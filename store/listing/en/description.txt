@@ -1,0 +1,32 @@
+Dynamic Assist puts the everyday tools that administrators and developers need for Microsoft Dynamics 365 Business Central, Dynamics 365 apps and the Power Apps maker portal into one side panel. Open one of those sites and the panel shows the tools for it; switch tabs and it follows.
+
+BUSINESS CENTRAL
+• Page details: page and table IDs, page type, the app and version that own the page, primary key, SystemId and bookmark, with links to open the page or the table's data
+• Every field on the page with its value, grouped by FastTab, searchable and filterable (has value, added by an extension, FlowFields, hidden)
+• Copy a field's schema name or value in one click, or as an AL reference, API name or OData name; copy all fields as a JSON object
+• Parts: each FactBox and subpage with its own page, table and fields
+• Session: your user, role, company, environment, tenant and platform version, and a link to the admin center
+• Read from the web client itself, so it doesn't start a second session the way the page inspector does
+
+DYNAMICS 365 APPS (model-driven apps)
+• Record details: table, record ID, form, entity set, and every form field with its value, required level and changes
+• All columns: every column of the record from the Web API, including ones the form doesn't show
+• Form tools: god mode, logical names on the form with copy buttons, expand tabs, refresh subgrids, fill required fields, clone record, blur values for screenshots
+• List tools: copy the current view's FetchXML, or open the view in the Web API
+• Debug switches: form monitor, ribbon debug and performance panel
+• Go to: search any table by name and open a record, a new form or the list, plus admin, maker and developer shortcuts
+• Session: your user, security roles, app and environment details
+
+POWER APPS MAKER PORTAL
+• The environment's name and ID, and the solution ID when you're in a solution
+• Shortcuts to the environment's solutions, tables, apps, flows, solution history and admin center, and to its Dynamics 365 app once you've opened it
+
+HISTORY
+• Every environment, org and company you open, newest first; pin the ones you use and give them your own names
+
+WHAT IT ACCESSES
+Dynamic Assist works only on businesscentral.dynamics.com, Dynamics 365 app sites (*.dynamics.com) and make.powerapps.com. It reads the page you're on and calls that site's own API as you, with your existing sign-in and permissions. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser.
+
+Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Business Central, Dynamics 365 and Power Apps are trademarks of the Microsoft group of companies.
+
+Source code and support: https://github.com/garethcheyne/Dynamic-Assist

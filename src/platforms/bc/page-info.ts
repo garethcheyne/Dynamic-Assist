@@ -64,6 +64,8 @@ export type BcPageInfo = {
     name: string | null
     type: string | null
     platform: string | null
+    /** Entra tenant ID, from the session (the URL may not carry it) */
+    aadTenantId: string | null
   }
   session: BcSession | null
   form: BcForm

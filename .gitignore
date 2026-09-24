@@ -20,3 +20,8 @@ investigations/**/_*.js
 
 # Built by vite.config.ts (main-world scripts)
 public/scripts/
+
+# Store publishing secrets (extension-publisher)
+.env.store
+*.service-account.json
+*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json

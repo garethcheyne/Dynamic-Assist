@@ -1,0 +1,9 @@
+# Edge only: Partner Center → Store listings → Search terms. One per line.
+# Not shown to users. Lines starting with # are ignored.
+Business Central developer tools
+Dynamics 365 admin tools
+page inspector
+logical names
+Dataverse
+Power Apps maker
+AL developer

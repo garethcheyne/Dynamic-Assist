@@ -206,6 +206,33 @@
   --chart-2: #6f9bf2;
 }
 
+/* Power Apps (maker portal): plum #742774 → orchid #A33A9F → pink #E08FC8 */
+:root[data-platform="maker"] {
+  --primary: #8a2d88;
+  --primary-foreground: #ffffff;
+  --ring: #8a2d88;
+  --accent: #f8ebf6;
+  --accent-foreground: #6e2270;
+  --sidebar-primary: #8a2d88;
+  --sidebar-accent: #f8ebf6;
+  --sidebar-accent-foreground: #6e2270;
+  --chart-1: #8a2d88;
+  --chart-2: #d56db8;
+  --brand-gradient: linear-gradient(90deg, #742774, #a33a9f 55%, #e08fc8);
+}
+:root.dark[data-platform="maker"] {
+  --primary: #e59ad3;
+  --primary-foreground: #3a0f38;
+  --ring: #e59ad3;
+  --accent: #3d1a3c;
+  --accent-foreground: #f4c6e8;
+  --sidebar-primary: #e59ad3;
+  --sidebar-accent: #3d1a3c;
+  --sidebar-accent-foreground: #f4c6e8;
+  --chart-1: #e59ad3;
+  --chart-2: #b04ea6;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

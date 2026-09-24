@@ -1,10 +1,17 @@
-import { Building2Icon, ServerIcon, UserRoundIcon } from "lucide-react"
+import {
+  Building2Icon,
+  ServerCogIcon,
+  ServerIcon,
+  UserRoundIcon,
+} from "lucide-react"
+
+import { ActionTile, TileGrid } from "@/components/action-tile"
 
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Detail, DetailGrid } from "@/components/detail-grid"
 
 import type { BcPageInfo } from "../page-info"
-import type { BcContext } from "../url"
+import { bcAdminCenterUrl, type BcContext } from "../url"
 
 /** Who you are and where: user, company, environment. */
 export function SessionView({
@@ -99,17 +106,29 @@ export function SessionView({
             copy={env?.name ?? ctx.environment ?? undefined}
           />
           <Detail label="Type" value={env?.type ?? "—"} />
-          {ctx.tenant && (
+          {(env?.aadTenantId ?? ctx.tenant) && (
             <Detail
               label="Tenant"
-              value={ctx.tenant}
-              copy={ctx.tenant}
+              value={env?.aadTenantId ?? ctx.tenant!}
+              copy={env?.aadTenantId ?? ctx.tenant!}
               mono
               wide
             />
           )}
           <Detail label="Platform" value={env?.platform ?? "—"} mono />
         </DetailGrid>
+        <TileGrid>
+          <ActionTile
+            icon={<ServerCogIcon />}
+            title="Admin center"
+            description="Environments, apps and sessions for this tenant"
+            onClick={() =>
+              chrome.tabs.create({
+                url: bcAdminCenterUrl(ctx, env?.aadTenantId),
+              })
+            }
+          />
+        </TileGrid>
       </CollapsibleSection>
 
       {!s && (

@@ -50,3 +50,13 @@ export function buildBcUrl(
   }
   return u.toString()
 }
+
+/**
+ * The Business Central admin center for a tenant. The tenant comes from the
+ * session when the page has loaded, else from the URL; without either BC picks
+ * your home tenant.
+ */
+export function bcAdminCenterUrl(ctx: BcContext, aadTenantId?: string | null) {
+  const tenant = aadTenantId ?? ctx.tenant
+  return `${ctx.origin}/${tenant ? `${tenant}/` : ""}admin`
+}

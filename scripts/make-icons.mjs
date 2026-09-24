@@ -1,4 +1,5 @@
-// Renders scripts/icon.svg to public/icons/icon{16,32,48,128}.png with headless Chrome.
+// Renders scripts/icon.svg to public/icons/icon{16,32,48,128}.png, and the store's
+// icon-128.png and logo-300.png (Edge), with headless Chrome.
 // Usage: npm run icons   (set CHROME to the browser's path if it isn't in the usual place)
 import { execFileSync } from "node:child_process"
 import fs from "node:fs"
@@ -20,13 +21,18 @@ const chrome =
 if (!chrome) throw new Error("No Chrome or Edge found; set CHROME.")
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "da-icons-"))
-for (const size of [16, 32, 48, 128]) {
-  const html = path.join(tmp, `icon${size}.html`)
+const outputs = [
+  ...[16, 32, 48, 128].map((size) => [size, `public/icons/icon${size}.png`]),
+  [128, "store/images/icon-128.png"],
+  [300, "store/images/logo-300.png"],
+]
+for (const [size, file] of outputs) {
+  const html = path.join(tmp, `icon-${path.basename(file)}.html`)
   fs.writeFileSync(
     html,
     `<html><body style="margin:0;background:transparent">${svg.replace("<svg ", `<svg width="${size}" height="${size}" `)}</body></html>`
   )
-  const out = path.join(root, "public/icons", `icon${size}.png`)
+  const out = path.join(root, file)
   execFileSync(chrome, [
     "--headless",
     "--disable-gpu",

@@ -10,6 +10,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { recordVisit, visitFromUrl } from "@/lib/history"
 import { useAction } from "@/lib/use-action"
 
 import type { CeState } from "../types"
@@ -27,6 +28,25 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
   const { connected, state, refresh, run } = useCeTab(tab.id)
   const { busy, act } = useAction()
   const [current, setCurrent] = React.useState<Tab>("record")
+
+  // Name this org (and the app you were in) in History
+  const orgName = state?.environment.friendlyName ?? null
+  const clientUrl = state?.environment.clientUrl
+  const appId = state?.app?.id ?? null
+  const appName = state?.app?.displayName ?? null
+  const environmentId = state?.environment.environmentId ?? null
+  React.useEffect(() => {
+    const visit = tab.url ? visitFromUrl(tab.url) : null
+    if (!visit || !clientUrl) return
+    void recordVisit({
+      ...visit,
+      title: orgName ?? visit.title,
+      subtitle: appName,
+      environmentId,
+      url: `${clientUrl}/main.aspx${appId ? `?appid=${appId}` : ""}`,
+      named: true,
+    })
+  }, [tab.url, orgName, clientUrl, appId, appName, environmentId])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

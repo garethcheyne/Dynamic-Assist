@@ -229,6 +229,7 @@ function readPageInfo(): BcPageInfo | null {
       name: read(() => DN.ExecutionContext.Instance.EnvName),
       type: read(() => DN.ExecutionContext.Instance.EnvType),
       platform: read(() => DN.ClientConfiguration.settings.PlatformVersion),
+      aadTenantId: read(() => DN.ExecutionContext.Instance.AadTenantId),
     },
     session: readSession(),
     form: main.form,

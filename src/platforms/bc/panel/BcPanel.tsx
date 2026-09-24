@@ -4,15 +4,17 @@ import {
   Loader2Icon,
   PanelsTopLeftIcon,
   RefreshCwIcon,
+  ServerCogIcon,
   UserRoundIcon,
 } from "lucide-react"
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { recordVisit, visitFromUrl } from "@/lib/history"
 
 import type { BcPageInfo } from "../page-info"
-import { parseBcUrl, type BcContext } from "../url"
+import { bcAdminCenterUrl, parseBcUrl, type BcContext } from "../url"
 import { useBcTab } from "../use-bc-tab"
 import { PageView } from "./PageView"
 import { PartsView } from "./PartsView"
@@ -24,6 +26,22 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
   const ctx = parseBcUrl(tab.url!)
   const { connected, page, refresh } = useBcTab(tab.id)
   const [current, setCurrent] = React.useState<Tab>("page")
+
+  // Name this environment in History once the client has told us about it
+  const envName = page?.environment.name
+  const envType = page?.environment.type ?? null
+  const company = page?.session?.company?.name ?? null
+  React.useEffect(() => {
+    const visit = tab.url ? visitFromUrl(tab.url) : null
+    if (!visit || !envName) return
+    void recordVisit({
+      ...visit,
+      title: envName,
+      subtitle: company ?? visit.subtitle,
+      envType,
+      named: true,
+    })
+  }, [tab.url, envName, envType, company])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -118,6 +136,19 @@ function EnvironmentBar({
         variant="ghost"
         size="icon-xs"
         className="ml-auto"
+        title="Business Central admin center"
+        aria-label="Business Central admin center"
+        onClick={() =>
+          chrome.tabs.create({
+            url: bcAdminCenterUrl(ctx, page?.environment.aadTenantId),
+          })
+        }
+      >
+        <ServerCogIcon />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-xs"
         title="Read the page again"
         aria-label="Read the page again"
         onClick={onRefresh}

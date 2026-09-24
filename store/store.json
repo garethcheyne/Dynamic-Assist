@@ -1,0 +1,36 @@
+{
+  "name": "dynamic-assist",
+  "build": {
+    "command": "npm run build",
+    "output": "dist"
+  },
+  "package": {
+    "outDir": "releases",
+    "exclude": [
+      "*.map"
+    ],
+    "stripManifestKeys": [
+      "key",
+      "update_url"
+    ]
+  },
+  "listing": {
+    "defaultLocale": "en",
+    "privacyPolicyUrl": "https://github.com/garethcheyne/Dynamic-Assist/blob/main/store/privacy/privacy-policy.md",
+    "homepageUrl": "https://github.com/garethcheyne/Dynamic-Assist",
+    "supportUrl": "https://github.com/garethcheyne/Dynamic-Assist/issues",
+    "category": "Developer Tools"
+  },
+  "stores": {
+    "chrome": {
+      "enabled": true,
+      "extensionId": "",
+      "publisherId": "",
+      "publishType": "DEFAULT_PUBLISH"
+    },
+    "edge": {
+      "enabled": true,
+      "productId": ""
+    }
+  }
+}

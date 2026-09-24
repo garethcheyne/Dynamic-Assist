@@ -1,3 +1,5 @@
+import { recordVisit, visitFromUrl } from "@/lib/history"
+
 // Open the side panel when the toolbar icon is clicked.
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
@@ -38,4 +40,12 @@ async function registerMainWorldScripts() {
 
 chrome.runtime.onInstalled.addListener(() => {
   registerMainWorldScripts().catch((error) => console.error(error))
+})
+
+// History: every BC environment / CE org you open, recorded from the tab's URL
+// (host permissions let us see those URLs). The panel adds friendly names.
+chrome.tabs.onUpdated.addListener((_tabId, change, tab) => {
+  if (change.status !== "complete" || !tab.url) return
+  const visit = visitFromUrl(tab.url)
+  if (visit) void recordVisit(visit)
 })

@@ -1,6 +1,6 @@
 # Dynamic Assist
 
-Side panel tools for Dynamics 365 Business Central and Customer Engagement. Not affiliated with Microsoft.
+Admin and developer tools for Business Central, Dynamics 365 and Power Apps, in one side panel. Not affiliated with Microsoft.
 
 A Manifest V3 extension for Chrome and Edge, built with Vite, React, TypeScript, Tailwind CSS and [shadcn/ui](https://ui.shadcn.com). Created with [extension-publisher](https://github.com/garethcheyne/extension-publisher)'s `New-Extension.ps1`.
 
