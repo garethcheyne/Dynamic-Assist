@@ -10,9 +10,6 @@ import {
 } from "lucide-react"
 import { cn } from "cn"
 
-import bcLogo from "@/assets/brand/bc.png"
-import ceLogo from "@/assets/brand/ce.png"
-import paLogo from "@/assets/brand/pa.png"
 import { useTheme } from "@/components/theme-provider"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -21,21 +18,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { instanceKey } from "@/lib/history"
 import { useActiveTab } from "@/lib/use-active-tab"
 import { BcPanel } from "@/platforms/bc/panel/BcPanel"
 import { CePanel } from "@/platforms/ce/panel/CePanel"
 import { MakerPanel } from "@/platforms/maker/MakerPanel"
 import { detectPlatform, type Platform } from "@/shared/detect"
+import { PRODUCTS } from "@/shared/products"
 
 import { CreditsView } from "./CreditsView"
 import { HelpView } from "./HelpView"
 import { HistoryView } from "./HistoryView"
-
-const PRODUCTS = {
-  bc: { name: "Business Central", logo: bcLogo },
-  ce: { name: "Dynamics 365", logo: ceLogo },
-  maker: { name: "Power Apps", logo: paLogo },
-} as const
 
 type View = "tools" | "history" | "help" | "credits"
 
@@ -55,6 +48,9 @@ export function App() {
   // Off BC/CE/Power Apps there are no tools, so History is the home page
   const home: View = platform === "none" ? "history" : "tools"
   const view = chosen === "tools" ? home : chosen
+  // One panel per tab and instance: moving to another environment, company or
+  // org in the same tab starts fresh instead of mixing the two
+  const panelKey = `${tab?.id}:${instanceKey(tab?.url)}`
   const go = (next: View) => setChosen((v) => (v === next ? "tools" : next))
 
   // The accent colours follow the product in the active tab (index.css).
@@ -77,11 +73,11 @@ export function App() {
       ) : view === "credits" ? (
         <CreditsView />
       ) : platform === "bc" && tab ? (
-        <BcPanel key={tab.id} tab={tab} />
+        <BcPanel key={panelKey} tab={tab} />
       ) : platform === "ce" && tab ? (
-        <CePanel key={tab.id} tab={tab} />
+        <CePanel key={panelKey} tab={tab} />
       ) : platform === "maker" && tab ? (
-        <MakerPanel key={tab.id} tab={tab} />
+        <MakerPanel key={panelKey} tab={tab} />
       ) : null}
     </div>
   )

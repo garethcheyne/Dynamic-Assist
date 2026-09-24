@@ -28,7 +28,9 @@ import { ActionTile, TileGrid } from "@/components/action-tile"
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { HISTORY_KEY, type HistoryEntry } from "@/lib/history"
 import type { Act } from "@/lib/use-action"
+import { useStorage } from "@/lib/use-storage"
 
 import type { CeState } from "../types"
 import { ceUrls } from "../urls"
@@ -76,6 +78,7 @@ export function NavigateView({
   return (
     <div className="flex flex-col gap-3">
       <QuickOpen state={state} run={run} />
+      <OtherOrgs current={state.environment.clientUrl} />
 
       <CollapsibleSection
         id="ce.nav.me"
@@ -134,8 +137,8 @@ export function NavigateView({
           {link(InboxIcon, "Mailboxes", "All mailboxes", urls.mailboxes)}
           {link(
             LayersIcon,
-            "Instance picker",
-            "Other orgs in this region",
+            "My apps",
+            "Every app in every environment",
             urls.instancePicker
           )}
           {link(
@@ -257,5 +260,48 @@ function QuickOpen({ state, run }: { state: CeState; run: Run }) {
         </Button>
       </div>
     </section>
+  )
+}
+
+/**
+ * The orgs you've been to, to jump between: the old port.crm instance picker
+ * is gone, and listing every org would need a Global Discovery token.
+ */
+function OtherOrgs({ current }: { current: string }) {
+  const [history] = useStorage<HistoryEntry[]>(HISTORY_KEY, [])
+  const host = new URL(current).host
+  const orgs = history.filter(
+    (e) => e.platform === "ce" && new URL(e.url).host !== host
+  )
+  if (orgs.length === 0) return null
+
+  return (
+    <CollapsibleSection
+      id="ce.nav.orgs"
+      title="Other orgs"
+      icon={<LayersIcon />}
+      summary={
+        <span className="font-normal text-muted-foreground">{orgs.length}</span>
+      }
+    >
+      <div className="-mx-1.5 flex flex-col">
+        {orgs.map((e) => (
+          <button
+            key={e.key}
+            type="button"
+            title={e.url}
+            onClick={() => open(e.url)}
+            className="flex min-w-0 flex-col rounded-md px-1.5 py-1.5 text-left hover:bg-muted/60"
+          >
+            <span className="truncate text-xs font-medium">
+              {e.label || e.title}
+            </span>
+            <span className="truncate text-[11px] text-muted-foreground">
+              {[e.subtitle, new URL(e.url).host].filter(Boolean).join(" · ")}
+            </span>
+          </button>
+        ))}
+      </div>
+    </CollapsibleSection>
   )
 }

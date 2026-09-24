@@ -6,7 +6,8 @@
   "permissions": [
     "sidePanel",
     "storage",
-    "scripting"
+    "scripting",
+    "declarativeNetRequest"
   ],
   "action": {
     "default_title": "Dynamic Assist",
@@ -57,6 +58,16 @@
       "run_at": "document_idle",
       "exclude_matches": [
         "https://businesscentral.dynamics.com/*"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*.css"
+      ],
+      "matches": [
+        "https://*.dynamics.com/*"
       ]
     }
   ]

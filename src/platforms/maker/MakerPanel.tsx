@@ -23,6 +23,7 @@ import {
 } from "@/lib/history"
 import { useStorage } from "@/lib/use-storage"
 import { parseMakerUrl } from "@/shared/detect"
+import { powerPlatform } from "@/shared/links"
 
 const AREAS: Record<string, string> = {
   home: "Home",
@@ -61,10 +62,19 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
   const m = parseMakerUrl(tab.url!)
   const env = m.environmentId
   const [name, setName] = React.useState<string | null>(null)
+  // The picker can still show the previous environment just after a switch,
+  // so History only takes a name that two reads in a row agree on
+  const [stableName, setStableName] = React.useState<string | null>(null)
+  const lastRead = React.useRef<string | null>(null)
   const [history] = useStorage<HistoryEntry[]>(HISTORY_KEY, [])
 
   const refresh = React.useCallback(() => {
-    if (tab.id !== undefined) void readEnvironmentName(tab.id).then(setName)
+    if (tab.id === undefined) return
+    void readEnvironmentName(tab.id).then((next) => {
+      if (next && next === lastRead.current) setStableName(next)
+      lastRead.current = next
+      setName(next)
+    })
   }, [tab.id])
 
   // The picker renders after the page; read it now and again shortly after
@@ -76,14 +86,15 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
 
   React.useEffect(() => {
     const visit = tab.url ? visitFromUrl(tab.url) : null
-    if (visit && name) void recordVisit({ ...visit, title: name, named: true })
-  }, [tab.url, name])
+    if (visit && stableName)
+      void recordVisit({ ...visit, title: stableName, named: true })
+  }, [tab.url, stableName])
 
   // The Dynamics 365 org behind this environment, if you've been there
   const org = history.find(
     (e) => e.platform === "ce" && env && e.environmentId === env
   )
-  const maker = (path: string) => `${m.origin}/environments/${env}/${path}`
+  const maker = (path: string) => powerPlatform.maker(env!, path)
   const open = (url: string) => chrome.tabs.create({ url })
 
   return (
@@ -205,11 +216,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
                   icon={<WorkflowIcon />}
                   title="Flows"
                   description="In Power Automate"
-                  onClick={() =>
-                    open(
-                      `https://make.powerautomate.com/environments/${env}/flows`
-                    )
-                  }
+                  onClick={() => open(powerPlatform.flows(env))}
                 />
                 <ActionTile
                   icon={<HistoryIcon />}
@@ -221,11 +228,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
                   icon={<ServerCogIcon />}
                   title="Admin center"
                   description="This environment in Power Platform admin"
-                  onClick={() =>
-                    open(
-                      `https://admin.powerplatform.microsoft.com/environments/${env}/hub`
-                    )
-                  }
+                  onClick={() => open(powerPlatform.adminCenter(env))}
                 />
               </TileGrid>
             </CollapsibleSection>

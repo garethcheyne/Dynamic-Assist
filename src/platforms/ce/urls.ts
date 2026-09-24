@@ -1,4 +1,17 @@
+import { powerPlatform } from "@/shared/links"
+
 import type { CeState } from "./types"
+
+/** A model-driven app in an org, or the org's default app. */
+export function ceAppUrl(clientUrl: string, appId?: string | null) {
+  return `${clientUrl}/main.aspx${appId ? `?appid=${appId}` : ""}`
+}
+
+/**
+ * Microsoft's "My apps" page lists apps across all your environments. It
+ * replaced the old port.crm*.dynamics.com instance picker, which now returns 404.
+ */
+export const MY_APPS_URL = "https://home.dynamics.com/"
 
 /** Links into the org, the maker portal and the admin center, as Level Up had them. */
 export function ceUrls(s: CeState) {
@@ -34,17 +47,11 @@ export function ceUrls(s: CeState) {
       id: s.user.id,
     }),
     diagnostics: `${base}/tools/diagnostics/diag.aspx/GetMetrics`,
-    instancePicker: `https://port${new URL(base).host.slice(new URL(base).host.indexOf("."))}/G/Instances/InstancePicker.aspx?redirect=False`,
-    maker: env ? `https://make.powerapps.com/environments/${env}/home` : null,
-    solutions: env
-      ? `https://make.powerapps.com/environments/${env}/solutions`
-      : null,
-    solutionHistory: env
-      ? `https://make.powerapps.com/environments/${env}/history`
-      : null,
-    adminCenter: env
-      ? `https://admin.powerplatform.microsoft.com/environments/${env}/hub`
-      : "https://admin.powerplatform.microsoft.com/environments",
+    instancePicker: MY_APPS_URL,
+    maker: env ? powerPlatform.maker(env) : null,
+    solutions: env ? powerPlatform.maker(env, "solutions") : null,
+    solutionHistory: env ? powerPlatform.maker(env, "history") : null,
+    adminCenter: powerPlatform.adminCenter(env),
   }
 }
 

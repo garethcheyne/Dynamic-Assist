@@ -21,6 +21,12 @@ function report() {
 }
 
 let nextId = 1
+/**
+ * Long enough for the slowest command (loading all tables' metadata on a big
+ * org). If the page script never answers (not injected: the tab predates the
+ * install), the panel gets an error instead of waiting forever.
+ */
+const COMMAND_TIMEOUT_MS = 45_000
 const pending = new Map<number, (r: CeCommandResponse) => void>()
 
 window.addEventListener("message", (event) => {
@@ -44,7 +50,17 @@ chrome.runtime.onMessage.addListener(
     }
     if (message.type === "ce:command") {
       const id = nextId++
-      pending.set(id, sendResponse)
+      const timer = window.setTimeout(() => {
+        pending.delete(id)
+        sendResponse({
+          ok: false,
+          error: "The page didn't answer. Reload the tab and try again.",
+        })
+      }, COMMAND_TIMEOUT_MS)
+      pending.set(id, (response) => {
+        window.clearTimeout(timer)
+        sendResponse(response)
+      })
       window.postMessage(
         { type: CE_COMMAND, id, command: message.command, args: message.args },
         location.origin

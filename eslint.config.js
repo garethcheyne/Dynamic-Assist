@@ -26,4 +26,13 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  {
+    // Ported as-is from fluentui-extended's QueryBuilder; kept identical to
+    // upstream so it can be updated by copying, rather than linted into a fork
+    files: ['src/platforms/ce/query/lib/**'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
 ])

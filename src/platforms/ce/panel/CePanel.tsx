@@ -4,6 +4,7 @@ import {
   FileSearchIcon,
   Loader2Icon,
   RefreshCwIcon,
+  UserRoundCogIcon,
   UserRoundIcon,
   WrenchIcon,
 } from "lucide-react"
@@ -12,10 +13,13 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { recordVisit, visitFromUrl } from "@/lib/history"
 import { useAction } from "@/lib/use-action"
+import { stopImpersonation, useImpersonation } from "../impersonation"
+import { ceAppUrl } from "../urls"
 
 import type { CeState } from "../types"
 import { useCeTab } from "../use-ce-tab"
 import { CeSessionView } from "./CeSessionView"
+import { ImpersonateSection } from "./ImpersonateSection"
 import { NavigateView } from "./NavigateView"
 import { RecordView } from "./RecordView"
 import { ToolsView } from "./ToolsView"
@@ -27,6 +31,8 @@ const TRIGGER = "text-xs [&_svg]:size-3.5"
 export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
   const { connected, state, refresh, run } = useCeTab(tab.id)
   const { busy, act } = useAction()
+  const host = tab.url ? new URL(tab.url).host : ""
+  const impersonation = useImpersonation(tab.id, host)
   const [current, setCurrent] = React.useState<Tab>("record")
 
   // Name this org (and the app you were in) in History
@@ -38,12 +44,14 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
   React.useEffect(() => {
     const visit = tab.url ? visitFromUrl(tab.url) : null
     if (!visit || !clientUrl) return
+    // Only name the org the tab is on, never one a previous page reported
+    if (tab.url && new URL(clientUrl).host !== new URL(tab.url).host) return
     void recordVisit({
       ...visit,
       title: orgName ?? visit.title,
       subtitle: appName,
       environmentId,
-      url: `${clientUrl}/main.aspx${appId ? `?appid=${appId}` : ""}`,
+      url: ceAppUrl(clientUrl, appId),
       named: true,
     })
   }, [tab.url, orgName, clientUrl, appId, appName, environmentId])
@@ -51,6 +59,27 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EnvironmentBar state={state} onRefresh={refresh} />
+      {impersonation && (
+        <div className="flex items-center gap-2 border-b bg-sandbox px-3 py-1.5 text-xs text-sandbox-foreground">
+          <UserRoundCogIcon className="size-3.5 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">
+            Running as <b>{impersonation.user.name}</b>
+          </span>
+          <Button
+            size="xs"
+            variant="outline"
+            className="h-6 bg-background/60"
+            onClick={() =>
+              act("stopImpersonation", async () => {
+                await stopImpersonation(tab.id!)
+                return "Stopped impersonating"
+              })
+            }
+          >
+            Stop
+          </Button>
+        </div>
+      )}
       {!state ? (
         <div className="p-3">
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center text-xs text-muted-foreground">
@@ -91,7 +120,12 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
             </TabsList>
           </div>
           <TabsContent value="record" className="min-h-0 overflow-y-auto p-3">
-            <RecordView state={state} run={run} act={act} />
+            <RecordView
+              state={state}
+              run={run}
+              act={act}
+              actingAs={impersonation?.user.id ?? null}
+            />
           </TabsContent>
           <TabsContent value="tools" className="min-h-0 overflow-y-auto p-3">
             <ToolsView
@@ -106,7 +140,18 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
             <NavigateView state={state} run={run} act={act} busy={busy} />
           </TabsContent>
           <TabsContent value="session" className="min-h-0 overflow-y-auto p-3">
-            <CeSessionView state={state} />
+            <CeSessionView
+              state={state}
+              impersonate={
+                <ImpersonateSection
+                  tab={tab}
+                  host={host}
+                  run={run}
+                  act={act}
+                  active={impersonation}
+                />
+              }
+            />
           </TabsContent>
         </Tabs>
       )}

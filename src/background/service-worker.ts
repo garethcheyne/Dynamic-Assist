@@ -1,4 +1,10 @@
-import { recordVisit, visitFromUrl } from "@/lib/history"
+import {
+  applyHistoryOp,
+  HISTORY_MESSAGE,
+  recordVisit,
+  visitFromUrl,
+  type HistoryOp,
+} from "@/lib/history"
 
 // Open the side panel when the toolbar icon is clicked.
 chrome.sidePanel
@@ -48,4 +54,24 @@ chrome.tabs.onUpdated.addListener((_tabId, change, tab) => {
   if (change.status !== "complete" || !tab.url) return
   const visit = visitFromUrl(tab.url)
   if (visit) void recordVisit(visit)
+})
+
+// The panel's History changes (names, pins, renames) come here, so the worker
+// is History's only writer.
+chrome.runtime.onMessage.addListener(
+  (message: { type?: string; op?: HistoryOp }) => {
+    if (message?.type === HISTORY_MESSAGE && message.op) {
+      void applyHistoryOp(message.op)
+    }
+    return false
+  }
+)
+
+// Impersonation rules are per tab (platforms/ce/impersonation.ts); drop a
+// closed tab's rule so its ID can't carry over to a tab that reuses it.
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void chrome.declarativeNetRequest
+    .updateSessionRules({ removeRuleIds: [tabId] })
+    .catch(() => {})
+  void chrome.storage.session.remove(`impersonation:${tabId}`)
 })

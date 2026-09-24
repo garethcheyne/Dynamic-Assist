@@ -34,6 +34,13 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
   React.useEffect(() => {
     const visit = tab.url ? visitFromUrl(tab.url) : null
     if (!visit || !envName) return
+    // Only name the instance the tab is on: the URL's environment (when it
+    // names one) must be the one the client reports
+    if (
+      ctx.environment &&
+      ctx.environment.toLowerCase() !== envName.toLowerCase()
+    )
+      return
     void recordVisit({
       ...visit,
       title: envName,
@@ -41,7 +48,19 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
       envType,
       named: true,
     })
-  }, [tab.url, envName, envType, company])
+  }, [tab.url, ctx.environment, envName, envType, company])
+
+  if (ctx.isAdminCenter) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+        <ServerCogIcon className="size-6 text-primary" />
+        <p className="max-w-64">
+          This is the Business Central admin center. Open an environment to use
+          the page tools.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

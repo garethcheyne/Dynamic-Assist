@@ -1,0 +1,237 @@
+/*
+ * Colour and type tokens, shared by the side panel (index.css) and the query
+ * builder that runs inside a shadow root on the page (query.css). Base tokens
+ * sit on :root and :host so both documents get them; .dark and data-platform
+ * work on <html> in the panel and on the modal's root element in the page.
+ */
+
+/*
+ * Business Central look: its teal for actions and selection, Fluent's warm
+ * neutrals for surfaces, and Segoe UI as the BC web client uses. Geist is only
+ * the fallback where Segoe isn't installed.
+ *
+ * Teal #00767c is BC's accent darkened to 5.6:1 on white; in dark mode a lighter
+ * #3fc1c4 carries dark text. Sandbox/production get their own tokens so the
+ * environment pill reads at a glance.
+ */
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans:
+    "Segoe UI Variable Text", "Segoe UI", "Geist Variable", system-ui,
+    sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-sandbox: var(--sandbox);
+  --color-sandbox-foreground: var(--sandbox-foreground);
+  --color-production: var(--production);
+  --color-production-foreground: var(--production-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root,
+:host {
+  --background: #faf9f8;
+  --foreground: #201f1e;
+  --card: #ffffff;
+  --card-foreground: #201f1e;
+  --popover: #ffffff;
+  --popover-foreground: #201f1e;
+  --primary: #00767c;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f2f1;
+  --secondary-foreground: #201f1e;
+  --muted: #f3f2f1;
+  --muted-foreground: #605e5c;
+  --accent: #e3f3f3;
+  --accent-foreground: #00585d;
+  --destructive: #a4262c;
+  --border: #e1dfdd;
+  --input: #d2d0ce;
+  --ring: #00767c;
+  --sandbox: #fff4ce;
+  --sandbox-foreground: #6b4a00;
+  --production: #fde7e9;
+  --production-foreground: #a4262c;
+  --chart-1: #00767c;
+  --chart-2: #3fc1c4;
+  --chart-3: #605e5c;
+  --chart-4: #a19f9d;
+  --chart-5: #201f1e;
+  --radius: 0.5rem;
+  --sidebar: #faf9f8;
+  --sidebar-foreground: #201f1e;
+  --sidebar-primary: #00767c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3f3f3;
+  --sidebar-accent-foreground: #00585d;
+  --sidebar-border: #e1dfdd;
+  --sidebar-ring: #00767c;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #1b1a19;
+  --foreground: #f3f2f1;
+  --card: #252423;
+  --card-foreground: #f3f2f1;
+  --popover: #292827;
+  --popover-foreground: #f3f2f1;
+  --primary: #3fc1c4;
+  --primary-foreground: #04282a;
+  --secondary: #323130;
+  --secondary-foreground: #f3f2f1;
+  --muted: #2d2c2b;
+  --muted-foreground: #a19f9d;
+  --accent: #143c3e;
+  --accent-foreground: #8fe1e3;
+  --destructive: #f1707b;
+  --border: #3b3a39;
+  --input: #484644;
+  --ring: #3fc1c4;
+  --sandbox: #4a3b10;
+  --sandbox-foreground: #ffd966;
+  --production: #4a1d20;
+  --production-foreground: #ff9aa2;
+  --chart-1: #3fc1c4;
+  --chart-2: #00767c;
+  --chart-3: #a19f9d;
+  --chart-4: #605e5c;
+  --chart-5: #f3f2f1;
+  --sidebar: #252423;
+  --sidebar-foreground: #f3f2f1;
+  --sidebar-primary: #3fc1c4;
+  --sidebar-primary-foreground: #04282a;
+  --sidebar-accent: #143c3e;
+  --sidebar-accent-foreground: #8fe1e3;
+  --sidebar-border: #3b3a39;
+  --sidebar-ring: #3fc1c4;
+  color-scheme: dark;
+}
+
+/*
+ * Per-platform accents, taken from each product's logo. <html data-platform>
+ * is set by App. Only the accent family changes; surfaces stay Fluent neutral.
+ * Light-mode primaries are darkened for 4.5:1 on white, dark-mode ones
+ * lightened and paired with dark text.
+ */
+:root,
+:host {
+  --brand-gradient: linear-gradient(90deg, #3fc1c4, #00767c);
+}
+
+/* Business Central: aqua #45E0CE → cyan #1BA4C9 → deep blue #064E86 */
+[data-platform="bc"] {
+  --primary: #0a6f96;
+  --primary-foreground: #ffffff;
+  --ring: #0a6f96;
+  --accent: #e1f3f8;
+  --accent-foreground: #075777;
+  --sidebar-primary: #0a6f96;
+  --sidebar-accent: #e1f3f8;
+  --sidebar-accent-foreground: #075777;
+  --chart-1: #0a6f96;
+  --chart-2: #1ba4c9;
+  --brand-gradient: linear-gradient(90deg, #45e0ce, #1ba4c9 55%, #064e86);
+}
+.dark[data-platform="bc"] {
+  --primary: #3cc8de;
+  --primary-foreground: #032a36;
+  --ring: #3cc8de;
+  --accent: #0f3847;
+  --accent-foreground: #8fe3f0;
+  --sidebar-primary: #3cc8de;
+  --sidebar-accent: #0f3847;
+  --sidebar-accent-foreground: #8fe3f0;
+  --chart-1: #3cc8de;
+  --chart-2: #45e0ce;
+}
+
+/* Dynamics 365 (CE): blue #0B53CE → violet #5B4FC7 → lavender #8E7EF2 */
+[data-platform="ce"] {
+  --primary: #4f46c9;
+  --primary-foreground: #ffffff;
+  --ring: #4f46c9;
+  --accent: #eeecfd;
+  --accent-foreground: #3d33a8;
+  --sidebar-primary: #4f46c9;
+  --sidebar-accent: #eeecfd;
+  --sidebar-accent-foreground: #3d33a8;
+  --chart-1: #4f46c9;
+  --chart-2: #0b53ce;
+  --brand-gradient: linear-gradient(90deg, #0b53ce, #5b4fc7 55%, #8e7ef2);
+}
+.dark[data-platform="ce"] {
+  --primary: #a497f7;
+  --primary-foreground: #1a1447;
+  --ring: #a497f7;
+  --accent: #29245a;
+  --accent-foreground: #cdc6ff;
+  --sidebar-primary: #a497f7;
+  --sidebar-accent: #29245a;
+  --sidebar-accent-foreground: #cdc6ff;
+  --chart-1: #a497f7;
+  --chart-2: #6f9bf2;
+}
+
+/* Power Apps (maker portal): plum #742774 → orchid #A33A9F → pink #E08FC8 */
+[data-platform="maker"] {
+  --primary: #8a2d88;
+  --primary-foreground: #ffffff;
+  --ring: #8a2d88;
+  --accent: #f8ebf6;
+  --accent-foreground: #6e2270;
+  --sidebar-primary: #8a2d88;
+  --sidebar-accent: #f8ebf6;
+  --sidebar-accent-foreground: #6e2270;
+  --chart-1: #8a2d88;
+  --chart-2: #d56db8;
+  --brand-gradient: linear-gradient(90deg, #742774, #a33a9f 55%, #e08fc8);
+}
+.dark[data-platform="maker"] {
+  --primary: #e59ad3;
+  --primary-foreground: #3a0f38;
+  --ring: #e59ad3;
+  --accent: #3d1a3c;
+  --accent-foreground: #f4c6e8;
+  --sidebar-primary: #e59ad3;
+  --sidebar-accent: #3d1a3c;
+  --sidebar-accent-foreground: #f4c6e8;
+  --chart-1: #e59ad3;
+  --chart-2: #b04ea6;
+}

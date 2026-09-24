@@ -1,3 +1,5 @@
+import { GUID } from "@/shared/links"
+
 /**
  * Business Central web client URLs:
  *   https://businesscentral.dynamics.com/{tenant?}/{environment?}/?company=…&page=…&bookmark=…
@@ -11,9 +13,9 @@ export type BcContext = {
   company: string | null
   page: number | null
   bookmark: string | null
+  /** The tenant's admin center (/{tenant}/admin), not the web client */
+  isAdminCenter: boolean
 }
-
-const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function parseBcUrl(url: string): BcContext {
   const u = new URL(url)
@@ -24,13 +26,15 @@ export function parseBcUrl(url: string): BcContext {
     tenant = segments.shift()!
   }
   const environment = segments[0] ?? null
+  const isAdminCenter = environment?.toLowerCase() === "admin"
 
   const page = Number(u.searchParams.get("page"))
 
   return {
     origin: u.origin,
     tenant,
-    environment,
+    environment: isAdminCenter ? null : environment,
+    isAdminCenter,
     company: u.searchParams.get("company"),
     page: Number.isInteger(page) && page > 0 ? page : null,
     bookmark: u.searchParams.get("bookmark"),

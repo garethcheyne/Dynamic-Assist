@@ -17,7 +17,11 @@ import {
   type CeCommand,
   type CeCommandMessage,
   type CeCommands,
+  type CeDepth,
   type CeEntity,
+  type CePermissions,
+  type CePrivilegeType,
+  type CeUserSummary,
   type CeEnvironment,
   type CeField,
   type CeForm,
@@ -576,6 +580,99 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
       fetchXml: view.fetchxml,
       entitySetName: md.EntitySetName,
     }
+  },
+
+  async permissions({ entityName, recordId, userId }) {
+    const g = global()
+    const uid = trimId(userId ?? g.userSettings.userId)!
+    const api = `${clientUrl()}/api/data/v9.2/`
+    const get = async (path: string) => {
+      const res = await fetch(api + path, {
+        headers: { Accept: "application/json" },
+      })
+      if (!res.ok) throw new Error(`Web API ${res.status}`)
+      return res.json()
+    }
+    const [md, user] = await Promise.all([
+      get(
+        `EntityDefinitions(LogicalName='${entityName}')?$select=LogicalName,EntitySetName,Privileges`
+      ),
+      get(`systemusers(${uid})?$select=fullname`),
+    ])
+    const rank: CeDepth[] = ["None", "Basic", "Local", "Deep", "Global"]
+    const privileges = await Promise.all(
+      (md.Privileges as { Name: string; PrivilegeType: CePrivilegeType }[]).map(
+        async (p) => {
+          const r = await get(
+            `systemusers(${uid})/Microsoft.Dynamics.CRM.RetrieveUserPrivilegeByPrivilegeName(PrivilegeName='${p.Name}')`
+          ).catch(() => ({ RolePrivileges: [] }))
+          // Several roles can grant it; the widest level wins
+          const depth = (
+            r.RolePrivileges as { Depth: CeDepth }[]
+          ).reduce<CeDepth>(
+            (best, rp) =>
+              rank.indexOf(rp.Depth) > rank.indexOf(best) ? rp.Depth : best,
+            "None"
+          )
+          return { type: p.PrivilegeType, name: p.Name, depth }
+        }
+      )
+    )
+    let recordAccess: string[] | null = null
+    const rid = trimId(recordId ?? null)
+    if (rid && md.EntitySetName) {
+      const target = encodeURIComponent(
+        JSON.stringify({ "@odata.id": `${md.EntitySetName}(${rid})` })
+      )
+      const r = await get(
+        `systemusers(${uid})/Microsoft.Dynamics.CRM.RetrievePrincipalAccess(Target=@tid)?@tid=${target}`
+      ).catch(() => null)
+      recordAccess = r?.AccessRights
+        ? String(r.AccessRights)
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+        : null
+    }
+    const order: CePrivilegeType[] = [
+      "Create",
+      "Read",
+      "Write",
+      "Delete",
+      "Append",
+      "AppendTo",
+      "Assign",
+      "Share",
+    ]
+    privileges.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))
+    const result: CePermissions = {
+      user: { id: uid, name: user.fullname },
+      entityName,
+      privileges,
+      recordAccess,
+    }
+    return result
+  },
+
+  async searchUsers({ query }) {
+    const q = query.trim().replace(/'/g, "''")
+    const filter = [
+      "isdisabled eq false",
+      // Interactive users only: not application, support or integration users
+      "accessmode eq 0",
+      q ? `(contains(fullname,'${q}') or contains(domainname,'${q}'))` : null,
+    ]
+      .filter(Boolean)
+      .join(" and ")
+    const r = await Xrm.WebApi.retrieveMultipleRecords(
+      "systemuser",
+      `?$select=fullname,domainname&$filter=${filter}&$orderby=fullname&$top=20`
+    )
+    return r.entities.map((u: any): CeUserSummary => ({
+      id: u.systemuserid,
+      name: u.fullname,
+      domainName: u.domainname ?? null,
+    }))
   },
 
   async entities() {

@@ -23,6 +23,7 @@ import type { CeColumn, CeForm, CeState } from "../types"
 import { ceUrls, FORM_TYPES } from "../urls"
 import type { useCeTab } from "../use-ce-tab"
 import { CeFieldList } from "./CeFieldList"
+import { PermissionsSection } from "./PermissionsSection"
 
 type Run = ReturnType<typeof useCeTab>["run"]
 
@@ -31,13 +32,31 @@ export function RecordView({
   state,
   run,
   act,
+  actingAs,
 }: {
   state: CeState
   run: Run
   act: Act
+  /** The impersonated user's ID, whose access to check instead of yours */
+  actingAs: string | null
 }) {
   const form = state.form
-  if (!form) return <PageContext state={state} />
+  if (!form) {
+    return (
+      <div className="flex flex-col gap-3">
+        <PageContext state={state} />
+        {state.page.entityName && (
+          <PermissionsSection
+            key={state.page.entityName}
+            run={run}
+            entityName={state.page.entityName}
+            recordId={null}
+            userId={actingAs}
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -60,6 +79,13 @@ export function RecordView({
       >
         <CeFieldList fields={form.fields} />
       </CollapsibleSection>
+      <PermissionsSection
+        key={`${form.entityName}:${form.id}:${actingAs}`}
+        run={run}
+        entityName={form.entityName}
+        recordId={form.id}
+        userId={actingAs}
+      />
       {form.id && <AllColumns key={form.id} run={run} />}
     </div>
   )

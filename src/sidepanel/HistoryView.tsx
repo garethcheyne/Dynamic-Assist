@@ -10,9 +10,6 @@ import {
 } from "lucide-react"
 import { cn } from "cn"
 
-import bcLogo from "@/assets/brand/bc.png"
-import ceLogo from "@/assets/brand/ce.png"
-import paLogo from "@/assets/brand/pa.png"
 import { CollapsibleSection, Count } from "@/components/collapsible-section"
 import { SearchBox } from "@/components/search-box"
 import { Button } from "@/components/ui/button"
@@ -26,12 +23,7 @@ import {
   type HistoryEntry,
 } from "@/lib/history"
 import { useStorage } from "@/lib/use-storage"
-
-const PRODUCTS = {
-  bc: { title: "Business Central", logo: bcLogo },
-  ce: { title: "Dynamics 365", logo: ceLogo },
-  maker: { title: "Power Apps", logo: paLogo },
-} as const
+import { PRODUCTS } from "@/shared/products"
 
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" })
 function ago(time: number) {
@@ -114,7 +106,7 @@ export function HistoryView() {
           <CollapsibleSection
             key={platform}
             id={`history.${platform}`}
-            title={product.title}
+            title={product.name}
             icon={<img src={product.logo} alt="" className="size-3.5" />}
             summary={<Count>{items.length}</Count>}
             bodyClassName="gap-0 px-1.5"
@@ -173,7 +165,7 @@ function HistoryRow({
         {showProduct && (
           <img
             src={PRODUCTS[e.platform].logo}
-            alt={PRODUCTS[e.platform].title}
+            alt={PRODUCTS[e.platform].name}
             className="size-4 shrink-0"
           />
         )}

@@ -1,12 +1,18 @@
 /**
- * Instances you've visited: BC environments (per company) and CE orgs. Kept in
- * chrome.storage.local on this machine only. The service worker records every
- * visit from the tab's URL; the side panel adds friendly names when it has them.
+ * Instances you've visited: BC environments (per company), CE orgs and Power
+ * Apps environments. Kept in chrome.storage.local on this machine only.
+ *
+ * The service worker is the only writer: it records visits from tab URLs and
+ * applies the panel's changes (names, pins, renames), which the panel sends it
+ * as messages. One writer with one queue means no two read-modify-writes race.
  */
-import { detectPlatform, parseMakerUrl } from "@/shared/detect"
 import { buildBcUrl, parseBcUrl } from "@/platforms/bc/url"
+import { ceAppUrl } from "@/platforms/ce/urls"
+import { detectPlatform, parseMakerUrl } from "@/shared/detect"
+import { powerPlatform } from "@/shared/links"
 
 export const HISTORY_KEY = "history"
+export const HISTORY_MESSAGE = "history:op"
 const MAX_ENTRIES = 50
 /** Page moves inside an instance within this window don't count as a new visit. */
 const SAME_VISIT_MS = 30 * 60 * 1000
@@ -30,7 +36,7 @@ export type HistoryEntry = {
   label?: string | null
 }
 
-type Visit = Omit<
+export type Visit = Omit<
   HistoryEntry,
   "lastVisited" | "visits" | "pinned" | "label"
 > & {
@@ -38,11 +44,20 @@ type Visit = Omit<
   named?: boolean
 }
 
+export type HistoryOp =
+  | { op: "record"; visit: Visit }
+  | { op: "remove"; key: string }
+  | { op: "pin"; key: string; pinned: boolean }
+  | { op: "label"; key: string; label: string }
+  | { op: "clear" }
+
 /** What the URL alone says about the instance, or null if it isn't one. */
 export function visitFromUrl(url: string): Visit | null {
   const platform = detectPlatform(url)
   if (platform === "bc") {
     const ctx = parseBcUrl(url)
+    // The tenant's admin center isn't an environment
+    if (ctx.isAdminCenter) return null
     return {
       key: `bc:${ctx.tenant ?? ""}/${ctx.environment ?? "default"}/${ctx.company ?? ""}`,
       platform,
@@ -54,13 +69,14 @@ export function visitFromUrl(url: string): Visit | null {
   }
   if (platform === "ce") {
     const u = new URL(url)
-    const appId = u.searchParams.get("appid")
+    // Only app pages are an org you worked in (not /api/data, sign-in or error pages)
+    if (!u.pathname.toLowerCase().startsWith("/main.aspx")) return null
     return {
       key: `ce:${u.host}`,
       platform,
       title: u.host.split(".")[0],
       subtitle: null,
-      url: `${u.origin}/main.aspx${appId ? `?appid=${appId}` : ""}`,
+      url: ceAppUrl(u.origin, u.searchParams.get("appid")),
       envType: null,
     }
   }
@@ -72,7 +88,7 @@ export function visitFromUrl(url: string): Visit | null {
       platform,
       title: m.environmentId,
       subtitle: "Power Apps",
-      url: `${m.origin}/environments/${m.environmentId}/home`,
+      url: powerPlatform.maker(m.environmentId),
       envType: null,
       environmentId: m.environmentId,
     }
@@ -80,20 +96,19 @@ export function visitFromUrl(url: string): Visit | null {
   return null
 }
 
-let queue: Promise<void> = Promise.resolve()
+/** The instance key a URL belongs to: panels remount when it changes. */
+export const instanceKey = (url: string | undefined) =>
+  (url && visitFromUrl(url)?.key) || url || ""
 
-/** Adds or refreshes an instance. Writes are queued so visits don't overwrite each other. */
-export function recordVisit(visit: Visit) {
-  queue = queue.then(async () => {
-    const items = await chrome.storage.local.get(HISTORY_KEY)
-    const list = (items[HISTORY_KEY] as HistoryEntry[] | undefined) ?? []
-    const now = Date.now()
-    const existing = list.find((e) => e.key === visit.key)
-    const { named, ...fields } = visit
+// --- The writer (service worker) ---------------------------------------------
 
-    let entry: HistoryEntry
-    if (existing) {
-      entry = {
+function applyRecord(list: HistoryEntry[], visit: Visit): HistoryEntry[] {
+  const now = Date.now()
+  const existing = list.find((e) => e.key === visit.key)
+  const { named, ...fields } = visit
+
+  const entry: HistoryEntry = existing
+    ? {
         ...existing,
         // Keep panel-given names over URL guesses
         title: named ? fields.title : existing.title,
@@ -109,42 +124,69 @@ export function recordVisit(visit: Visit) {
             : existing.visits,
         lastVisited: now,
       }
-    } else {
-      entry = { ...fields, lastVisited: now, visits: 1 }
-    }
+    : { ...fields, lastVisited: now, visits: 1 }
 
-    const others = list.filter((e) => e.key !== visit.key)
-    const sorted = [entry, ...others].sort(
-      (a, b) => b.lastVisited - a.lastVisited
-    )
-    // Pinned entries don't count towards the limit
-    const pinned = sorted.filter((e) => e.pinned)
-    const recent = sorted.filter((e) => !e.pinned).slice(0, MAX_ENTRIES)
-    await chrome.storage.local.set({ [HISTORY_KEY]: [...pinned, ...recent] })
-  })
-  return queue.catch(() => {})
-}
-
-async function update(fn: (list: HistoryEntry[]) => HistoryEntry[]) {
-  queue = queue.then(async () => {
-    const items = await chrome.storage.local.get(HISTORY_KEY)
-    const list = (items[HISTORY_KEY] as HistoryEntry[] | undefined) ?? []
-    await chrome.storage.local.set({ [HISTORY_KEY]: fn(list) })
-  })
-  return queue.catch(() => {})
-}
-
-export const removeVisit = (key: string) =>
-  update((list) => list.filter((e) => e.key !== key))
-
-export const setPinned = (key: string, pinned: boolean) =>
-  update((list) => list.map((e) => (e.key === key ? { ...e, pinned } : e)))
-
-/** An empty name goes back to the instance's own title. */
-export const setLabel = (key: string, label: string) =>
-  update((list) =>
-    list.map((e) => (e.key === key ? { ...e, label: label.trim() || null } : e))
+  const sorted = [entry, ...list.filter((e) => e.key !== visit.key)].sort(
+    (a, b) => b.lastVisited - a.lastVisited
   )
+  // Pinned entries don't count towards the limit
+  return [
+    ...sorted.filter((e) => e.pinned),
+    ...sorted.filter((e) => !e.pinned).slice(0, MAX_ENTRIES),
+  ]
+}
 
+function apply(list: HistoryEntry[], op: HistoryOp): HistoryEntry[] {
+  switch (op.op) {
+    case "record":
+      return applyRecord(list, op.visit)
+    case "remove":
+      return list.filter((e) => e.key !== op.key)
+    case "pin":
+      return list.map((e) =>
+        e.key === op.key ? { ...e, pinned: op.pinned } : e
+      )
+    case "label":
+      // An empty name goes back to the instance's own title
+      return list.map((e) =>
+        e.key === op.key ? { ...e, label: op.label.trim() || null } : e
+      )
+    case "clear":
+      return list.filter((e) => e.pinned)
+  }
+}
+
+let queue: Promise<void> = Promise.resolve()
+
+/** Applies a change in order. A failed write doesn't block the ones after it. */
+export function applyHistoryOp(op: HistoryOp): Promise<void> {
+  queue = queue
+    .then(async () => {
+      const items = await chrome.storage.local.get(HISTORY_KEY)
+      const list = (items[HISTORY_KEY] as HistoryEntry[] | undefined) ?? []
+      await chrome.storage.local.set({ [HISTORY_KEY]: apply(list, op) })
+    })
+    .catch((error) => console.warn("History write failed", error))
+  return queue
+}
+
+// --- Callers (panel or worker) ---------------------------------------------------
+
+const inWorker = typeof window === "undefined"
+
+function send(op: HistoryOp): Promise<void> {
+  if (inWorker) return applyHistoryOp(op)
+  return chrome.runtime
+    .sendMessage({ type: HISTORY_MESSAGE, op })
+    .then(() => undefined)
+    .catch(() => undefined)
+}
+
+export const recordVisit = (visit: Visit) => send({ op: "record", visit })
+export const removeVisit = (key: string) => send({ op: "remove", key })
+export const setPinned = (key: string, pinned: boolean) =>
+  send({ op: "pin", key, pinned })
+export const setLabel = (key: string, label: string) =>
+  send({ op: "label", key, label })
 /** Forgets everything except pinned entries. */
-export const clearHistory = () => update((list) => list.filter((e) => e.pinned))
+export const clearHistory = () => send({ op: "clear" })

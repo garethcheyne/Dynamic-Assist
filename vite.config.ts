@@ -18,8 +18,13 @@ const MAIN_WORLD_SCRIPTS: Record<string, string> = {
 
 function mainWorldScripts(): Plugin {
   const outDir = path.resolve(__dirname, "public/scripts")
-  const buildAll = () =>
-    Promise.all(
+  const normalize = (file: string) => path.resolve(file).toLowerCase()
+  // Every source file the scripts are built from, from the last build, so an
+  // edit elsewhere (a panel component) doesn't rebuild them
+  let sources = new Set<string>()
+
+  const buildAll = async () => {
+    const results = await Promise.all(
       Object.entries(MAIN_WORLD_SCRIPTS).map(([file, input]) =>
         rolldown({
           input: path.resolve(__dirname, input),
@@ -28,6 +33,14 @@ function mainWorldScripts(): Plugin {
         })
       )
     )
+    sources = new Set(
+      results.flatMap((r) =>
+        r.output.flatMap((chunk) =>
+          "moduleIds" in chunk ? chunk.moduleIds.map(normalize) : []
+        )
+      )
+    )
+  }
 
   return {
     name: "main-world-scripts",
@@ -35,7 +48,7 @@ function mainWorldScripts(): Plugin {
       await buildAll()
     },
     async handleHotUpdate({ file }) {
-      if (file.replaceAll("\\", "/").includes("/src/platforms/")) await buildAll()
+      if (sources.has(normalize(file))) await buildAll()
     },
   }
 }
@@ -48,6 +61,13 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  // React reads process.env.NODE_ENV; the ?script&iife bundle (the query
+  // builder injected into the page) doesn't get Vite's usual replacement
+  define: {
+    "process.env.NODE_ENV": JSON.stringify(
+      process.env.NODE_ENV ?? "production"
+    ),
   },
   build: {
     outDir: "dist",

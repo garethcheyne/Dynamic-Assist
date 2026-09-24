@@ -124,6 +124,35 @@ export type CeEntity = {
 
 export type CeColumn = { name: string; value: string; formatted: string | null }
 
+/** Privilege levels, from none to the whole organisation. */
+export type CeDepth = "None" | "Basic" | "Local" | "Deep" | "Global"
+
+export type CePrivilegeType =
+  | "Create"
+  | "Read"
+  | "Write"
+  | "Delete"
+  | "Append"
+  | "AppendTo"
+  | "Assign"
+  | "Share"
+
+/** What a user can do with a table, and with one record of it. */
+export type CePermissions = {
+  user: { id: string; name: string }
+  entityName: string
+  /** Highest level any of the user's roles grants, per privilege */
+  privileges: { type: CePrivilegeType; name: string; depth: CeDepth }[]
+  /** Rights on the open record (RetrievePrincipalAccess), when there is one */
+  recordAccess: string[] | null
+}
+
+export type CeUserSummary = {
+  id: string
+  name: string
+  domainName: string | null
+}
+
 /** Commands the panel can run in the page, with their arguments and results. */
 export type CeCommands = {
   godMode: { args: void; result: { controls: number } }
@@ -141,6 +170,15 @@ export type CeCommands = {
     result: { name: string; fetchXml: string; entitySetName: string }
   }
   entities: { args: void; result: CeEntity[] }
+  permissions: {
+    args: {
+      entityName: string
+      recordId?: string | null
+      userId?: string | null
+    }
+    result: CePermissions
+  }
+  searchUsers: { args: { query: string }; result: CeUserSummary[] }
   myMailbox: { args: void; result: { id: string | null } }
 }
 

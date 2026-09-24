@@ -16,6 +16,8 @@ import {
   WrenchIcon,
   ListIcon,
   BugIcon,
+  DatabaseZapIcon,
+  ListFilterIcon,
 } from "lucide-react"
 
 import { ActionTile, TileGrid } from "@/components/action-tile"
@@ -23,6 +25,7 @@ import { CollapsibleSection } from "@/components/collapsible-section"
 import { useCopy } from "@/lib/copy"
 import type { Act } from "@/lib/use-action"
 
+import { openQueryBuilder } from "../query/open"
 import type { CeState } from "../types"
 import { ceUrls, withFlag } from "../urls"
 import type { useCeTab } from "../use-ce-tab"
@@ -55,6 +58,41 @@ export function ToolsView({
 
   return (
     <div className="flex flex-col gap-3">
+      <CollapsibleSection
+        id="ce.tools.query"
+        title="Query"
+        icon={<DatabaseZapIcon />}
+      >
+        <TileGrid>
+          <ActionTile
+            icon={<DatabaseZapIcon />}
+            title="Query builder"
+            description="Build and run a query, export to Excel, CSV or JSON"
+            busy={busy === "query"}
+            onClick={() =>
+              act("query", async () => {
+                await openQueryBuilder(tab.id!, {
+                  entityName: state.page.entityName ?? state.form?.entityName,
+                })
+              })
+            }
+          />
+          <ActionTile
+            icon={<ListFilterIcon />}
+            title="Open this view"
+            description="The current list view in the query builder"
+            disabled={!isList}
+            busy={busy === "queryView"}
+            onClick={() =>
+              act("queryView", async () => {
+                const view = await run("viewFetchXml")
+                await openQueryBuilder(tab.id!, { fetchXml: view.fetchXml })
+              })
+            }
+          />
+        </TileGrid>
+      </CollapsibleSection>
+
       <CollapsibleSection id="ce.tools.form" title="Form" icon={<WrenchIcon />}>
         {!hasForm && (
           <p className="text-xs text-muted-foreground">

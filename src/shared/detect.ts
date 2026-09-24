@@ -1,3 +1,5 @@
+import { GUID } from "./links"
+
 export type Platform = "bc" | "ce" | "maker" | "none"
 
 const BC_HOST = "businesscentral.dynamics.com"
@@ -15,7 +17,9 @@ export function detectPlatform(url: string | undefined): Platform {
   }
 
   if (host === BC_HOST) return "bc"
-  if (/\.crm\d*\.dynamics\.com$/.test(host)) return "ce"
+  // Org hosts; port.crm*.dynamics.com was the retired instance picker, not an org
+  if (/\.crm\d*\.dynamics\.com$/.test(host) && !host.startsWith("port."))
+    return "ce"
   if (MAKER_HOSTS.includes(host)) return "maker"
   return "none"
 }
@@ -27,8 +31,6 @@ export type MakerContext = {
   area: string | null
   solutionId: string | null
 }
-
-const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function parseMakerUrl(url: string): MakerContext {
   const u = new URL(url)

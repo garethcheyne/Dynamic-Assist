@@ -3,6 +3,8 @@ import { AppWindowIcon, ServerIcon, UserRoundIcon } from "lucide-react"
 import { CollapsibleSection, Count } from "@/components/collapsible-section"
 import { Detail, DetailGrid } from "@/components/detail-grid"
 
+import type * as React from "react"
+
 import type { CeState } from "../types"
 
 const offset = (minutes: number | null) => {
@@ -13,7 +15,14 @@ const offset = (minutes: number | null) => {
 }
 
 /** You, the app and the environment. */
-export function CeSessionView({ state }: { state: CeState }) {
+export function CeSessionView({
+  state,
+  impersonate,
+}: {
+  state: CeState
+  /** The impersonation section, rendered by the panel that owns the tab */
+  impersonate: React.ReactNode
+}) {
   const { user, environment: env, app } = state
   return (
     <div className="flex flex-col gap-3">
@@ -35,6 +44,8 @@ export function CeSessionView({ state }: { state: CeState }) {
           />
         </DetailGrid>
       </CollapsibleSection>
+
+      {impersonate}
 
       <CollapsibleSection
         id="ce.session.roles"
