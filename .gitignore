@@ -1,0 +1,22 @@
+node_modules
+dist
+releases
+*.log
+*.local
+*.pem
+*.crx
+*.zip
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# Investigation snapshots hold tenant data
+investigations/**/snapshots/
+investigations/**/_*.js
+
+# Built by vite.config.ts (main-world scripts)
+public/scripts/

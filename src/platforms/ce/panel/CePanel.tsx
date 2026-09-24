@@ -1,0 +1,130 @@
+import * as React from "react"
+import {
+  CompassIcon,
+  FileSearchIcon,
+  Loader2Icon,
+  RefreshCwIcon,
+  UserRoundIcon,
+  WrenchIcon,
+} from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAction } from "@/lib/use-action"
+
+import type { CeState } from "../types"
+import { useCeTab } from "../use-ce-tab"
+import { CeSessionView } from "./CeSessionView"
+import { NavigateView } from "./NavigateView"
+import { RecordView } from "./RecordView"
+import { ToolsView } from "./ToolsView"
+
+type Tab = "record" | "tools" | "navigate" | "session"
+
+const TRIGGER = "text-xs [&_svg]:size-3.5"
+
+export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
+  const { connected, state, refresh, run } = useCeTab(tab.id)
+  const { busy, act } = useAction()
+  const [current, setCurrent] = React.useState<Tab>("record")
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <EnvironmentBar state={state} onRefresh={refresh} />
+      {!state ? (
+        <div className="p-3">
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center text-xs text-muted-foreground">
+            {connected ? (
+              <>
+                <Loader2Icon className="size-4 animate-spin" />
+                Waiting for the app to load…
+              </>
+            ) : (
+              "Can't reach this tab yet. Reload it once after installing or updating the extension."
+            )}
+          </div>
+        </div>
+      ) : (
+        <Tabs
+          value={current}
+          onValueChange={(v) => setCurrent(v as Tab)}
+          className="flex min-h-0 flex-1 flex-col gap-0"
+        >
+          <div className="px-3 pt-3">
+            <TabsList className="h-8 w-full">
+              <TabsTrigger value="record" className={TRIGGER}>
+                <FileSearchIcon />
+                Record
+              </TabsTrigger>
+              <TabsTrigger value="tools" className={TRIGGER}>
+                <WrenchIcon />
+                Tools
+              </TabsTrigger>
+              <TabsTrigger value="navigate" className={TRIGGER}>
+                <CompassIcon />
+                Go to
+              </TabsTrigger>
+              <TabsTrigger value="session" className={TRIGGER}>
+                <UserRoundIcon />
+                Session
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="record" className="min-h-0 overflow-y-auto p-3">
+            <RecordView state={state} run={run} act={act} />
+          </TabsContent>
+          <TabsContent value="tools" className="min-h-0 overflow-y-auto p-3">
+            <ToolsView
+              state={state}
+              tab={tab}
+              run={run}
+              act={act}
+              busy={busy}
+            />
+          </TabsContent>
+          <TabsContent value="navigate" className="min-h-0 overflow-y-auto p-3">
+            <NavigateView state={state} run={run} act={act} busy={busy} />
+          </TabsContent>
+          <TabsContent value="session" className="min-h-0 overflow-y-auto p-3">
+            <CeSessionView state={state} />
+          </TabsContent>
+        </Tabs>
+      )}
+    </div>
+  )
+}
+
+function EnvironmentBar({
+  state,
+  onRefresh,
+}: {
+  state: CeState | null
+  onRefresh: () => void
+}) {
+  const env = state?.environment
+  return (
+    <div className="flex h-9 items-center gap-2 border-b bg-card px-3 text-xs">
+      <span className="truncate font-semibold" title={env?.clientUrl}>
+        {env?.friendlyName ?? env?.orgUniqueName ?? "Dynamics 365"}
+      </span>
+      {state?.app && (
+        <span
+          className="min-w-0 truncate text-muted-foreground"
+          title={state.app.uniqueName}
+        >
+          {state.app.displayName}
+        </span>
+      )}
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        className="ml-auto"
+        title="Read the page again"
+        aria-label="Read the page again"
+        onClick={onRefresh}
+      >
+        <RefreshCwIcon />
+      </Button>
+    </div>
+  )
+}
