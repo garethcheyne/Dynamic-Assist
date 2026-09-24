@@ -156,9 +156,10 @@ export function CreditsView() {
       </CollapsibleSection>
 
       <p className="px-2 text-center text-[10px] leading-snug text-muted-foreground">
-        Microsoft, Dynamics 365, Business Central and Power Apps are trademarks
-        of the Microsoft group of companies. Dynamic Assist is an independent
-        project, not affiliated with or endorsed by Microsoft.
+        Microsoft, Dynamics 365, Business Central and Power Apps, and their
+        logos, are trademarks of the Microsoft group of companies; the logos
+        only show which platform you're working in. Dynamic Assist is an
+        independent project, not affiliated with or endorsed by Microsoft.
       </p>
     </div>
   )

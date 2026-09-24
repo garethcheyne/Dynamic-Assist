@@ -30,6 +30,6 @@ HISTORY
 WHAT IT ACCESSES
 Dynamic Assist works only on businesscentral.dynamics.com, Dynamics 365 app sites (*.dynamics.com) and make.powerapps.com. It reads the page you're on and calls that site's own API as you, with your existing sign-in and permissions. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser.
 
-Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Business Central, Dynamics 365 and Power Apps are trademarks of the Microsoft group of companies.
+Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Business Central, Dynamics 365 and Power Apps, and their logos, are trademarks of the Microsoft group of companies; the logos appear in the panel only to show which of these platforms you are working in.
 
 Source code and support: https://github.com/garethcheyne/Dynamic-Assist
