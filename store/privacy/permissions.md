@@ -15,6 +15,10 @@ Keeps your History (the Business Central environments, Dynamics 365 orgs and Pow
 
 Registers the extension's own bundled scripts on Business Central and Dynamics 365 pages. They read the page's own client objects, which a normal content script can't reach, to show the current record's fields, IDs and session, and they run the form tools you click (god mode, logical names, refresh). On the Power Apps maker portal it reads the environment picker's label to show the environment's name. No code is fetched from the network.
 
+## declarativeNetRequest
+
+Used only for impersonation in Dynamics 365, which you start from the panel's Session tab. While it's on, one session rule adds the MSCRMCallerID header to that tab's requests to that one organisation, so the app runs as the user you chose (Dataverse only allows this if you hold the "Act on Behalf of Another User" privilege). The rule is removed when you stop, when the tab closes, or when the browser restarts. Nothing is blocked or redirected.
+
 ## host permissions
 
 - `https://*.dynamics.com/*`

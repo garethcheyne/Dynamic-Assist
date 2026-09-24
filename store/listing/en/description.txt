@@ -16,6 +16,9 @@ DYNAMICS 365 APPS (model-driven apps)
 • Debug switches: form monitor, ribbon debug and performance panel
 • Go to: search any table by name and open a record, a new form or the list, plus admin, maker and developer shortcuts
 • Session: your user, security roles, app and environment details
+• Access: your privileges on the table (and level: user, business unit, organization) and your rights on the open record
+• Impersonate: run the app as another user to see what they see (needs the "Act on Behalf of Another User" privilege)
+• Query builder: build and run a query in a large window over the page, or edit its FetchXML; export the results to Excel, CSV or JSON
 
 POWER APPS MAKER PORTAL
 • The environment's name and ID, and the solution ID when you're in a solution
