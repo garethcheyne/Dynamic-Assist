@@ -13,7 +13,7 @@ Keeps, on your computer only: your History (the Business Central environments, D
 
 ## scripting
 
-Registers the extension's own bundled scripts on Business Central and Dynamics 365 pages. They read the page's own client objects, which a normal content script can't reach, to show the current record's fields, IDs and session; they run the page tools you click (god mode, logical names, field names, blur, expand, refresh); if you switch on the panel's Errors tab, a small script notes Dynamics 365 pages' errors, failed scripts and failed requests (it only observes, and the log stays in the page); and they open the query builder over the page. On the Power Apps maker portal and Power Automate it reads which environment and flow the page is showing. No code is fetched from the network.
+Registers the extension's own bundled scripts on Business Central and Dynamics 365 pages. They read the page's own client objects, which a normal content script can't reach, to show the current record's fields, IDs and session; they run the page tools you click (god mode, logical names, field names, blur, expand, refresh); if you switch on the panel's Errors tab, a small script notes Dynamics 365 pages' errors, failed scripts and failed requests, and console errors and warnings if you ask for them (it only observes, and the log stays in the page); and they open the query builder over the page. On the Power Apps maker portal and Power Automate it reads which environment and flow the page is showing. No code is fetched from the network.
 
 ## declarativeNetRequest
 

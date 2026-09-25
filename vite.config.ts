@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "path"
-import { crx } from "@crxjs/vite-plugin"
+import { crx, type CrxPlugin } from "@crxjs/vite-plugin"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { build as rolldown } from "rolldown"
@@ -94,6 +94,24 @@ function singleReact(): Plugin {
   }
 }
 
+// @crxjs makes every ?script import web-accessible to all sites. The query
+// builder (inject.tsx?script&iife) is injected with scripting.executeScript,
+// which doesn't need that, and exposing it lets any site detect the extension.
+function noScriptWebResources(): CrxPlugin {
+  return {
+    name: "no-script-web-resources",
+    apply: "build",
+    enforce: "post",
+    renderCrxManifest(manifest) {
+      manifest.web_accessible_resources =
+        manifest.web_accessible_resources?.filter(
+          (entry) => !entry.resources.includes("src/query-builder/inject.js")
+        )
+      return manifest
+    },
+  }
+}
+
 // manifest.json is the source; @crxjs bundles every entry it names (side panel,
 // service worker, content scripts) and writes the final manifest to dist/.
 export default defineConfig({
@@ -104,6 +122,7 @@ export default defineConfig({
     tailwindcss(),
     crx({ manifest }),
     singleReact(),
+    noScriptWebResources(),
   ],
   resolve: {
     alias: {

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Dynamic Assist",
-  "version": "2026.9.24",
-  "description": "Admin and developer tools for Business Central, Dynamics 365, Power Apps and Power Automate, in one side panel. Not affiliated with Microsoft.",
+  "version": "2026.9.25",
+  "description": "Admin and developer tools for Business Central, Dynamics 365, Power Apps and Power Automate. Not affiliated with Microsoft.",
   "permissions": [
     "sidePanel",
     "storage",
