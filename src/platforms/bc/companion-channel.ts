@@ -60,17 +60,29 @@ export async function companionFor(
   onOpening?: () => void
 ): Promise<CompanionCall> {
   let tab = await findChannel(ctx)
-  let deadline = Date.now() + 5000
-  // A query page opened before the extension was updated or reloaded has no
-  // content script to answer; reloading it once brings the bridge back
-  let reloaded = false
+  // When the page we talk to was (re)loaded: it gets OPEN_WAIT_MS to answer
+  let loadedAt = 0
   if (!tab) {
     onOpening?.()
     tab = await openChannel(ctx)
-    deadline = Date.now() + OPEN_WAIT_MS
-    reloaded = true
+    loadedAt = Date.now()
   }
-  const tabId = tab.id!
+  let tabId = tab.id!
+
+  /**
+   * The query page to talk to: this one while it's open and still on the
+   * query page; else another that is, or a new one in the background (the
+   * user may have closed it, or gone elsewhere in it).
+   */
+  const ensureChannel = async () => {
+    const current = await chrome.tabs.get(tabId).catch(() => null)
+    const url = current?.pendingUrl || current?.url
+    if (url && parseBcUrl(url).page === BRIDGE_PAGE_ID) return
+    onOpening?.()
+    const next = (await findChannel(ctx)) ?? (await openChannel(ctx))
+    tabId = next.id!
+    loadedAt = Date.now()
+  }
 
   return async <T>(method: string, params?: object) => {
     const request: BcCompanionRequest = {
@@ -78,7 +90,14 @@ export async function companionFor(
       method,
       params,
     }
+    // A query page opened before the extension was updated or reloaded has no
+    // content script to answer; reloading it once brings the bridge back
+    let reloaded = false
+    const started = Date.now()
     for (;;) {
+      await ensureChannel()
+      // A few seconds for a page that's up; longer for one still loading
+      const deadline = Math.max(started + 5000, loadedAt + OPEN_WAIT_MS)
       const answer = (await chrome.tabs
         .sendMessage(tabId, request, { frameId: 0 })
         .catch(() => null)) as CompanionAnswer | null
@@ -86,15 +105,15 @@ export async function companionFor(
         if (answer.ok) return answer.result as T
         throw new Error(answer.error)
       }
-      // Still loading, or no companion page there
+      // Still loading, or no companion on that page
       if (Date.now() > deadline && !reloaded) {
         reloaded = true
         onOpening?.()
         await chrome.tabs.reload(tabId).catch(() => undefined)
-        deadline = Date.now() + OPEN_WAIT_MS
+        loadedAt = Date.now()
         continue
       }
-      if (Date.now() > deadline)
+      if (Date.now() > deadline && reloaded)
         throw new Error(
           "Couldn't reach the Dynamic Assist Companion. Is it installed in this environment, and can you open its Dynamic Assist Query page (77500)?"
         )

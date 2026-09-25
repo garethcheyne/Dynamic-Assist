@@ -9,6 +9,7 @@ import {
   type CeResultMessage,
   type CeState,
 } from "./types"
+import { sendToExtension } from "@/shared/send"
 
 // Runs in the top frame of Dynamics 365 pages, in the extension's isolated
 // world. Relays between the side panel and main-world.ts, which has Xrm.
@@ -17,7 +18,7 @@ let state: CeState | null = null
 
 function report() {
   const event: CeEvent = { type: "ce:state", state }
-  chrome.runtime.sendMessage(event).catch(() => {})
+  sendToExtension(event)
 }
 
 let nextId = 1

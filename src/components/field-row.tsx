@@ -11,6 +11,7 @@ import { buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useCopy } from "@/lib/copy"
 import { Hint } from "@/components/hint"
+import { useFieldNaming } from "@/lib/field-naming"
 
 export type CopyFormat = { label: string; value: string }
 export type DetailRow = { label: string; value: string; long?: boolean }
@@ -53,6 +55,8 @@ export function FieldRow({
 }) {
   const copy = useCopy()
   const [open, setOpen] = React.useState(false)
+  // Label or logical name first, as chosen above the list; the other on hover
+  const byName = useFieldNaming() === "name"
 
   return (
     <div
@@ -71,9 +75,14 @@ export function FieldRow({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           <span className="flex max-w-[55%] min-w-0 shrink-0 items-center gap-1">
-            <Hint label={`${label} · ${name}`}>
-              <span className="truncate text-xs text-muted-foreground">
-                {label}
+            <Hint label={byName ? label : name}>
+              <span
+                className={cn(
+                  "truncate text-muted-foreground",
+                  byName ? "font-mono text-[11px]" : "text-xs"
+                )}
+              >
+                {byName ? name : label}
               </span>
             </Hint>
             {markers}
@@ -185,7 +194,12 @@ function FormatsMenu({
         </DropdownMenuTrigger>
       </Hint>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="truncate">Copy {label}</DropdownMenuLabel>
+        {/* A group label must sit in a group (Base UI throws otherwise) */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="truncate">
+            Copy {label}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {formats.map((f) => (
           <DropdownMenuItem

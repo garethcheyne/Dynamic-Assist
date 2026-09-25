@@ -16,6 +16,7 @@ import {
   SettingsIcon,
   TableIcon,
   XIcon,
+  MinusIcon,
 } from "lucide-react"
 import { cn } from "cn"
 
@@ -65,6 +66,7 @@ import {
   type RequestPlan,
 } from "./api"
 import { Hint } from "@/components/hint"
+import { SavedQueries } from "@/query-builder/SavedQueries"
 
 export type BcOpenRequest = {
   app: "bc"
@@ -76,6 +78,8 @@ export type BcOpenRequest = {
   fields?: number[] | "all"
   /** Run it straight away */
   run?: boolean
+  /** Start from this whole query (a saved one) */
+  query?: BcQuery
 }
 
 const COMPANION_HELP_URL =
@@ -107,7 +111,8 @@ function newQuery(table: number, fields: BcField[]): BcQuery {
     filters: [],
     sort: [],
     descending: false,
-    top: 100,
+    // No limit: every row, page by page (runQuery)
+    top: null,
     count: false,
   }
 }
@@ -147,10 +152,16 @@ export function BcQueryApp({
   request,
   dark,
   onClose,
+  onMinimize,
+  onTitle,
 }: {
   request: BcOpenRequest & { seq: number }
   dark: boolean
   onClose: () => void
+  /** Down to a tile at the bottom of the page, to come back to */
+  onMinimize?: () => void
+  /** What its tile says while minimised */
+  onTitle?: (title: string) => void
 }) {
   // Tooltips render inside the builder's shadow root, in its styles and theme
   const [rootEl, setRootEl] = React.useState<HTMLDivElement | null>(null)
@@ -208,23 +219,86 @@ export function BcQueryApp({
   const [denied, setDenied] = React.useState<string | null>(null)
 
   /** Runs a query and shows its first page */
-  const runQuery = React.useCallback(
-    async (q: BcQuery) => {
-      setRunning(true)
-      setError(null)
+  const stop = React.useRef(false)
+  // Each run's number: a newer run, or closing the builder, ends older ones
+  const runId = React.useRef(0)
+  React.useEffect(() => () => void runId.current++, [])
+
+  /**
+   * Fetches pages after `from` until the query's row limit, the last page, or
+   * Stop, showing the rows as each page arrives. A page without a limit is
+   * the companion's largest (top 0).
+   */
+  const followPages = React.useCallback(
+    async (q: BcQuery, from: BcQueryResult, soFar: Results) => {
+      const id = runId.current
+      const current = () => runId.current === id
+      const limit = q.top ?? Infinity
+      let last = from
+      let all = soFar
+      setLoadingMore(true)
       try {
-        const r = await client.query(q)
-        setLastRun(r)
-        setResults(toResults(r))
+        while (
+          last.more &&
+          last.next &&
+          all.rows.length < limit &&
+          !stop.current &&
+          current()
+        ) {
+          const left = limit - all.rows.length
+          const next = await client.query({
+            ...q,
+            count: false,
+            after: last.next,
+            top: Number.isFinite(left) ? left : 0,
+          })
+          if (!current()) return
+          const page = toResults(next)
+          all = {
+            ...all,
+            rows: all.rows.concat(page.rows),
+            more: next.more,
+            ms: all.ms + page.ms,
+          }
+          setResults(all)
+          setLastRun({ ...next, count: from.count })
+          last = next
+        }
       } catch (e) {
-        setResults(null)
-        setLastRun(null)
-        setError(e instanceof Error ? e.message : String(e))
+        if (current()) setError(e instanceof Error ? e.message : String(e))
       } finally {
-        setRunning(false)
+        if (current()) setLoadingMore(false)
       }
     },
     [client]
+  )
+
+  /** Runs a query: its first page at once, then the rest as they come */
+  const runQuery = React.useCallback(
+    async (q: BcQuery) => {
+      const id = ++runId.current
+      stop.current = false
+      setRunning(true)
+      setError(null)
+      let first: BcQueryResult
+      try {
+        first = await client.query({ ...q, top: q.top ?? 0 })
+        if (runId.current !== id) return
+      } catch (e) {
+        if (runId.current !== id) return
+        setResults(null)
+        setLastRun(null)
+        setError(e instanceof Error ? e.message : String(e))
+        setRunning(false)
+        return
+      }
+      const results = toResults(first)
+      setLastRun(first)
+      setResults(results)
+      setRunning(false)
+      await followPages(q, first, results)
+    },
+    [client, followPages]
   )
 
   const openTable = React.useCallback(
@@ -240,9 +314,46 @@ export function BcQueryApp({
           setPlanKey(null)
           setFields(loaded.fields)
           setReadable(loaded.readable)
-          const q = newQuery(table, loaded.fields)
+          let q = newQuery(table, loaded.fields)
+          if (start?.query) {
+            // A saved query, maybe from another environment: keep what
+            // exists here and say what doesn't
+            const have = new Set(loaded.fields.map((f) => f.no))
+            const saved = start.query
+            const missing = [
+              ...saved.fields,
+              ...saved.filters.map((f) => f.field),
+              ...saved.sort,
+            ].filter((n) => !have.has(n))
+            q = {
+              ...saved,
+              table,
+              fields: saved.fields.filter((n) => have.has(n)),
+              filters: saved.filters.filter((f) => have.has(f.field)),
+              sort: saved.sort.filter((n) => have.has(n)),
+              after: undefined,
+            }
+            if (!q.fields.length)
+              q.fields = newQuery(table, loaded.fields).fields
+            for (const j of saved.joins ?? []) {
+              const r = await client.fields(j.table).catch(() => null)
+              if (r)
+                setRelated((all) => ({
+                  ...all,
+                  [j.table]: {
+                    name: r.name,
+                    caption: r.caption,
+                    fields: r.fields,
+                  },
+                }))
+            }
+            if (missing.length)
+              setError(
+                `Fields ${[...new Set(missing)].join(", ")} aren't in this environment's table, so they were left out.`
+              )
+          }
           // Opened with a query in mind (a record's fields, a table's list…)
-          if (start?.fields === "all")
+          else if (start?.fields === "all")
             q.fields = loaded.fields.filter(isPlain).map((f) => f.no)
           else if (start?.fields?.length) q.fields = start.fields
           if (start?.filters?.length) q.filters = start.filters
@@ -341,30 +452,13 @@ export function BcQueryApp({
     if (query) await runQuery(query)
   }, [query, runQuery])
 
-  /** Appends the next page of the last run */
+  /** After a Stop: the rest of the rows */
   const loadMore = React.useCallback(async () => {
-    if (!query || !lastRun?.next) return
-    setLoadingMore(true)
-    try {
-      const r = await client.query({ ...query, after: lastRun.next })
-      const page = toResults(r)
-      setResults((prev) =>
-        prev
-          ? {
-              ...prev,
-              rows: [...prev.rows, ...page.rows],
-              more: page.more,
-              ms: page.ms,
-            }
-          : page
-      )
-      setLastRun((prev) => ({ ...r, count: prev?.count ?? r.count }))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setLoadingMore(false)
-    }
-  }, [client, query, lastRun])
+    if (!query || !lastRun?.next || !results) return
+    runId.current++
+    stop.current = false
+    await followPages(query, lastRun, results)
+  }, [query, lastRun, results, followPages])
 
   const tableItems = React.useMemo<SelectItem[]>(
     () =>
@@ -376,6 +470,18 @@ export function BcQueryApp({
     [tables]
   )
 
+  // The tile's title while minimised: the table, and what the last run found
+  const tileTitle = [
+    table?.caption,
+    results &&
+      `${results.rows.length}${results.more ? "+" : ""} ${results.rows.length === 1 && !results.more ? "row" : "rows"}`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+  React.useEffect(() => {
+    if (tileTitle) onTitle?.(tileTitle)
+  }, [tileTitle, onTitle])
+
   return (
     <TooltipPortalContainer.Provider value={rootEl}>
       <div
@@ -383,7 +489,8 @@ export function BcQueryApp({
         className={cn("da-root", dark && "dark")}
         data-platform="bc"
         onKeyDown={(e) => {
-          if (e.key === "Escape") onClose()
+          // Esc minimises: a query isn't lost to a stray key
+          if (e.key === "Escape") (onMinimize ?? onClose)()
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
             e.preventDefault()
             void run()
@@ -423,6 +530,37 @@ export function BcQueryApp({
             )}
             <div className="ml-auto flex items-center gap-1">
               {status === "ready" && (
+                <SavedQueries
+                  platform="bc"
+                  current={() =>
+                    query && table
+                      ? {
+                          platform: "bc",
+                          query: { ...query, after: undefined },
+                          table: `${table.caption} (${table.id})`,
+                          where: [
+                            parseBcUrl(window.location.href).environment,
+                            info?.company,
+                          ]
+                            .filter(Boolean)
+                            .join(" · "),
+                        }
+                      : null
+                  }
+                  onLoad={(saved) => {
+                    if (saved.platform !== "bc") return
+                    if (!tables.some((t) => t.id === saved.query.table))
+                      return setError(
+                        `Table ${saved.query.table} isn't in this environment, or you can't read it.`
+                      )
+                    void openTable(saved.query.table, {
+                      app: "bc",
+                      query: saved.query,
+                    })
+                  }}
+                />
+              )}
+              {status === "ready" && (
                 <Button
                   size="sm"
                   onClick={() => void run()}
@@ -440,10 +578,21 @@ export function BcQueryApp({
                   Run
                 </Button>
               )}
+              {onMinimize && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Minimise (Esc): keep it as a tile at the bottom of the page"
+                  aria-label="Minimise"
+                  onClick={onMinimize}
+                >
+                  <MinusIcon />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon-sm"
-                title="Close (Esc)"
+                title="Close"
                 aria-label="Close"
                 onClick={onClose}
               >
@@ -458,10 +607,19 @@ export function BcQueryApp({
           </div>
 
           {status === "connecting" ? (
-            <p className="flex items-center gap-2 p-6 text-xs text-muted-foreground">
-              <Loader2Icon className="size-3.5 animate-spin" /> Looking for the
-              Dynamic Assist Companion app…
-            </p>
+            <div className="flex flex-col gap-1 p-6 text-xs text-muted-foreground">
+              <p className="flex items-center gap-2">
+                <Loader2Icon className="size-3.5 animate-spin" /> Looking for
+                the Dynamic Assist Companion app…
+              </p>
+              {parseBcUrl(window.location.href).page !== BRIDGE_PAGE_ID && (
+                <p className="pl-5.5">
+                  The first time in a company, its query page opens in a
+                  background tab to answer the builder. That can take a minute;
+                  after that it's quick.
+                </p>
+              )}
+            </div>
           ) : status === "missing" ? (
             <CompanionMissing />
           ) : status === "denied" ? (
@@ -532,13 +690,14 @@ export function BcQueryApp({
                     </>
                   )}
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                   <ResultsPane
                     sources={sources}
                     onLoadMore={
                       lastRun?.next ? () => void loadMore() : undefined
                     }
                     loadingMore={loadingMore}
+                    onStop={() => (stop.current = true)}
                     results={results}
                     error={error}
                     running={running}
@@ -821,9 +980,9 @@ function CompanionMissing() {
           as you: you only see what your permissions allow.
         </p>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          If it's installed, open the page and the query builder opens over it.
-          If Business Central says the page doesn't exist, install the app
-          first.
+          If it's installed, open its page to check it loads (you need the DA
+          QUERY permission set). If Business Central says the page doesn't
+          exist, install the app first.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           <Button size="sm" onClick={openPage}>
@@ -1320,15 +1479,15 @@ function OptionsEditor({
         <input
           type="number"
           min={1}
-          max={maxRows}
-          placeholder={String(maxRows)}
+          placeholder="All"
+          title={`Empty loads every row, ${maxRows.toLocaleString()} at a time`}
           className="h-7 w-20 rounded-md border border-input bg-background px-2 text-xs outline-none focus-visible:border-ring"
           value={query.top ?? ""}
           onChange={(e) => {
             const n = Number(e.target.value)
             onChange({
               ...query,
-              top: e.target.value && n > 0 ? Math.min(n, maxRows) : null,
+              top: e.target.value && n > 0 ? n : null,
             })
           }}
         />

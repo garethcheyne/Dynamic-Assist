@@ -36,7 +36,8 @@ export function newQuery(entityName: string): Query {
     entityName,
     columns: [],
     orders: [],
-    top: 50,
+    // No limit: every row, page by page (run.ts)
+    top: null,
     distinct: true,
     filters: emptyFilters(),
   }
@@ -158,7 +159,11 @@ export function fromFetchXml(
       distinct: fetchEl.getAttribute("distinct") !== "false",
       filters: parsed.state ?? emptyFilters(),
     },
-    error: parsed.error ?? null,
+    // A query without filters is fine: the parser only has something to say
+    // when there were filters it couldn't read
+    error: entity.querySelector("filter, condition")
+      ? (parsed.error ?? null)
+      : null,
     warnings,
   }
 }

@@ -20,6 +20,11 @@ export type BcTable = {
 }
 
 import type { ConditionOp } from "./conditions"
+import {
+  COMPANION_RELAY,
+  type BcCompanionRelay,
+  type CompanionRelayAnswer,
+} from "../messages"
 
 /**
  * A filter: the BC filter expression that runs, and, when it was built as a
@@ -165,8 +170,37 @@ function allFrames(root: Window = window): Window[] {
   return found
 }
 
+/** One companion call through the service worker (see connect). */
+async function relayRequest<T>(method: string, params: object): Promise<T> {
+  const message: BcCompanionRelay = {
+    type: COMPANION_RELAY,
+    url: location.href,
+    method,
+    params,
+  }
+  let answer: CompanionRelayAnswer | undefined
+  try {
+    answer = (await chrome.runtime.sendMessage(message)) as
+      CompanionRelayAnswer | undefined
+  } catch (error) {
+    // The extension was updated or reloaded since this page opened, or its
+    // worker restarted mid-request
+    throw new Error(
+      /context invalidated/i.test(String(error))
+        ? "Dynamic Assist was updated or reloaded. Reload this page to keep using the query builder."
+        : "The extension stopped answering. Press Run again, or reload the page.",
+      { cause: error }
+    )
+  }
+  if (!answer) throw new Error("The extension didn't answer. Reload the page.")
+  if (!answer.ok) throw new Error(answer.error)
+  return answer.result as T
+}
+
 export class BridgeClient {
   private target: Window | null = null
+  /** Not on the query page: requests go through the service worker instead */
+  private relay = false
   private pending = new Map<
     string,
     { resolve: (v: unknown) => void; reject: (e: Error) => void }
@@ -196,8 +230,27 @@ export class BridgeClient {
 
   private found: (() => void) | null = null
 
-  /** Finds the bridge frame. False if the page has none within the wait. */
+  /**
+   * Finds the companion: the bridge frame on this page (the query page), or,
+   * anywhere else in Business Central, the query page of this environment and
+   * company through the service worker, which opens it in the background the
+   * first time (that can take a minute). False if there's no companion.
+   */
   async connect(waitMs = 2500): Promise<boolean> {
+    const onQueryPage =
+      new URLSearchParams(location.search).get("page") ===
+      String(BRIDGE_PAGE_ID)
+    if (!onQueryPage && typeof chrome !== "undefined" && chrome.runtime?.id) {
+      this.relay = true
+      return this.request("info").then(
+        () => true,
+        () => false
+      )
+    }
+    return this.connectHere(waitMs)
+  }
+
+  private async connectHere(waitMs: number): Promise<boolean> {
     // Listening again after dispose() is harmless: the same listener is added once
     window.addEventListener("message", this.onMessage)
     if (this.target && !this.target.closed) return true
@@ -220,6 +273,7 @@ export class BridgeClient {
   }
 
   request<T>(method: string, params: object = {}): Promise<T> {
+    if (this.relay) return relayRequest<T>(method, params)
     const target = this.target
     if (!target) return Promise.reject(new Error("Not connected."))
     const id = `${Date.now()}-${++this.seq}`

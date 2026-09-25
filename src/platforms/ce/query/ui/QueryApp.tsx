@@ -14,6 +14,7 @@ import {
   TableIcon,
   WrenchIcon,
   XIcon,
+  MinusIcon,
 } from "lucide-react"
 import { cn } from "cn"
 
@@ -28,9 +29,10 @@ import {
   toFetchXml,
   type Query,
 } from "../query"
-import { entitySetOf, runFetchXml, type Results } from "../run"
+import { entitySetOf, runFetchXmlAll, type Results } from "../run"
 import { FilterEditor } from "./FilterEditor"
 import { ResultsPane, Section } from "@/query-builder/ResultsPane"
+import { SavedQueries } from "@/query-builder/SavedQueries"
 import { SearchSelect, type SelectItem } from "@/query-builder/SearchSelect"
 import { Hint } from "@/components/hint"
 
@@ -46,10 +48,16 @@ export function QueryApp({
   request,
   dark,
   onClose,
+  onMinimize,
+  onTitle,
 }: {
   request: OpenRequest & { seq: number }
   dark: boolean
   onClose: () => void
+  /** Down to a tile at the bottom of the page, to come back to */
+  onMinimize?: () => void
+  /** What its tile says while minimised */
+  onTitle?: (title: string) => void
 }) {
   // Tooltips render inside the builder's shadow root, in its styles and theme
   const [rootEl, setRootEl] = React.useState<HTMLDivElement | null>(null)
@@ -63,6 +71,12 @@ export function QueryApp({
   const [results, setResults] = React.useState<Results | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [running, setRunning] = React.useState(false)
+  /** Still fetching pages after the first (every row, no limit) */
+  const [loadingMore, setLoadingMore] = React.useState(false)
+  const stop = React.useRef(false)
+  // Each run's number: a newer run, or closing the builder, ends older ones
+  const runId = React.useRef(0)
+  React.useEffect(() => () => void runId.current++, [])
 
   React.useEffect(() => {
     loadTables()
@@ -125,6 +139,9 @@ export function QueryApp({
 
   const run = React.useCallback(async () => {
     if (!xml.trim()) return
+    const id = ++runId.current
+    const current = () => runId.current === id
+    stop.current = false
     setRunning(true)
     setError(null)
     try {
@@ -133,12 +150,33 @@ export function QueryApp({
       const set =
         tables.find((t) => t.logicalName === entity)?.entitySetName ??
         (await entitySetOf(entity))
-      setResults(await runFetchXml(xml, set, fields, query?.columns ?? []))
+      let first = true
+      await runFetchXmlAll(
+        xml,
+        set,
+        fields,
+        query?.columns ?? [],
+        (soFar) => {
+          if (!current()) return
+          // Rows show as each page arrives; the rest keep coming
+          setResults(soFar)
+          if (first) {
+            first = false
+            setRunning(false)
+            setLoadingMore(soFar.more)
+          }
+        },
+        () => stop.current || !current()
+      )
     } catch (e) {
+      if (!current()) return
       setResults(null)
       setError(e instanceof Error ? e.message : String(e))
     } finally {
-      setRunning(false)
+      if (current()) {
+        setRunning(false)
+        setLoadingMore(false)
+      }
     }
   }, [xml, tables, fields, query])
 
@@ -176,6 +214,18 @@ export function QueryApp({
     [tables]
   )
 
+  // The tile's title while minimised: the table, and what the last run found
+  const tileTitle = [
+    table?.displayName ?? query?.entityName,
+    results &&
+      `${results.rows.length}${results.more ? "+" : ""} ${results.rows.length === 1 && !results.more ? "row" : "rows"}`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+  React.useEffect(() => {
+    if (tileTitle) onTitle?.(tileTitle)
+  }, [tileTitle, onTitle])
+
   return (
     <TooltipPortalContainer.Provider value={rootEl}>
       <div
@@ -183,7 +233,8 @@ export function QueryApp({
         className={cn("da-root", dark && "dark")}
         data-platform="ce"
         onKeyDown={(e) => {
-          if (e.key === "Escape") onClose()
+          // Esc minimises: a query isn't lost to a stray key
+          if (e.key === "Escape") (onMinimize ?? onClose)()
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
             e.preventDefault()
             void run()
@@ -235,6 +286,25 @@ export function QueryApp({
               ))}
             </div>
             <div className="ml-auto flex items-center gap-1">
+              <SavedQueries
+                platform="ce"
+                current={() =>
+                  query && xml.trim()
+                    ? {
+                        platform: "ce",
+                        fetchXml: xml,
+                        table: table?.displayName ?? query.entityName,
+                        where: location.host,
+                      }
+                    : null
+                }
+                onLoad={(saved) => {
+                  if (saved.platform !== "ce") return
+                  const entity = entityOf(saved.fetchXml)
+                  if (!entity) return setError("That saved query has no table.")
+                  switchTable(entity, saved.fetchXml)
+                }}
+              />
               <Button
                 size="sm"
                 onClick={() => void run()}
@@ -251,10 +321,21 @@ export function QueryApp({
                 )}
                 Run
               </Button>
+              {onMinimize && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Minimise (Esc): keep it as a tile at the bottom of the page"
+                  aria-label="Minimise"
+                  onClick={onMinimize}
+                >
+                  <MinusIcon />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon-sm"
-                title="Close (Esc)"
+                title="Close"
                 aria-label="Close"
                 onClick={onClose}
               >
@@ -334,6 +415,8 @@ export function QueryApp({
             {/* Right: results */}
             <ResultsPane
               sources={[{ label: "FetchXML", text: xml }]}
+              loadingMore={loadingMore}
+              onStop={() => (stop.current = true)}
               results={results}
               error={error}
               running={running}
@@ -513,7 +596,7 @@ function OptionsEditor({
           type="number"
           min={1}
           max={5000}
-          placeholder="5000"
+          placeholder="All"
           className="h-7 w-20 rounded-md border border-input bg-background px-2 text-xs outline-none focus-visible:border-ring"
           value={query.top ?? ""}
           onChange={(e) => {

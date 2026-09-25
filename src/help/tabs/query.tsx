@@ -24,10 +24,13 @@ export const QUERY: HelpTab = {
           what: (
             <>
               The builder is on the left: <b>Columns</b>, <b>Filters</b>,{" "}
-              <b>Related tables</b>, <b>Sort</b> and <b>Options</b> (such as the
+              <b>Related tables</b>, <b>Sort</b> and <b>Options</b> (such as a
               row limit). Results are on the right, with the query as text
-              beside them. <b>Run</b> with the button or Ctrl+Enter; close with
-              Esc. It follows the panel's light or dark theme.
+              beside them. <b>Run</b> with the button or Ctrl+Enter. With no row
+              limit, every matching row loads, page by page: the rows show as
+              they arrive, <b>Stop</b> ends it early and <b>Load the rest</b>{" "}
+              carries on. Only the rows in view are drawn, so large results
+              scroll smoothly. It follows the panel's light or dark theme.
             </>
           ),
           how: (
@@ -35,6 +38,41 @@ export const QUERY: HelpTab = {
               The window is drawn into the page in a sealed-off area of its own
               (a shadow root), so the page's styles and the builder's don't mix.
               Queries run from the page, in your session.
+            </>
+          ),
+        },
+        {
+          id: "minimise",
+          name: "Minimise and come back",
+          what: (
+            <>
+              <b>Minimise</b> (or Esc) shrinks the builder to a tile in the
+              bottom-right corner of the page, so you can use the page and come
+              back to your query and results as they were. Open another builder
+              and it gets its own tile: they stack, one above the other. Click a
+              tile to bring it back; × closes it.
+            </>
+          ),
+        },
+        {
+          id: "saved",
+          name: "Saved queries",
+          what: (
+            <>
+              <b>Saved</b> keeps the query you have under a name, and opens the
+              ones you saved earlier: in this environment or org, or another
+              one. Save with a name you already used to update it. <b>Export</b>{" "}
+              writes them all to a file and <b>Import</b> reads one back, to
+              move them to another browser or share them with a colleague.
+            </>
+          ),
+          how: (
+            <>
+              Kept in this browser's extension storage. Dynamics 365 queries are
+              saved as FetchXML; Business Central ones as the table and field
+              numbers, so they open in any environment with the same tables.
+              Fields the other environment doesn't have are left out, and the
+              builder says which.
             </>
           ),
         },
@@ -62,10 +100,11 @@ export const QUERY: HelpTab = {
             <>
               Build a FetchXML query without writing it: columns, filter groups
               (and/or) with operators that suit each column's type, option-set
-              and yes/no values picked from a list, linked tables, sort and a
-              row limit. Switch to <b>FetchXML</b> to edit the query by hand and
-              back to <b>Builder</b> to keep going. <b>Open this view</b> starts
-              from the list you're looking at.
+              and yes/no values picked from a list, linked tables, sort and an
+              optional row limit (empty loads every row, 5,000 at a time).
+              Switch to <b>FetchXML</b> to edit the query by hand and back to{" "}
+              <b>Builder</b> to keep going. <b>Open this view</b> starts from
+              the list you're looking at.
             </>
           ),
           how: (
@@ -97,7 +136,8 @@ export const QUERY: HelpTab = {
               filter them with simple conditions or in Business Central's own
               filter syntax (<code>{">20000"}</code>,{" "}
               <code>{"10000..20000"}</code>, <code>{"@*bike*"}</code>), join
-              related tables through lookup fields, sort, and set the row limit.
+              related tables through lookup fields, sort, and optionally limit
+              the rows (empty loads them all).
             </>
           ),
         },
@@ -143,9 +183,11 @@ export const QUERY: HelpTab = {
           ),
           how: (
             <>
-              When you open the builder, the panel looks for a tab with the
-              Dynamic Assist Query page, and if there isn't one, opens it in the
-              background and talks to it through the page.
+              The builder opens over the page you're on. It talks to the
+              companion through a tab on the Dynamic Assist Query page of the
+              same environment and company: one you have open, or one it opens
+              in the background the first time (that takes a minute) and keeps
+              using. On the query page itself it talks to it directly.
             </>
           ),
           needs: (

@@ -47,12 +47,15 @@ export function buildBcUrl(
   params: Record<string, string | number>
 ): string {
   const path = [ctx.tenant, ctx.environment].filter(Boolean).join("/")
-  const u = new URL(`${ctx.origin}/${path}${path ? "/" : ""}`)
-  if (ctx.company) u.searchParams.set("company", ctx.company)
-  for (const [key, value] of Object.entries(params)) {
-    u.searchParams.set(key, String(value))
-  }
-  return u.toString()
+  // Encoded by hand: URLSearchParams writes a space as "+", which Business
+  // Central reads literally ("Contoso+Trading+East does not exist")
+  const query = [
+    ...(ctx.company ? [["company", ctx.company] as const] : []),
+    ...Object.entries(params),
+  ]
+    .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
+    .join("&")
+  return `${ctx.origin}/${path}${path ? "/" : ""}${query ? `?${query}` : ""}`
 }
 
 /**

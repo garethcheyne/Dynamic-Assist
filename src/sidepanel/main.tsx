@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client"
 import "@/index.css"
 import "@/help/help.css"
 import { App } from "./App.tsx"
+import { CrashBoundary } from "@/components/crash-boundary"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 import { TooltipProvider } from "@/components/ui/tooltip.tsx"
 import { HelpPage } from "@/help/HelpPage"
@@ -18,13 +19,15 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <TooltipProvider delay={300}>
-        {help ? (
-          <HelpPage />
-        ) : (
-          <CopyProvider>
-            <App />
-          </CopyProvider>
-        )}
+        <CrashBoundary>
+          {help ? (
+            <HelpPage />
+          ) : (
+            <CopyProvider>
+              <App />
+            </CopyProvider>
+          )}
+        </CrashBoundary>
       </TooltipProvider>
     </ThemeProvider>
   </StrictMode>
