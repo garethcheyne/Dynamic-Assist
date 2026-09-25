@@ -63,6 +63,14 @@ export const QUERY: HelpTab = {
               one. Save with a name you already used to update it. <b>Export</b>{" "}
               writes them all to a file and <b>Import</b> reads one back, to
               move them to another browser or share them with a colleague.
+              They're also listed in the panel's Query section on the Tools tab:
+              click one to open it in the builder and run it.
+              <br />
+              <b>Examples</b> sit under your own queries, in the panel and in
+              Saved: a few ready-made queries on standard tables that show what
+              the builder can do (linked tables, FlowFields, aggregates,
+              relative dates). Turn them off with <b>Example queries</b> in the
+              panel's ⋮ menu.
             </>
           ),
           how: (

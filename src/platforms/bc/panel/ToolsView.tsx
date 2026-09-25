@@ -16,6 +16,7 @@ import { CollapsibleSection } from "@/components/collapsible-section"
 import { useCopy, useNotify } from "@/lib/copy"
 import { rememberBcOrg } from "@/lib/product-links"
 import type { Act } from "@/lib/use-action"
+import { PanelQueries } from "@/query-builder/PanelQueries"
 
 import { KNOWN_APPS, loadAppNames } from "../app-names"
 import { companionFor } from "../companion-channel"
@@ -253,6 +254,21 @@ export function ToolsView({
             }
           />
         </TileGrid>
+        <PanelQueries
+          platform="bc"
+          busy={busy}
+          onOpen={(q) => {
+            if (q.platform !== "bc") return
+            void act(q.id, () =>
+              openBcQuery(tab, {
+                app: "bc",
+                tableId: q.query.table,
+                query: q.query,
+                run: true,
+              })
+            )
+          }}
+        />
       </CollapsibleSection>
     </div>
   )

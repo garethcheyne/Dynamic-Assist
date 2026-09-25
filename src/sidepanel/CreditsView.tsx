@@ -122,13 +122,7 @@ export function CreditsView() {
             logical names, all fields, clone, the admin shortcuts and more.
             Level Up has helped Dynamics people for years (MIT licence).
           </Credit>
-          <Credit
-            name="ServiceNow Companion"
-            href="https://github.com/garethcheyne"
-            by="Gareth Cheyne"
-          >
-            The side panel design: cards, filter chips, collapsible sections.
-          </Credit>
+
         </ul>
       </CollapsibleSection>
 

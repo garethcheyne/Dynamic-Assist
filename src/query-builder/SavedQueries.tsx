@@ -11,6 +11,7 @@ import { cn } from "cn"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+import { EXAMPLE_QUERIES, useShowExamples } from "./examples"
 import {
   deleteQuery,
   exportQueries,
@@ -41,6 +42,8 @@ export function SavedQueries({
   onLoad: (query: SavedQuery) => void
 }) {
   const saved = useSavedQueries(platform)
+  const [showExamples] = useShowExamples()
+  const examples = showExamples ? EXAMPLE_QUERIES[platform] : []
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState("")
   const [message, setMessage] = React.useState<string | null>(null)
@@ -210,6 +213,34 @@ export function SavedQueries({
                   </li>
                 ))}
               </ul>
+            )}
+            {examples.length > 0 && (
+              <>
+                <p className="mt-1 border-t px-2 pt-2 pb-1 text-[11px] font-medium text-muted-foreground">
+                  Examples
+                </p>
+                <ul className="flex flex-col">
+                  {examples.map((q) => (
+                    <li key={q.id} className="rounded-md hover:bg-muted">
+                      <button
+                        type="button"
+                        className="w-full px-2 py-1.5 text-left"
+                        onClick={() => {
+                          onLoad(q)
+                          setOpen(false)
+                        }}
+                      >
+                        <span className="block truncate text-xs font-medium">
+                          {q.name}
+                        </span>
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {q.description}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
 

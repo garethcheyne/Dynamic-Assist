@@ -26,6 +26,7 @@ import { useCopy } from "@/lib/copy"
 import type { Act } from "@/lib/use-action"
 
 import { openQueryBuilder } from "@/query-builder/open"
+import { PanelQueries } from "@/query-builder/PanelQueries"
 import type { CeState } from "../types"
 import { ceUrls, withFlag } from "../urls"
 import type { useCeTab } from "../use-ce-tab"
@@ -93,6 +94,16 @@ export function ToolsView({
             }
           />
         </TileGrid>
+        <PanelQueries
+          platform="ce"
+          busy={busy}
+          onOpen={(q) => {
+            if (q.platform !== "ce") return
+            void act(q.id, () =>
+              openQueryBuilder(tab.id!, { fetchXml: q.fetchXml, run: true })
+            )
+          }}
+        />
       </CollapsibleSection>
 
       <CollapsibleSection id="ce.tools.form" title="Form" icon={<WrenchIcon />}>

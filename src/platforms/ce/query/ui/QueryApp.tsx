@@ -40,6 +40,8 @@ import { Hint } from "@/components/hint"
 export type OpenRequest = {
   entityName?: string | null
   fetchXml?: string | null
+  /** Run it once it's loaded (a saved or example query from the panel) */
+  run?: boolean
 }
 
 type Mode = "builder" | "fetchxml"
@@ -162,6 +164,14 @@ export function QueryApp({
       if (current()) setRunning(false)
     }
   }, [xml, tables, fields, query])
+
+  // Asked to run on open: once, when the starting query has loaded
+  const runOnOpen = React.useRef(request.run === true)
+  React.useEffect(() => {
+    if (!runOnOpen.current || loadingFields || !xml.trim()) return
+    runOnOpen.current = false
+    void run()
+  }, [loadingFields, xml, run])
 
   const switchMode = (next: Mode) => {
     if (next === mode) return

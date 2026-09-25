@@ -7,6 +7,7 @@ import {
   HouseIcon,
   LifeBuoyIcon,
   MoonIcon,
+  SparklesIcon,
   SunIcon,
 } from "lucide-react"
 import { cn } from "cn"
@@ -15,8 +16,10 @@ import { useTheme } from "@/components/theme-provider"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { instanceKey } from "@/lib/history"
@@ -27,6 +30,7 @@ import { MakerPanel } from "@/platforms/maker/MakerPanel"
 import { FlowPanel } from "@/platforms/flow/FlowPanel"
 import { detectPlatform, type Platform } from "@/shared/detect"
 import { PRODUCTS } from "@/shared/products"
+import { useShowExamples } from "@/query-builder/examples"
 
 import { CreditsView } from "./CreditsView"
 import { Launcher } from "./Launcher"
@@ -124,6 +128,7 @@ function Header({
   onGo: (view: View) => void
 }) {
   const { theme, setTheme } = useTheme()
+  const [showExamples, setShowExamples] = useShowExamples()
   const isDark =
     theme === "dark" ||
     (theme === "system" &&
@@ -194,7 +199,7 @@ function Header({
             <EllipsisVerticalIcon />
           </DropdownMenuTrigger>
         </Hint>
-        <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem onClick={() => openHelp(platform)}>
             <LifeBuoyIcon />
             Help
@@ -203,6 +208,15 @@ function Header({
             <HeartIcon />
             About &amp; credits
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={showExamples}
+            onCheckedChange={setShowExamples}
+            title="Example queries in the Query section and the query builder's Saved list"
+          >
+            <SparklesIcon />
+            Example queries
+          </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
