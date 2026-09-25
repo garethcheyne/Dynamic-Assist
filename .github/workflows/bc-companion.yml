@@ -1,0 +1,134 @@
+# Builds the Dynamic Assist Companion (the Business Central app in
+# bc-companion/) and, when asked, publishes it as a GitHub Release that people
+# can download and upload to Business Central.
+#
+# - Every push or pull request that touches bc-companion/ compiles it and keeps
+#   the .app as a workflow artifact, so a broken build shows up straight away.
+# - To release: bump "version" in bc-companion/app.json, then either push a tag
+#   companion-v<that version> (git tag companion-v2026.9.24.11 && git push
+#   --tags), or run this workflow by hand (Actions → BC companion → Run
+#   workflow) with "Publish a release" ticked. It refuses a version that has
+#   already been released.
+#
+# No Business Central environment or secrets are needed: the compiler comes
+# from nuget.org and the only symbols the app needs (System) from Microsoft's
+# public symbols feed.
+name: BC companion
+
+on:
+  push:
+    branches: [main]
+    paths: ["bc-companion/**", ".github/workflows/bc-companion.yml"]
+    tags: ["companion-v*"]
+  pull_request:
+    paths: ["bc-companion/**", ".github/workflows/bc-companion.yml"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a release of the version in app.json
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  PROJECT: bc-companion
+  # The AL compiler (the same one the VS Code AL extension ships)
+  AL_TOOL_VERSION: 18.0.41.62505
+  # System symbols for the app's minimum platform (app.json "platform": 25.0)
+  PLATFORM_SYMBOLS_VERSION: 25.0.25071
+  SYMBOLS_FEED: https://dynamicssmb2.pkgs.visualstudio.com/571e802d-b44b-45fc-bd41-4cfddec73b44/_packaging/b656b10c-3de0-440c-900c-bc2e4e86d84c/nuget/v3/flat2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.app.outputs.version }}
+      file: ${{ steps.app.outputs.file }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read app.json
+        id: app
+        run: |
+          version=$(jq -r .version "$PROJECT/app.json")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "file=ERR403_DynamicAssistCompanion_$version.app" >> "$GITHUB_OUTPUT"
+          echo "Dynamic Assist Companion $version"
+
+      - name: Tag matches app.json
+        if: startsWith(github.ref, 'refs/tags/companion-v')
+        run: |
+          tag="${GITHUB_REF_NAME#companion-v}"
+          if [ "$tag" != "${{ steps.app.outputs.version }}" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match app.json version ${{ steps.app.outputs.version }}."
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install the AL compiler
+        run: |
+          # Cross-platform; it fetches the Linux compiler it runs on here
+          dotnet tool install Microsoft.Dynamics.BusinessCentral.Development.Tools \
+            --version "$AL_TOOL_VERSION" --tool-path "$RUNNER_TEMP/al"
+          echo "$RUNNER_TEMP/al" >> "$GITHUB_PATH"
+
+      - name: Download System symbols
+        run: |
+          mkdir -p "$RUNNER_TEMP/symbols"
+          curl -fsSL -o "$RUNNER_TEMP/platform.nupkg" \
+            "$SYMBOLS_FEED/microsoft.platform.symbols/$PLATFORM_SYMBOLS_VERSION/microsoft.platform.symbols.$PLATFORM_SYMBOLS_VERSION.nupkg"
+          unzip -o -j "$RUNNER_TEMP/platform.nupkg" '*.app' -d "$RUNNER_TEMP/symbols"
+          ls -l "$RUNNER_TEMP/symbols"
+
+      - name: Compile
+        run: |
+          al compile \
+            "/project:$PROJECT" \
+            "/packagecachepath:$RUNNER_TEMP/symbols" \
+            "/out:$RUNNER_TEMP/${{ steps.app.outputs.file }}" \
+            "/errorlog:$RUNNER_TEMP/errors.json"
+          test -s "$RUNNER_TEMP/${{ steps.app.outputs.file }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bc-companion-${{ steps.app.outputs.version }}
+          path: ${{ runner.temp }}/${{ steps.app.outputs.file }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/companion-v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: bc-companion-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          FILE: ${{ needs.build.outputs.file }}
+        run: |
+          tag="companion-v$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::error::$tag is already released. Bump version in $PROJECT/app.json first."
+            exit 1
+          fi
+          sed -e "s/{{VERSION}}/$VERSION/g" -e "s/{{FILE}}/$FILE/g" \
+            "$PROJECT/RELEASE_NOTES.md" > "$RUNNER_TEMP/notes.md"
+          # Creates the tag at this commit when the run wasn't started by one
+          gh release create "$tag" "dist/$FILE" \
+            --target "$GITHUB_SHA" \
+            --title "Dynamic Assist Companion $VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md"

@@ -7,7 +7,7 @@
  * These functions work for both main entity fields and related entity fields.
  */
 
-import type { QueryBuilderField, QueryBuilderLookupTarget } from './types';
+import type { QueryBuilderField } from './types';
 import { buildFieldOptions } from './utils';
 
 const ODATA_HEADERS = {
@@ -37,7 +37,7 @@ const OPTIONSET_CASTS: { castType: string; optionSelect: string }[] = [
  *
  * @returns Map of attribute logical name to its raw option set metadata
  */
-export const fetchOptionSetMetadata = async (
+const fetchOptionSetMetadata = async (
     entityName: string,
     trace?: (message: string, data?: any) => void
 ): Promise<Map<string, any>> => {
@@ -78,111 +78,6 @@ export const fetchOptionSetMetadata = async (
 
     trace?.('[QueryBuilder] Fetched option metadata', { entityName, attributeCount: optionSetMap.size });
     return optionSetMap;
-};
-
-/**
- * Enrich lookup fields with target entity metadata (EntitySetName, PrimaryNameAttribute, DisplayName).
- * This enables automatic search functionality in lookup inputs.
- * 
- * @param fields - Array of fields that may contain lookup fields
- * @param entityName - The entity that owns these fields
- * @param trace - Optional trace callback for debugging
- * @returns Fields with enriched lookup metadata
- */
-export const enrichLookupFields = async (
-    fields: (QueryBuilderField & { _raw?: any })[],
-    entityName: string,
-    trace?: (message: string, data?: any) => void
-): Promise<QueryBuilderField[]> => {
-    trace?.('[QueryBuilder] Enriching lookup targets for lookup fields', { entityName, fieldCount: fields.length });
-    
-    const lookupFields = fields.filter((f: any) => f.dataType === 'lookup' && f._raw);
-    
-    for (const field of lookupFields) {
-        try {
-            const attr = field._raw;
-            const attrType = attr.AttributeType || attr.AttributeTypeName?.Value;
-            
-            if (attrType === 'Lookup' || attrType === 'Customer' || attrType === 'Owner') {
-                const typeCast = attrType === 'Customer' ? 'CustomerAttributeMetadata' :
-                               attrType === 'Owner' ? 'OwnerAttributeMetadata' :
-                               'LookupAttributeMetadata';
-                const targetsUrl = `/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')/Attributes(LogicalName='${field.id}')/Microsoft.Dynamics.CRM.${typeCast}?$select=LogicalName,Targets`;
-                
-                const targetsResponse = await fetch(targetsUrl, {
-                    headers: {
-                        'OData-MaxVersion': '4.0',
-                        'OData-Version': '4.0',
-                        'Accept': 'application/json',
-                    },
-                });
-                
-                if (targetsResponse.ok) {
-                    const targetsData = await targetsResponse.json();
-                    
-                    if (targetsData.Targets && Array.isArray(targetsData.Targets)) {
-                        // Fetch entity metadata for each target
-                        const enrichedTargets: QueryBuilderLookupTarget[] = [];
-                        
-                        for (const targetEntityName of targetsData.Targets) {
-                            try {
-                                const entityMetaUrl = `/api/data/v9.2/EntityDefinitions(LogicalName='${targetEntityName}')?$select=LogicalName,EntitySetName,PrimaryNameAttribute,PrimaryIdAttribute,DisplayName`;
-                                const entityMetaResponse = await fetch(entityMetaUrl, {
-                                    headers: {
-                                        'OData-MaxVersion': '4.0',
-                                        'OData-Version': '4.0',
-                                        'Accept': 'application/json',
-                                    },
-                                });
-                                
-                                if (entityMetaResponse.ok) {
-                                    const entityMeta = await entityMetaResponse.json();
-                                    enrichedTargets.push({
-                                        entityLogicalName: targetEntityName,
-                                        entitySetName: entityMeta.EntitySetName,
-                                        primaryNameAttribute: entityMeta.PrimaryNameAttribute,
-                                        displayName: entityMeta.DisplayName?.UserLocalizedLabel?.Label || targetEntityName,
-                                    });
-                                } else {
-                                    // Fallback without metadata
-                                    enrichedTargets.push({
-                                        entityLogicalName: targetEntityName,
-                                    });
-                                }
-                            } catch {
-                                // Fallback without metadata
-                                enrichedTargets.push({
-                                    entityLogicalName: targetEntityName,
-                                });
-                            }
-                        }
-                        
-                        field.targets = enrichedTargets;
-                        
-                        trace?.('[QueryBuilder] Enriched lookup targets', { 
-                            field: field.id, 
-                            targetCount: field.targets.length,
-                            targets: field.targets.map((t: QueryBuilderLookupTarget) => ({
-                                entity: t.entityLogicalName,
-                                hasMetadata: !!(t.entitySetName && t.primaryNameAttribute)
-                            }))
-                        });
-                    }
-                }
-            }
-        } catch (lookupError) {
-            trace?.('[QueryBuilder] Failed to enrich lookup field', { 
-                field: field.id,
-                error: lookupError instanceof Error ? lookupError.message : String(lookupError)
-            });
-        }
-    }
-    
-    // Remove _raw property and return
-    return fields.map((f: any) => {
-        const { _raw, ...field } = f;
-        return field;
-    });
 };
 
 /**

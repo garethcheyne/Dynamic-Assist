@@ -1,11 +1,7 @@
-import {
-  Building2Icon,
-  ServerCogIcon,
-  ServerIcon,
-  UserRoundIcon,
-} from "lucide-react"
+import { Building2Icon, ServerIcon, UserRoundIcon } from "lucide-react"
 
 import { ActionTile, TileGrid } from "@/components/action-tile"
+import { ProductIcon } from "@/components/product-icon"
 
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Detail, DetailGrid } from "@/components/detail-grid"
@@ -119,7 +115,7 @@ export function SessionView({
         </DetailGrid>
         <TileGrid>
           <ActionTile
-            icon={<ServerCogIcon />}
+            icon={<ProductIcon product="businessCentral" />}
             title="Admin center"
             description="Environments, apps and sessions for this tenant"
             onClick={() =>

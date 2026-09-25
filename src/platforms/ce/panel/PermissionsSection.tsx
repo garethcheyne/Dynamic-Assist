@@ -1,12 +1,28 @@
 import * as React from "react"
-import { CheckIcon, KeyRoundIcon, RefreshCwIcon, XIcon } from "lucide-react"
+import {
+  CheckIcon,
+  KeyRoundIcon,
+  RefreshCwIcon,
+  UserRoundSearchIcon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react"
 import { cn } from "cn"
 
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Button } from "@/components/ui/button"
 
-import type { CeDepth, CePermissions, CePrivilegeType } from "../types"
+import type {
+  CeDepth,
+  CePermissions,
+  CePrivilegeType,
+  CeUserSummary,
+} from "../types"
 import type { useCeTab } from "../use-ce-tab"
+import { Hint } from "@/components/hint"
+import { AccessDetail } from "./AccessDetail"
+import { CompareUsers } from "./CompareUsers"
+import { UserPicker } from "./UserPicker"
 
 type Run = ReturnType<typeof useCeTab>["run"]
 
@@ -42,8 +58,8 @@ const ACCESS: Record<CePrivilegeType, string> = {
 }
 
 /**
- * What the user (or the impersonated user) may do with this table, at which
- * level, and on the open record. Dynamics shows levels as filled circles;
+ * What a user may do with this table, at which level, and on the open record:
+ * you (or the user you're impersonating), or anyone you pick. Dynamics shows levels as filled circles;
  * this uses the same idea as a four-step meter.
  */
 export function PermissionsSection({
@@ -61,18 +77,38 @@ export function PermissionsSection({
   const [data, setData] = React.useState<CePermissions | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
+  // Someone picked to check instead of you; null: you (or who you impersonate)
+  const [picked, setPicked] = React.useState<CeUserSummary | null>(null)
+  const [picking, setPicking] = React.useState(false)
+  const [comparing, setComparing] = React.useState(false)
 
-  const load = async () => {
+  const load = async (who: CeUserSummary | null = picked) => {
     setLoading(true)
     setError(null)
     try {
-      setData(await run("permissions", { entityName, recordId, userId }))
+      setData(
+        await run("permissions", {
+          entityName,
+          recordId,
+          userId: who?.id ?? userId,
+        })
+      )
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
   }
+  const check = (who: CeUserSummary | null) => {
+    setPicked(who)
+    setPicking(false)
+    void load(who)
+  }
+  const whose = picked
+    ? picked.name
+    : userId
+      ? "The impersonated user's"
+      : "Your"
 
   return (
     <CollapsibleSection
@@ -93,7 +129,7 @@ export function PermissionsSection({
             size="icon-xs"
             title="Check again"
             aria-label="Check again"
-            onClick={load}
+            onClick={() => void load()}
             disabled={loading}
           >
             <RefreshCwIcon className={cn(loading && "animate-spin")} />
@@ -102,64 +138,140 @@ export function PermissionsSection({
       }
       defaultCollapsed
     >
-      {!data ? (
-        <div className="flex flex-col items-center gap-2 py-2 text-center text-xs text-muted-foreground">
-          Your privileges on {entityName}
-          {recordId ? " and your access to this record" : ""}, from your
-          security roles.
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-            <KeyRoundIcon data-icon="inline-start" />
-            {loading ? "Checking…" : "Check access"}
+      {comparing && data ? (
+        <CompareUsers
+          run={run}
+          entityName={entityName}
+          recordId={recordId}
+          first={data.user}
+          onClose={() => setComparing(false)}
+        />
+      ) : picking ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Check another user&apos;s privileges on {entityName}
+            {recordId ? " and their access to this record" : ""}, from their
+            security roles. You need permission to read users and their roles.
+          </p>
+          <UserPicker run={run} action="Check" onPick={check} autoFocus />
+          <Button
+            size="xs"
+            variant="ghost"
+            className="self-start"
+            onClick={() => setPicking(false)}
+          >
+            Cancel
           </Button>
+        </div>
+      ) : !data ? (
+        <div className="flex flex-col items-center gap-2 py-2 text-center text-xs text-muted-foreground">
+          {whose} privileges on {entityName}
+          {recordId ? " and access to this record" : ""}, from security roles.
+          <div className="flex flex-wrap justify-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void load()}
+              disabled={loading}
+            >
+              <KeyRoundIcon data-icon="inline-start" />
+              {loading ? "Checking…" : "Check access"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setPicking(true)}
+              disabled={loading}
+            >
+              <UserRoundSearchIcon data-icon="inline-start" />
+              Check someone else
+            </Button>
+          </div>
           {error && <span className="text-destructive">{error}</span>}
         </div>
       ) : (
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-[10px] tracking-wide text-muted-foreground uppercase">
-              <th className="pb-1 text-left font-semibold">Privilege</th>
-              <th className="pb-1 text-left font-semibold">Level</th>
-              {data.recordAccess && (
-                <th className="pb-1 text-right font-semibold">Record</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {data.privileges.map((p) => (
-              <tr key={p.type} className="border-t" title={p.name}>
-                <td className="py-1.5 pr-2">{LABELS[p.type]}</td>
-                <td className="py-1.5">
-                  <span className="flex items-center gap-2">
-                    <DepthMeter depth={p.depth} />
-                    <span
-                      className={cn(
-                        "truncate",
-                        p.depth === "None" && "text-muted-foreground"
-                      )}
-                    >
-                      {DEPTHS[p.depth].label}
-                    </span>
-                  </span>
-                </td>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
+            <span className="min-w-0 flex-1 truncate">
+              Checking <b>{data.user.name}</b>
+            </span>
+            <Button size="xs" variant="ghost" onClick={() => setPicking(true)}>
+              <UserRoundSearchIcon data-icon="inline-start" />
+              Change
+            </Button>
+            {picked && (
+              <Button size="xs" variant="ghost" onClick={() => check(null)}>
+                Back to me
+              </Button>
+            )}
+            <Button
+              size="xs"
+              variant="ghost"
+              title={`Compare ${data.user.name} with someone else`}
+              onClick={() => setComparing(true)}
+            >
+              <UsersIcon data-icon="inline-start" />
+              Compare
+            </Button>
+          </div>
+          {error && <span className="text-xs text-destructive">{error}</span>}
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-[10px] tracking-wide text-muted-foreground uppercase">
+                <th className="pb-1 text-left font-semibold">Privilege</th>
+                <th className="pb-1 text-left font-semibold">Level</th>
                 {data.recordAccess && (
-                  <td className="py-1.5 text-right">
-                    {data.recordAccess.includes(ACCESS[p.type]) ? (
-                      <CheckIcon
-                        className="ml-auto size-3.5 text-primary"
-                        aria-label="Allowed"
-                      />
-                    ) : (
-                      <XIcon
-                        className="ml-auto size-3.5 text-muted-foreground"
-                        aria-label="Not allowed"
-                      />
-                    )}
-                  </td>
+                  <th className="pb-1 text-right font-semibold">Record</th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.privileges.map((p) => (
+                <Hint key={p.type} label={p.name}>
+                  <tr className="border-t">
+                    <td className="py-1.5 pr-2">{LABELS[p.type]}</td>
+                    <td className="py-1.5">
+                      <span className="flex items-center gap-2">
+                        <DepthMeter depth={p.depth} />
+                        <span
+                          className={cn(
+                            "truncate",
+                            p.depth === "None" && "text-muted-foreground"
+                          )}
+                        >
+                          {DEPTHS[p.depth].label}
+                        </span>
+                      </span>
+                    </td>
+                    {data.recordAccess && (
+                      <td className="py-1.5 text-right">
+                        {data.recordAccess.includes(ACCESS[p.type]) ? (
+                          <CheckIcon
+                            className="ml-auto size-3.5 text-primary"
+                            aria-label="Allowed"
+                          />
+                        ) : (
+                          <XIcon
+                            className="ml-auto size-3.5 text-muted-foreground"
+                            aria-label="Not allowed"
+                          />
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                </Hint>
+              ))}
+            </tbody>
+          </table>
+          <AccessDetail
+            key={data.user.id}
+            run={run}
+            main={data}
+            entityName={entityName}
+            recordId={recordId}
+            userId={data.user.id}
+          />
+        </div>
       )}
     </CollapsibleSection>
   )

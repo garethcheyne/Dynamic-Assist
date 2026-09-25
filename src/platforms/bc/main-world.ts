@@ -19,8 +19,11 @@
  */
 import {
   FIELD_CLASSES,
+  dataTypeOf,
   PAGE_MESSAGE,
   REQUEST_MESSAGE,
+  TOOL_MESSAGE,
+  TOOL_RESULT_MESSAGE,
   pageTypeName,
   schemaNameOf,
   type BcField,
@@ -28,6 +31,7 @@ import {
   type BcPageInfo,
   type BcSession,
 } from "./page-info"
+import { reapplyTools, runTool, toolModes } from "./page-tools"
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- BC's client model is untyped */
 type Control = any
@@ -47,33 +51,6 @@ const kids = (c: Control): Control[] => read(() => c.children.items) ?? []
 function currentForm(): Control | null {
   if (typeof DN === "undefined") return null
   return read(() => DN.App.context.currentPage.entry.formAdapter.logicalControl)
-}
-
-// Control type → the data type it implies. Strings can't tell Code from Text.
-const DATA_TYPES: Record<string, string> = {
-  StringControl: "Text/Code",
-  DecimalControl: "Decimal",
-  IntegerControl: "Integer",
-  BigIntegerControl: "BigInteger",
-  BooleanControl: "Boolean",
-  SelectionControl: "Option/Enum",
-  DateControl: "Date",
-  DateTimeControl: "DateTime",
-  TimeControl: "Time",
-  DurationControl: "Duration",
-  GuidControl: "Guid",
-  MediaControl: "Media",
-  MediaSetControl: "MediaSet",
-  BlobControl: "Blob",
-}
-
-function dataTypeOf(control: Control): string {
-  const type: string = read(() => control.typeName) ?? ""
-  const base = DATA_TYPES[type] ?? type.replace(/Control$/, "")
-  const max = read(() => control.maximumStringLength)
-  return type === "StringControl" && typeof max === "number" && max > 0
-    ? `${base}[${max}]`
-    : base
 }
 
 function toField(
@@ -232,6 +209,7 @@ function readPageInfo(): BcPageInfo | null {
       aadTenantId: read(() => DN.ExecutionContext.Instance.AadTenantId),
     },
     session: readSession(),
+    tools: toolModes(),
     form: main.form,
     parts,
   }
@@ -241,19 +219,37 @@ function readPageInfo(): BcPageInfo | null {
 
 let last = ""
 
+/**
+ * True when Business Central has drawn a page here but its model isn't where
+ * this reads it: the web client changed (a monthly update can), and the page
+ * tools need an update. Said out loud rather than leaving the panel waiting.
+ */
+function unreadable(page: BcPageInfo | null) {
+  return (
+    !page &&
+    typeof DN !== "undefined" &&
+    !!document.querySelector("form.ms-nav-root-form")
+  )
+}
+
 function post(force = false) {
   const page = read(readPageInfo)
-  const json = JSON.stringify(page)
+  const unsupported = unreadable(page)
+  const json = JSON.stringify(page) + unsupported
   if (!force && json === last) return
   last = json
-  window.postMessage({ type: PAGE_MESSAGE, page }, location.origin)
+  window.postMessage({ type: PAGE_MESSAGE, page, unsupported }, location.origin)
 }
 
 // Only the frame running the client (?runinframe=1, or a top-level client) has a form model.
 let timer: number | undefined
 new MutationObserver(() => {
   clearTimeout(timer)
-  timer = window.setTimeout(() => post(), 300)
+  timer = window.setTimeout(() => {
+    // The client redraws as you move around: put field names back
+    read(reapplyTools)
+    post()
+  }, 300)
 }).observe(document.documentElement, {
   subtree: true,
   childList: true,
@@ -261,6 +257,20 @@ new MutationObserver(() => {
 })
 
 window.addEventListener("message", (event) => {
-  if (event.source === window && event.data?.type === REQUEST_MESSAGE)
+  if (event.source !== window) return
+  if (event.data?.type === REQUEST_MESSAGE) post(true)
+  if (event.data?.type === TOOL_MESSAGE && currentForm()) {
+    const message = read(() =>
+      runTool(event.data.command, event.data.on, event.data.data)
+    )
+    window.postMessage(
+      {
+        type: TOOL_RESULT_MESSAGE,
+        id: event.data.id,
+        message: message ?? "That didn't work on this page",
+      },
+      location.origin
+    )
     post(true)
+  }
 })

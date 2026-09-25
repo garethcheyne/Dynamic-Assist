@@ -1,0 +1,38 @@
+{
+  "url": "https://make.powerautomate.com/environments/7d3c1f0a-2b4e-4c8d-9a61-3f5e8b2c7d10/solutions/5a8e2c14-9b7d-4f3a-8e21-6c4d0b9f1a37",
+  "org": "https://contoso.crm.dynamics.com",
+  "environmentId": "7d3c1f0a-2b4e-4c8d-9a61-3f5e8b2c7d10",
+  "solutionId": "5a8e2c14-9b7d-4f3a-8e21-6c4d0b9f1a37",
+  "flows": [
+    ["[Sales] Notify owner when an opportunity is won", true],
+    ["[Sales] Create onboarding tasks for new accounts", false],
+    ["[Sales] Sync quote PDFs to SharePoint", false],
+    ["[Finance] Post approved invoices to Business Central", false],
+    ["[Finance] Daily overdue invoice digest", true],
+    ["[Service] Escalate cases breaching SLA", false],
+    ["[Service] Send CSAT survey on case close", true],
+    ["[Ops] Nightly data quality report", false],
+    ["[Ops] Archive completed activities", true],
+    ["[Marketing] Add web leads to nurture journey", false],
+    ["[Marketing] Welcome email for new contacts", true],
+    ["[HR] New starter access request", true]
+  ],
+  "connectionReferences": [
+    ["Dataverse (Contoso Sales)", "shared_commondataserviceforapps", true],
+    ["Business Central (CRONUS NZ)", "shared_dynamicssmbsaas", true],
+    ["Office 365 Outlook", "shared_office365", true],
+    ["SharePoint Online", "shared_sharepointonline", false],
+    ["Microsoft Teams", "shared_teams", true]
+  ],
+  "envVariables": [
+    ["Business Central company", "contoso_BcCompany", "Text", "CRONUS NZ", null],
+    ["Escalation mailbox", "contoso_EscalationMailbox", "Text", null, "service@contoso.com"],
+    ["SLA warning (hours)", "contoso_SlaWarningHours", "Number", "4", null],
+    ["SharePoint site", "contoso_QuoteSite", "Text", null, null]
+  ],
+  "runs": [
+    ["[Finance] Post approved invoices to Business Central", "Failed", "ActionFailed: The customer 'C00420' does not exist in company CRONUS NZ.", 34],
+    ["[Service] Escalate cases breaching SLA", "Failed", "InvalidTemplate: Unable to process template language expressions for action 'Get_manager'.", 95],
+    ["[Sales] Sync quote PDFs to SharePoint", "Failed", "ConnectionAuthorizationFailed: The connection reference 'SharePoint Online' has no connection.", 180]
+  ]
+}

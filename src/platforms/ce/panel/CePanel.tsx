@@ -23,6 +23,7 @@ import { ImpersonateSection } from "./ImpersonateSection"
 import { NavigateView } from "./NavigateView"
 import { RecordView } from "./RecordView"
 import { ToolsView } from "./ToolsView"
+import { Hint } from "@/components/hint"
 
 type Tab = "record" | "tools" | "navigate" | "session"
 
@@ -169,16 +170,17 @@ function EnvironmentBar({
   const env = state?.environment
   return (
     <div className="flex h-9 items-center gap-2 border-b bg-card px-3 text-xs">
-      <span className="truncate font-semibold" title={env?.clientUrl}>
-        {env?.friendlyName ?? env?.orgUniqueName ?? "Dynamics 365"}
-      </span>
-      {state?.app && (
-        <span
-          className="min-w-0 truncate text-muted-foreground"
-          title={state.app.uniqueName}
-        >
-          {state.app.displayName}
+      <Hint label={env?.clientUrl}>
+        <span className="truncate font-semibold">
+          {env?.friendlyName ?? env?.orgUniqueName ?? "Dynamics 365"}
         </span>
+      </Hint>
+      {state?.app && (
+        <Hint label={state.app.uniqueName}>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {state.app.displayName}
+          </span>
+        </Hint>
       )}
       <Button
         variant="ghost"

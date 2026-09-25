@@ -19,7 +19,7 @@ const SAME_VISIT_MS = 30 * 60 * 1000
 
 export type HistoryEntry = {
   key: string
-  platform: "bc" | "ce" | "maker"
+  platform: "bc" | "ce" | "maker" | "flow"
   title: string
   subtitle: string | null
   /** Where "open" goes: the environment and company, or the org and app */

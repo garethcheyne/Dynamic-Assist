@@ -1,11 +1,9 @@
 import * as React from "react"
 import {
   BlocksIcon,
-  BriefcaseBusinessIcon,
   CircleUserRoundIcon,
   CodeXmlIcon,
   CompassIcon,
-  DatabaseIcon,
   ExternalLinkIcon,
   FilePlus2Icon,
   FilterIcon,
@@ -17,7 +15,6 @@ import {
   PackageIcon,
   SettingsIcon,
   ShieldIcon,
-  ServerCogIcon,
   StethoscopeIcon,
   TimerIcon,
   WorkflowIcon,
@@ -25,6 +22,8 @@ import {
 } from "lucide-react"
 
 import { ActionTile, TileGrid } from "@/components/action-tile"
+import type { MsProduct } from "@/assets/brand/ms"
+import { ProductIcon } from "@/components/product-icon"
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +35,7 @@ import type { CeState } from "../types"
 import { ceUrls } from "../urls"
 import { TablePicker } from "./TablePicker"
 import type { useCeTab } from "../use-ce-tab"
+import { Hint } from "@/components/hint"
 
 type Run = ReturnType<typeof useCeTab>["run"]
 
@@ -55,7 +55,7 @@ export function NavigateView({
 }) {
   const urls = ceUrls(state)
   const link = (
-    icon: LucideIcon,
+    icon: LucideIcon | MsProduct,
     title: string,
     description: string,
     url: string | null
@@ -64,7 +64,9 @@ export function NavigateView({
     return (
       <ActionTile
         key={title}
-        icon={<Icon />}
+        icon={
+          typeof Icon === "string" ? <ProductIcon product={Icon} /> : <Icon />
+        }
         title={title}
         description={
           url ? description : "Needs the environment ID (online only)"
@@ -115,7 +117,7 @@ export function NavigateView({
       >
         <TileGrid>
           {link(
-            ServerCogIcon,
+            "powerPlatform",
             "Admin center",
             "This environment in Power Platform admin",
             urls.adminCenter
@@ -168,12 +170,7 @@ export function NavigateView({
             "Imports and upgrades",
             urls.solutionHistory
           )}
-          {link(
-            BriefcaseBusinessIcon,
-            "Maker portal",
-            "make.powerapps.com",
-            urls.maker
-          )}
+          {link("powerApps", "Maker portal", "make.powerapps.com", urls.maker)}
           {link(
             FilterIcon,
             "Advanced find",
@@ -189,7 +186,7 @@ export function NavigateView({
         icon={<CodeXmlIcon />}
       >
         <TileGrid>
-          {link(DatabaseIcon, "Web API", "Service document", urls.webApi)}
+          {link("dataverse", "Web API", "Service document", urls.webApi)}
           {state.page.entityName &&
             link(
               CodeXmlIcon,
@@ -286,20 +283,21 @@ function OtherOrgs({ current }: { current: string }) {
     >
       <div className="-mx-1.5 flex flex-col">
         {orgs.map((e) => (
-          <button
-            key={e.key}
-            type="button"
-            title={e.url}
-            onClick={() => open(e.url)}
-            className="flex min-w-0 flex-col rounded-md px-1.5 py-1.5 text-left hover:bg-muted/60"
-          >
-            <span className="truncate text-xs font-medium">
-              {e.label || e.title}
-            </span>
-            <span className="truncate text-[11px] text-muted-foreground">
-              {[e.subtitle, new URL(e.url).host].filter(Boolean).join(" · ")}
-            </span>
-          </button>
+          <Hint label={e.url}>
+            <button
+              key={e.key}
+              type="button"
+              onClick={() => open(e.url)}
+              className="flex min-w-0 flex-col rounded-md px-1.5 py-1.5 text-left hover:bg-muted/60"
+            >
+              <span className="truncate text-xs font-medium">
+                {e.label || e.title}
+              </span>
+              <span className="truncate text-[11px] text-muted-foreground">
+                {[e.subtitle, new URL(e.url).host].filter(Boolean).join(" · ")}
+              </span>
+            </button>
+          </Hint>
         ))}
       </div>
     </CollapsibleSection>

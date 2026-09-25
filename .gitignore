@@ -25,3 +25,13 @@ public/scripts/
 .env.store
 *.service-account.json
 *-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json
+
+# AL Test Runner (VS Code) settings
+.altestrunner/
+
+# Test reports: they name your environment and table sizes
+tests/results/*
+!tests/results/README.md
+
+# Rendered marketing screenshots (regenerate with npm run marketing)
+marketing/out/

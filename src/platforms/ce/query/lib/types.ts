@@ -43,7 +43,7 @@ export interface QueryBuilderField {
  * 
  * @see QueryBuilder.operators.ts for full list of operators
  */
-export type QueryBuilderOperator =
+type QueryBuilderOperator =
   // Comparison operators
   | 'eq'
   | 'ne'
@@ -235,28 +235,4 @@ export interface QueryBuilderApplyResult {
    * When non-empty the OData output is NOT equivalent to the FetchXML - use FetchXML instead.
    */
   odataUnsupported: QueryBuilderODataUnsupported[];
-}
-
-export interface QueryBuilderRelatedEntity {
-  /** Unique identifier - typically the lookup field name (e.g., "primarycontactid") */
-  id: string;
-  /** Display label for the relationship (e.g., "Primary Contact (Contact)") */
-  label: string;
-  /** The lookup field that creates this relationship */
-  lookupField?: string;
-  /** The target entity logical name (e.g., "contact") */
-  targetEntity?: string;
-  /** The target entity set name for OData (e.g., "contacts") */
-  targetEntitySetName?: string;
-  /** The target entity's primary key attribute - used as "from" in the generated link-entity */
-  targetPrimaryIdAttribute?: string;
-}
-
-export interface QueryBuilderLookupOption {
-  /** Unique identifier (typically a GUID) */
-  key: string;
-  /** Display text */
-  text: string;
-  /** Optional secondary text */
-  secondaryText?: string;
 }

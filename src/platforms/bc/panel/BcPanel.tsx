@@ -1,31 +1,49 @@
 import * as React from "react"
 import {
+  CompassIcon,
+  DatabaseIcon,
   FileSearchIcon,
   Loader2Icon,
   PanelsTopLeftIcon,
   RefreshCwIcon,
   ServerCogIcon,
   UserRoundIcon,
+  WrenchIcon,
 } from "lucide-react"
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useNotify } from "@/lib/copy"
 import { recordVisit, visitFromUrl } from "@/lib/history"
+import { useAction } from "@/lib/use-action"
 
 import type { BcPageInfo } from "../page-info"
+import { openBcQuery } from "../query/pending"
 import { bcAdminCenterUrl, parseBcUrl, type BcContext } from "../url"
 import { useBcTab } from "../use-bc-tab"
+import { GoToView } from "./GoToView"
 import { PageView } from "./PageView"
 import { PartsView } from "./PartsView"
 import { SessionView } from "./SessionView"
+import { ToolsView } from "./ToolsView"
+import { Hint } from "@/components/hint"
 
-type Tab = "page" | "parts" | "session"
+type Tab = "page" | "parts" | "tools" | "goto" | "session"
 
 export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
   const ctx = parseBcUrl(tab.url!)
-  const { connected, page, refresh } = useBcTab(tab.id)
+  const { connected, page, unsupported, refresh } = useBcTab(tab.id)
   const [current, setCurrent] = React.useState<Tab>("page")
+  const notify = useNotify()
+  const { busy, act } = useAction()
+  const openQuery = (tableId?: number) =>
+    openBcQuery(tab, { app: "bc", tableId }).catch(() =>
+      notify(
+        "Couldn't open the query builder. Reload the tab and try again.",
+        "error"
+      )
+    )
 
   // Name this environment in History once the client has told us about it
   const envName = page?.environment.name
@@ -64,7 +82,12 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <EnvironmentBar ctx={ctx} page={page} onRefresh={refresh} />
+      <EnvironmentBar
+        ctx={ctx}
+        page={page}
+        onRefresh={refresh}
+        onQuery={() => void openQuery(page?.form.tableId ?? undefined)}
+      />
       <Tabs
         value={current}
         onValueChange={(v) => setCurrent(v as Tab)}
@@ -85,6 +108,14 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="tools" className="text-xs [&_svg]:size-3.5">
+              <WrenchIcon />
+              Tools
+            </TabsTrigger>
+            <TabsTrigger value="goto" className="text-xs [&_svg]:size-3.5">
+              <CompassIcon />
+              Go to
+            </TabsTrigger>
             <TabsTrigger value="session" className="text-xs [&_svg]:size-3.5">
               <UserRoundIcon />
               Session
@@ -94,17 +125,34 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
 
         <TabsContent value="page" className="min-h-0 overflow-y-auto p-3">
           {page ? (
-            <PageView ctx={ctx} form={page.form} />
+            <PageView
+              ctx={ctx}
+              form={page.form}
+              onQuery={(id) => void openQuery(id)}
+            />
           ) : (
-            <Waiting connected={connected} />
+            <Waiting connected={connected} unsupported={unsupported} />
           )}
         </TabsContent>
         <TabsContent value="parts" className="min-h-0 overflow-y-auto p-3">
           {page ? (
             <PartsView ctx={ctx} host={page.form} parts={page.parts} />
           ) : (
-            <Waiting connected={connected} />
+            <Waiting connected={connected} unsupported={unsupported} />
           )}
+        </TabsContent>
+        <TabsContent value="tools" className="min-h-0 overflow-y-auto p-3">
+          <ToolsView
+            tab={tab}
+            ctx={ctx}
+            page={page}
+            act={act}
+            busy={busy}
+            onRefresh={refresh}
+          />
+        </TabsContent>
+        <TabsContent value="goto" className="min-h-0 overflow-y-auto p-3">
+          <GoToView ctx={ctx} page={page} />
         </TabsContent>
         <TabsContent value="session" className="min-h-0 overflow-y-auto p-3">
           <SessionView ctx={ctx} page={page} />
@@ -119,10 +167,12 @@ function EnvironmentBar({
   ctx,
   page,
   onRefresh,
+  onQuery,
 }: {
   ctx: BcContext
   page: BcPageInfo | null
   onRefresh: () => void
+  onQuery: () => void
 }) {
   const type = page?.environment.type
   const company = page?.session?.company?.name ?? ctx.company
@@ -144,17 +194,25 @@ function EnvironmentBar({
         </span>
       )}
       {company && (
-        <span
-          className="min-w-0 truncate text-muted-foreground"
-          title={company}
-        >
-          {company}
-        </span>
+        <Hint label={company}>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {company}
+          </span>
+        </Hint>
       )}
       <Button
         variant="ghost"
         size="icon-xs"
         className="ml-auto"
+        title="Query builder (needs the companion app)"
+        aria-label="Query builder"
+        onClick={onQuery}
+      >
+        <DatabaseIcon />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-xs"
         title="Business Central admin center"
         aria-label="Business Central admin center"
         onClick={() =>
@@ -178,7 +236,38 @@ function EnvironmentBar({
   )
 }
 
-function Waiting({ connected }: { connected: boolean }) {
+function Waiting({
+  connected,
+  unsupported,
+}: {
+  connected: boolean
+  unsupported?: boolean
+}) {
+  if (unsupported)
+    return (
+      <div className="flex flex-col gap-2 rounded-xl border border-sandbox/50 bg-sandbox/10 p-4 text-xs leading-relaxed">
+        <p className="font-semibold">
+          Business Central changed how its pages work
+        </p>
+        <p className="text-muted-foreground">
+          Dynamic Assist can't read this page in this version of the web client,
+          so the page and parts details and the page tools are paused. The query
+          builder, Go to and Session still work.
+        </p>
+        <p className="text-muted-foreground">
+          Check for an extension update, or let us know on{" "}
+          <a
+            className="font-medium text-primary hover:underline"
+            href="https://github.com/garethcheyne/Dynamic-Assist/issues"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
+          .
+        </p>
+      </div>
+    )
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center text-xs text-muted-foreground">
       {connected ? (

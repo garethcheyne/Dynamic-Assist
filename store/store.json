@@ -24,13 +24,18 @@
   "stores": {
     "chrome": {
       "enabled": true,
-      "extensionId": "",
-      "publisherId": "",
-      "publishType": "DEFAULT_PUBLISH"
+      "extensionId": "kdjmihadioacnbabibfljbpbkclcjhbf",
+      "publisherId": "fa4c7629-9460-470f-8491-e4666f0fc6aa",
+      "publishType": "DEFAULT_PUBLISH",
+      "listingUrl": "https://chromewebstore.google.com/detail/kdjmihadioacnbabibfljbpbkclcjhbf",
+      "dashboardUrl": "https://chrome.google.com/webstore/devconsole/fa4c7629-9460-470f-8491-e4666f0fc6aa/kdjmihadioacnbabibfljbpbkclcjhbf/edit"      
     },
     "edge": {
       "enabled": true,
-      "productId": ""
+      "productId": "df533ae3-c181-4492-887b-24dc9c60bb45",
+      "crxId": "",
+      "storeId": "",
+      "listingUrl": ""
     }
   }
 }

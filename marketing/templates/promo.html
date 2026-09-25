@@ -1,0 +1,282 @@
+<!doctype html>
+<!--
+  Store promo tiles, rendered by marketing/build.mjs:
+    promo.html?size=marquee   1400 x 560 (Chrome marquee, Edge large promo)
+    promo.html?size=small     440 x 280  (small promo tile)
+  Panels are real side panel screenshots with demo data (marketing/capture.mjs).
+  Edit the copy and layout here; `npm run marketing` renders it again.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dynamic Assist promo</title>
+    <style>
+      :root {
+        --bc: #19b0b4;
+        --ce: #6b5cf0;
+        --pa: #b0409f;
+        --flow: #2f7bff;
+        --ink: #f4f6ff;
+        --muted: #aab3cf;
+        --font: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #070b1c;
+      }
+      .stage {
+        position: relative;
+        overflow: hidden;
+        font-family: var(--font);
+        color: var(--ink);
+        background:
+          radial-gradient(60% 90% at 88% 30%, color-mix(in srgb, var(--flow) 45%, transparent), transparent 70%),
+          radial-gradient(45% 70% at 62% 105%, color-mix(in srgb, var(--pa) 50%, transparent), transparent 70%),
+          radial-gradient(50% 80% at 8% 0%, color-mix(in srgb, var(--bc) 42%, transparent), transparent 70%),
+          radial-gradient(40% 60% at 40% 40%, color-mix(in srgb, var(--ce) 30%, transparent), transparent 70%),
+          linear-gradient(135deg, #0a1030 0%, #0c0f2a 50%, #150a2a 100%);
+      }
+      /* A faint dot grid, fading out to the right */
+      .stage::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.13) 1px, transparent 1px);
+        background-size: 22px 22px;
+        mask-image: linear-gradient(90deg, #000 0%, transparent 65%);
+      }
+      /* A fine grain so the gradients don't band */
+      .stage::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.08;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .brand img {
+        border-radius: 22%;
+        box-shadow: 0 8px 30px rgba(25, 176, 180, 0.45);
+      }
+      h1 {
+        margin: 0;
+        font-weight: 750;
+        letter-spacing: -0.035em;
+        line-height: 1.02;
+      }
+      h1 .grad {
+        background: linear-gradient(90deg, var(--bc), #8f86ff 45%, #ff7ad9 75%, #7fb8ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .lead {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 11px 5px 9px;
+        border-radius: 999px;
+        font-size: 13px;
+        white-space: nowrap;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(6px);
+      }
+      .chip i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--c);
+        box-shadow: 0 0 10px var(--c);
+      }
+
+      /* Panels: real screenshots as floating glass cards in perspective */
+      .deck {
+        position: absolute;
+        perspective: 1700px;
+        transform-style: preserve-3d;
+      }
+      .panel {
+        position: absolute;
+        overflow: hidden;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow:
+          0 0 0 6px rgba(255, 255, 255, 0.06),
+          0 30px 60px -12px rgba(0, 0, 0, 0.65),
+          0 0 80px -10px var(--glow);
+        transform-origin: 50% 50%;
+      }
+      .panel img {
+        display: block;
+        width: 100%;
+      }
+      /* The panel's own bottom edge fades, as if it scrolls on */
+      .panel::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 18%;
+        background: linear-gradient(transparent, rgba(255, 255, 255, 0.96));
+      }
+      .panel.dark::after {
+        background: linear-gradient(transparent, rgba(24, 24, 27, 0.96));
+      }
+
+      /* Callouts that echo real UI */
+      .badge {
+        position: absolute;
+        z-index: 5;
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 9px;
+        border-radius: 6px;
+        font: 600 15px/22px Consolas, "Cascadia Mono", monospace;
+        color: #5c3d00;
+        background: #fff4ce;
+        border: 1px solid #e8c766;
+        box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.5);
+        transform: rotate(-4deg);
+      }
+      .toast {
+        position: absolute;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px 10px 12px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #0b1b3a;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow:
+          0 14px 40px -8px rgba(0, 0, 0, 0.55),
+          0 0 0 1px rgba(255, 255, 255, 0.6);
+      }
+      .toast b {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: #fff;
+        font-size: 14px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+      }
+      .tip {
+        position: absolute;
+        z-index: 5;
+        max-width: 250px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.35;
+        color: #1b1a19;
+        background: #f3f2f1;
+        box-shadow: 0 14px 40px -8px rgba(0, 0, 0, 0.6);
+      }
+      .tip strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+      .tip::after {
+        content: "";
+        position: absolute;
+        left: 22px;
+        bottom: -5px;
+        width: 10px;
+        height: 10px;
+        background: #f3f2f1;
+        transform: rotate(45deg);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage" class="stage"></div>
+
+    <script type="module">
+      const size = new URLSearchParams(location.search).get("size") ?? "marquee"
+      const theme = new URLSearchParams(location.search).get("panels") ?? "light"
+      const shot = (name) => `/marketing/out/shots/${name}-${theme}.png`
+      const icon = "/icons/icon128.png"
+      const stage = document.getElementById("stage")
+
+      const PRODUCTS = [
+        ["Business Central", "var(--bc)"],
+        ["Dynamics 365", "var(--ce)"],
+        ["Power Apps", "var(--pa)"],
+        ["Power Automate", "var(--flow)"],
+      ]
+      const chips = PRODUCTS.map(([name, c]) => `<span class="chip" style="--c:${c}"><i></i>${name}</span>`).join("")
+
+      /**
+       * A panel card: `crop` is the fraction of the screenshot's height shown,
+       * `t` its 3D transform.
+       */
+      const panel = ({ name, x, y, w, crop, t, glow, z }) => `
+        <div class="panel ${theme}" style="left:${x}px;top:${y}px;width:${w}px;height:${Math.round(w * 2.05 * crop)}px;transform:${t};--glow:${glow};z-index:${z}">
+          <img src="${shot(name)}" alt="">
+        </div>`
+
+      if (size === "marquee") {
+        stage.style.cssText = "width:1400px;height:560px"
+        stage.innerHTML = `
+          <div style="position:absolute;left:72px;top:0;bottom:0;width:560px;display:flex;flex-direction:column;justify-content:center;gap:22px;z-index:10">
+            <div class="brand" style="font-size:24px"><img src="${icon}" width="52" height="52" alt="">Dynamic Assist</div>
+            <h1 style="font-size:60px">Four Microsoft apps.<br><span class="grad">One side panel.</span></h1>
+            <p class="lead" style="margin:0;font-size:20px;max-width:500px">Inspect any page or record, query any table, and switch on a whole solution's flows in one click. As you, with your permissions.</p>
+            <div class="chips">${chips}</div>
+          </div>
+          <div class="deck" style="left:0;top:0;width:1400px;height:560px">
+            ${panel({ name: "bc-tools", x: 672, y: 78, w: 236, crop: 0.66, t: "rotateY(-22deg) rotateZ(-3deg) translateZ(-40px)", glow: "var(--bc)", z: 1 })}
+            ${panel({ name: "ce-record", x: 880, y: 44, w: 248, crop: 0.78, t: "rotateY(-18deg) rotateZ(-1deg)", glow: "var(--ce)", z: 2 })}
+            ${panel({ name: "flow-bulk", x: 1100, y: 70, w: 262, crop: 0.74, t: "rotateY(-14deg) rotateZ(2deg) translateZ(30px)", glow: "var(--flow)", z: 3 })}
+          </div>
+          <span class="badge" style="left:660px;top:404px">Credit Limit (LCY) · 20</span>
+          <div class="toast" style="left:1052px;top:478px"><b>✓</b>4 flows turned on</div>
+          <div class="tip" style="left:930px;top:10px;transform:rotate(-1.5deg)"><strong>Every field, every column</strong>From the Web API, not just the form</div>
+        `
+      } else {
+        stage.style.cssText = "width:440px;height:280px"
+        stage.innerHTML = `
+          <div style="position:absolute;left:24px;top:24px;width:270px;display:flex;flex-direction:column;gap:12px;z-index:10">
+            <div class="brand" style="font-size:15px;gap:9px"><img src="${icon}" width="32" height="32" alt="">Dynamic Assist</div>
+            <h1 style="font-size:24px">Four Microsoft apps.<br><span class="grad">One side panel.</span></h1>
+            <div style="display:flex;gap:6px;margin-top:2px">${PRODUCTS.map(([n, c]) => `<i title="${n}" style="width:10px;height:10px;border-radius:50%;background:${c};box-shadow:0 0 10px ${c}"></i>`).join("")}</div>
+          </div>
+          <div class="deck" style="left:0;top:0;width:440px;height:280px">
+            ${panel({ name: "flow-bulk", x: 268, y: 30, w: 172, crop: 0.8, t: "rotateY(-18deg) rotateZ(4deg) translateZ(20px)", glow: "var(--flow)", z: 2 })}
+          </div>
+          <div class="toast" style="left:24px;top:212px;font-size:12px;padding:7px 12px 7px 9px;gap:7px;border-radius:10px"><b style="width:18px;height:18px;font-size:11px">✓</b>4 flows turned on</div>
+        `
+      }
+      // Tell the renderer when every image has loaded
+      Promise.all([...document.images].map((i) => i.decode().catch(() => {}))).then(() => (document.body.dataset.ready = "1"))
+    </script>
+  </body>
+</html>

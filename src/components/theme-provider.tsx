@@ -1,6 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 
+import { THEME_STORAGE_KEY } from "@/shared/theme"
+
 type Theme = "dark" | "light" | "system"
 type ResolvedTheme = "dark" | "light"
 
@@ -77,6 +79,14 @@ function isEditableTarget(target: EventTarget | null) {
   return false
 }
 
+function shareTheme(theme: Theme) {
+  try {
+    void chrome.storage?.local?.set({ [THEME_STORAGE_KEY]: theme })
+  } catch {
+    // Not an extension page (tests, previews): nothing to share with
+  }
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -122,6 +132,7 @@ export function ThemeProvider({
 
   React.useEffect(() => {
     applyTheme(theme)
+    shareTheme(theme)
 
     if (theme !== "system") {
       return undefined

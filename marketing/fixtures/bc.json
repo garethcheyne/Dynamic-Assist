@@ -1,0 +1,339 @@
+{
+ "url": "https://businesscentral.dynamics.com/contoso.onmicrosoft.com/Sandbox/?company=CRONUS%20NZ&page=21",
+ "page": {
+  "environment": {
+   "name": "Sandbox",
+   "type": "sandbox",
+   "platform": "28.0.54688.0",
+   "aadTenantId": "00000000-0000-0000-0000-000000000000"
+  },
+  "session": {
+   "userName": "ALEX.WILBER",
+   "displayName": "Alex Wilber",
+   "upn": "alex.wilber@contoso.com",
+   "userSecurityId": "6f1c2d3e-4b5a-6978-8a9b-0c1d2e3f4a5b",
+   "isTenantAdmin": false,
+   "profile": {
+    "id": "BUSINESS MANAGER",
+    "caption": "Business Manager"
+   },
+   "company": {
+    "name": "CRONUS NZ",
+    "id": "8a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+    "indicator": "TEST"
+   },
+   "language": "en-NZ",
+   "timeZone": "Pacific/Auckland"
+  },
+  "form": {
+   "pageId": 21,
+   "name": "Customer Card",
+   "caption": "10000 · Adatum Corporation",
+   "pageType": "Card",
+   "tableId": 18,
+   "primaryKey": [
+    1
+   ],
+   "bookmark": "15_EgAAAAJ7BTEAMAAwADAAMA",
+   "systemId": "1f2e3d4c-5b6a-7980-a1b2-c3d4e5f60718",
+   "app": {
+    "id": "437dbf0e-84ff-417a-965d-ed2bb9650972",
+    "name": "Base Application",
+    "publisher": "Microsoft",
+    "version": "28.3.52162.54678"
+   },
+   "fields": [
+    {
+     "fieldNo": 1,
+     "schemaName": "No.",
+     "controlName": "No.",
+     "caption": "No.",
+     "value": "10000",
+     "dataType": "Text/Code[20]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "General",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 2,
+     "schemaName": "Name",
+     "controlName": "Name",
+     "caption": "Name",
+     "value": "Adatum Corporation",
+     "dataType": "Text/Code[100]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "General",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 5,
+     "schemaName": "Address",
+     "controlName": "Address",
+     "caption": "Address",
+     "value": "192 Market Square",
+     "dataType": "Text/Code[100]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "Address & Contact",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 7,
+     "schemaName": "City",
+     "controlName": "City",
+     "caption": "City",
+     "value": "Auckland",
+     "dataType": "Text/Code[30]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "Address & Contact",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 102,
+     "schemaName": "E-Mail",
+     "controlName": "E-Mail",
+     "caption": "Email",
+     "value": "robert.townes@contoso.com",
+     "dataType": "Text/Code[80]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "Address & Contact",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 59,
+     "schemaName": "Balance (LCY)",
+     "controlName": "Balance (LCY)",
+     "caption": "Balance (LCY)",
+     "value": "1,499.03",
+     "dataType": "Decimal",
+     "fieldClass": "FlowField",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "General",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 20,
+     "schemaName": "Credit Limit (LCY)",
+     "controlName": "Credit Limit (LCY)",
+     "caption": "Credit Limit (LCY)",
+     "value": "0.00",
+     "dataType": "Decimal",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "General",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 21,
+     "schemaName": "Customer Posting Group",
+     "controlName": "Customer Posting Group",
+     "caption": "Customer Posting Group",
+     "value": "DOMESTIC",
+     "dataType": "Text/Code[20]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "Invoicing",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 88,
+     "schemaName": "Gen. Bus. Posting Group",
+     "controlName": "Gen. Bus. Posting Group",
+     "caption": "Gen. Bus. Posting Group",
+     "value": "DOMESTIC",
+     "dataType": "Text/Code[20]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "Invoicing",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 27,
+     "schemaName": "Payment Terms Code",
+     "controlName": "Payment Terms Code",
+     "caption": "Payment Terms Code",
+     "value": "1M(8D)",
+     "dataType": "Text/Code[10]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "Payments",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 39,
+     "schemaName": "Blocked",
+     "controlName": "Blocked",
+     "caption": "Blocked",
+     "value": " ",
+     "dataType": "Option/Enum",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "General",
+     "appId": null,
+     "appName": null
+    },
+    {
+     "fieldNo": 50100,
+     "schemaName": "Loyalty Tier",
+     "controlName": "Loyalty Tier",
+     "caption": "Loyalty Tier",
+     "value": "Gold",
+     "dataType": "Option/Enum",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "General",
+     "appId": "ext-1",
+     "appName": "Contoso Loyalty"
+    },
+    {
+     "fieldNo": 29,
+     "schemaName": "Salesperson Code",
+     "controlName": "Salesperson Code",
+     "caption": "Salesperson Code",
+     "value": "PS",
+     "dataType": "Text/Code[20]",
+     "fieldClass": "Normal",
+     "editable": true,
+     "visible": true,
+     "promoted": true,
+     "group": "General",
+     "appId": null,
+     "appName": null
+    }
+   ]
+  },
+  "parts": [
+   {
+    "pageId": 9082,
+    "name": "Customer Statistics FactBox",
+    "caption": "Customer Statistics",
+    "pageType": "CardPart",
+    "tableId": 18,
+    "primaryKey": [
+     1
+    ],
+    "bookmark": null,
+    "systemId": null,
+    "app": {
+     "id": "437dbf0e-84ff-417a-965d-ed2bb9650972",
+     "name": "Base Application",
+     "publisher": "Microsoft",
+     "version": "28.3.52162.54678"
+    },
+    "fields": [
+     {
+      "fieldNo": 59,
+      "schemaName": "Balance (LCY)",
+      "controlName": "Balance (LCY)",
+      "caption": "Balance (LCY)",
+      "value": "1,499.03",
+      "dataType": "Decimal",
+      "fieldClass": "FlowField",
+      "editable": true,
+      "visible": true,
+      "promoted": true,
+      "group": "General",
+      "appId": null,
+      "appName": null
+     }
+    ]
+   },
+   {
+    "pageId": 9084,
+    "name": "Customer Details FactBox",
+    "caption": "Customer Details",
+    "pageType": "CardPart",
+    "tableId": 18,
+    "primaryKey": [
+     1
+    ],
+    "bookmark": null,
+    "systemId": null,
+    "app": {
+     "id": "437dbf0e-84ff-417a-965d-ed2bb9650972",
+     "name": "Base Application",
+     "publisher": "Microsoft",
+     "version": "28.3.52162.54678"
+    },
+    "fields": [
+     {
+      "fieldNo": 1,
+      "schemaName": "No.",
+      "controlName": "No.",
+      "caption": "No.",
+      "value": "10000",
+      "dataType": "Text/Code[20]",
+      "fieldClass": "Normal",
+      "editable": true,
+      "visible": true,
+      "promoted": true,
+      "group": "General",
+      "appId": null,
+      "appName": null
+     }
+    ]
+   },
+   {
+    "pageId": 1178,
+    "name": "Doc. Attachment List Factbox",
+    "caption": "Attachments",
+    "pageType": "ListPart",
+    "tableId": 1173,
+    "primaryKey": [
+     1
+    ],
+    "bookmark": null,
+    "systemId": null,
+    "app": {
+     "id": "437dbf0e-84ff-417a-965d-ed2bb9650972",
+     "name": "Base Application",
+     "publisher": "Microsoft",
+     "version": "28.3.52162.54678"
+    },
+    "fields": []
+   }
+  ],
+  "tools": {
+   "fieldNames": true,
+   "blur": false
+  }
+ }
+}

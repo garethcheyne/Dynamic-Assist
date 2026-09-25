@@ -2,17 +2,9 @@
 import { getJson } from "./metadata"
 import type { QueryBuilderField } from "./lib/types"
 
-export type Cell = { value: unknown; formatted: string | null }
-export type Row = Record<string, Cell>
-export type Column = { key: string; label: string }
+import type { Results, Row } from "@/query-builder/results"
 
-export type Results = {
-  columns: Column[]
-  rows: Row[]
-  /** More rows matched than came back (top or page size) */
-  more: boolean
-  ms: number
-}
+export type { Results }
 
 const FORMATTED = "@OData.Community.Display.V1.FormattedValue"
 

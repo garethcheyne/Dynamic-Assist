@@ -23,6 +23,7 @@ import type { CeColumn, CeForm, CeState } from "../types"
 import { ceUrls, FORM_TYPES } from "../urls"
 import type { useCeTab } from "../use-ce-tab"
 import { CeFieldList } from "./CeFieldList"
+import { CoupledBcSection } from "./CoupledBcSection"
 import { PermissionsSection } from "./PermissionsSection"
 
 type Run = ReturnType<typeof useCeTab>["run"]
@@ -61,6 +62,13 @@ export function RecordView({
   return (
     <div className="flex flex-col gap-3">
       <RecordSummary state={state} form={form} act={act} run={run} />
+      {form.id && (
+        <CoupledBcSection
+          key={form.id}
+          clientUrl={state.environment.clientUrl}
+          recordId={form.id}
+        />
+      )}
       <CollapsibleSection
         id="ce.fields"
         title="Form fields"
