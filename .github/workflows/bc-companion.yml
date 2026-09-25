@@ -125,10 +125,13 @@ jobs:
             echo "::error::$tag is already released. Bump version in $PROJECT/app.json first."
             exit 1
           fi
-          sed -e "s/{{VERSION}}/$VERSION/g" -e "s/{{FILE}}/$FILE/g" \
+          # GitHub refuses .app release assets, so the app goes out in a zip
+          zip="${FILE%.app}.zip"
+          (cd dist && zip -q "$zip" "$FILE")
+          sed -e "s/{{VERSION}}/$VERSION/g" -e "s/{{FILE}}/$FILE/g" -e "s/{{ZIP}}/$zip/g" \
             "$PROJECT/RELEASE_NOTES.md" > "$RUNNER_TEMP/notes.md"
           # Creates the tag at this commit when the run wasn't started by one
-          gh release create "$tag" "dist/$FILE" \
+          gh release create "$tag" "dist/$zip" \
             --target "$GITHUB_SHA" \
             --title "Dynamic Assist Companion $VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md"
