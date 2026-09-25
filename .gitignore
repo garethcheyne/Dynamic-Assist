@@ -35,3 +35,6 @@ tests/results/*
 
 # Rendered marketing screenshots (regenerate with npm run marketing)
 marketing/out/
+
+# Copilot usage logs (VS Code writes them into any .vscode folder)
+**/.vscode/copilot-usage-*.json
