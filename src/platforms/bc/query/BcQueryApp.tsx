@@ -21,6 +21,12 @@ import {
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
+import {
+  DEFAULT_ROWS,
+  MAX_ROWS,
+  parseRows,
+  rowLimit,
+} from "@/query-builder/limits"
 import type { Cell, Results, Row } from "@/query-builder/results"
 import { CopyButton } from "@/components/copy-button"
 import {
@@ -111,8 +117,7 @@ function newQuery(table: number, fields: BcField[]): BcQuery {
     filters: [],
     sort: [],
     descending: false,
-    // No limit: every row, page by page (runQuery)
-    top: null,
+    top: DEFAULT_ROWS,
     count: false,
   }
 }
@@ -198,7 +203,6 @@ export function BcQueryApp({
   const [lastRun, setLastRun] = React.useState<BcQueryResult | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [running, setRunning] = React.useState(false)
-  const [loadingMore, setLoadingMore] = React.useState(false)
   const [filterMode, setFilterMode] = React.useState<FilterMode>(() => {
     try {
       return localStorage.getItem(FILTER_MODE_KEY) === "bc"
@@ -218,87 +222,31 @@ export function BcQueryApp({
   }
   const [denied, setDenied] = React.useState<string | null>(null)
 
-  /** Runs a query and shows its first page */
-  const stop = React.useRef(false)
-  // Each run's number: a newer run, or closing the builder, ends older ones
+  // Each run's number: only the latest run's rows show
   const runId = React.useRef(0)
   React.useEffect(() => () => void runId.current++, [])
 
-  /**
-   * Fetches pages after `from` until the query's row limit, the last page, or
-   * Stop, showing the rows as each page arrives. A page without a limit is
-   * the companion's largest (top 0).
-   */
-  const followPages = React.useCallback(
-    async (q: BcQuery, from: BcQueryResult, soFar: Results) => {
-      const id = runId.current
-      const current = () => runId.current === id
-      const limit = q.top ?? Infinity
-      let last = from
-      let all = soFar
-      setLoadingMore(true)
-      try {
-        while (
-          last.more &&
-          last.next &&
-          all.rows.length < limit &&
-          !stop.current &&
-          current()
-        ) {
-          const left = limit - all.rows.length
-          const next = await client.query({
-            ...q,
-            count: false,
-            after: last.next,
-            top: Number.isFinite(left) ? left : 0,
-          })
-          if (!current()) return
-          const page = toResults(next)
-          all = {
-            ...all,
-            rows: all.rows.concat(page.rows),
-            more: next.more,
-            ms: all.ms + page.ms,
-          }
-          setResults(all)
-          setLastRun({ ...next, count: from.count })
-          last = next
-        }
-      } catch (e) {
-        if (current()) setError(e instanceof Error ? e.message : String(e))
-      } finally {
-        if (current()) setLoadingMore(false)
-      }
-    },
-    [client]
-  )
-
-  /** Runs a query: its first page at once, then the rest as they come */
+  /** Runs a query, up to its row limit */
   const runQuery = React.useCallback(
     async (q: BcQuery) => {
       const id = ++runId.current
-      stop.current = false
       setRunning(true)
       setError(null)
-      let first: BcQueryResult
       try {
-        first = await client.query({ ...q, top: q.top ?? 0 })
+        const result = await client.query({ ...q, top: rowLimit(q.top) })
         if (runId.current !== id) return
+        setLastRun(result)
+        setResults(toResults(result))
       } catch (e) {
         if (runId.current !== id) return
         setResults(null)
         setLastRun(null)
         setError(e instanceof Error ? e.message : String(e))
-        setRunning(false)
-        return
+      } finally {
+        if (runId.current === id) setRunning(false)
       }
-      const results = toResults(first)
-      setLastRun(first)
-      setResults(results)
-      setRunning(false)
-      await followPages(q, first, results)
     },
-    [client, followPages]
+    [client]
   )
 
   const openTable = React.useCallback(
@@ -451,14 +399,6 @@ export function BcQueryApp({
   const run = React.useCallback(async () => {
     if (query) await runQuery(query)
   }, [query, runQuery])
-
-  /** After a Stop: the rest of the rows */
-  const loadMore = React.useCallback(async () => {
-    if (!query || !lastRun?.next || !results) return
-    runId.current++
-    stop.current = false
-    await followPages(query, lastRun, results)
-  }, [query, lastRun, results, followPages])
 
   const tableItems = React.useMemo<SelectItem[]>(
     () =>
@@ -681,11 +621,7 @@ export function BcQueryApp({
                         />
                       </Section>
                       <Section icon={<SettingsIcon />} title="Options">
-                        <OptionsEditor
-                          query={query}
-                          maxRows={info?.maxRows ?? 10000}
-                          onChange={setQuery}
-                        />
+                        <OptionsEditor query={query} onChange={setQuery} />
                       </Section>
                     </>
                   )}
@@ -693,11 +629,6 @@ export function BcQueryApp({
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                   <ResultsPane
                     sources={sources}
-                    onLoadMore={
-                      lastRun?.next ? () => void loadMore() : undefined
-                    }
-                    loadingMore={loadingMore}
-                    onStop={() => (stop.current = true)}
                     results={results}
                     error={error}
                     running={running}
@@ -1465,11 +1396,9 @@ function SortEditor({
 
 function OptionsEditor({
   query,
-  maxRows,
   onChange,
 }: {
   query: BcQuery
-  maxRows: number
   onChange: (q: BcQuery) => void
 }) {
   return (
@@ -1479,17 +1408,14 @@ function OptionsEditor({
         <input
           type="number"
           min={1}
-          placeholder="All"
-          title={`Empty loads every row, ${maxRows.toLocaleString()} at a time`}
+          max={MAX_ROWS}
+          placeholder={String(DEFAULT_ROWS)}
+          title={`Up to ${MAX_ROWS.toLocaleString()}; empty means ${DEFAULT_ROWS}`}
           className="h-7 w-20 rounded-md border border-input bg-background px-2 text-xs outline-none focus-visible:border-ring"
           value={query.top ?? ""}
-          onChange={(e) => {
-            const n = Number(e.target.value)
-            onChange({
-              ...query,
-              top: e.target.value && n > 0 ? n : null,
-            })
-          }}
+          onChange={(e) =>
+            onChange({ ...query, top: parseRows(e.target.value) })
+          }
         />
       </label>
       <label className="flex items-center gap-1.5">

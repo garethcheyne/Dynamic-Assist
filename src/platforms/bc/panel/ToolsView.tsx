@@ -230,7 +230,7 @@ export function ToolsView({
             icon={<DatabaseZapIcon />}
             title="Query this table"
             description="This page's table in the query builder (companion app)"
-            detail="Opens this page's source table in the query builder and runs it: filter, join related tables, sort, load every row, however many, and export to Excel, CSV or JSON, or turn the query into AL or an API. Needs the Dynamic Assist Companion app."
+            detail="Opens this page's source table in the query builder and runs it: filter, join related tables, sort, up to 5,000 rows at a time, and export to Excel, CSV or JSON, or turn the query into AL or an API. Needs the Dynamic Assist Companion app."
             unavailable="Open a page that has a source table."
             disabled={!tableId}
             busy={busy === "queryTable"}

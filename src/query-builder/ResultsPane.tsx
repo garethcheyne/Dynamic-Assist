@@ -8,7 +8,6 @@ import {
   FileSpreadsheetIcon,
   FileTextIcon,
   Loader2Icon,
-  SquareIcon,
 } from "lucide-react"
 import { cn } from "cn"
 
@@ -53,16 +52,7 @@ export function ResultsPane({
   running,
   name,
   hint = "Build a query and press Run (Ctrl+Enter).",
-  onLoadMore,
-  loadingMore = false,
-  onStop,
 }: {
-  /** Fetches the rest, when the results say more match (after a Stop) */
-  onLoadMore?: () => void
-  /** Pages are still arriving */
-  loadingMore?: boolean
-  /** Stops fetching more pages */
-  onStop?: () => void
   /** The query as text: FetchXML, or AL and an API query for Business Central */
   sources: QuerySource[]
   hint?: string
@@ -102,19 +92,10 @@ export function ResultsPane({
           <span className="text-muted-foreground">
             {results.rows.length.toLocaleString()} row
             {results.rows.length === 1 ? "" : "s"}
-            {loadingMore
-              ? ", loading more…"
-              : results.more
-                ? " (more match)"
-                : ""}{" "}
-            · {results.ms.toLocaleString()} ms
+            {results.more
+              ? " (more match: raise Rows or add filters)"
+              : ""} · {results.ms.toLocaleString()} ms
           </span>
-        )}
-        {loadingMore && onStop && view === "results" && (
-          <Button variant="outline" size="xs" onClick={onStop}>
-            <SquareIcon data-icon="inline-start" />
-            Stop
-          </Button>
         )}
         <div className="ml-auto flex items-center gap-1">
           {source ? (
@@ -176,24 +157,6 @@ export function ResultsPane({
         ) : (
           <Grid results={results} scroller={scroller} />
         )}
-        {view === "results" && results?.more && !loadingMore && onLoadMore && (
-          <div className="flex justify-center p-3">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={loadingMore}
-              onClick={onLoadMore}
-            >
-              {loadingMore && (
-                <Loader2Icon
-                  data-icon="inline-start"
-                  className="animate-spin"
-                />
-              )}
-              Load the rest
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -204,7 +167,7 @@ const OVERSCAN = 30
 
 /**
  * The results table, drawing only the rows in view (and a few either side):
- * a query can return hundreds of thousands of rows. Rows are one line, so
+ * a query can return thousands of rows. Rows are one line, so
  * they're all as tall as the first.
  */
 function Grid({
