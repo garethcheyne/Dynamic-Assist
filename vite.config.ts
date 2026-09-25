@@ -1,3 +1,4 @@
+import fs from "node:fs"
 import path from "path"
 import { crx } from "@crxjs/vite-plugin"
 import tailwindcss from "@tailwindcss/vite"
@@ -7,6 +8,13 @@ import { defineConfig, type Plugin } from "vite"
 
 import manifest from "./manifest.json"
 
+// The project folder as it's spelled on disk. Started from "c:…" rather than
+// "C:…" (VS Code can do that), Vite would see some files under both
+// spellings and bundle React twice, which blanks the panel. process.chdir
+// makes every later path, ours or a plugin's, use this one.
+const ROOT = fs.realpathSync.native(__dirname)
+process.chdir(ROOT)
+
 // Scripts that run in the page's own JS world (world: "MAIN"). @crxjs wraps
 // content scripts in a loader that import()s a chunk by relative URL, which
 // can't work from the page's world, so these are bundled to one IIFE each in
@@ -14,10 +22,11 @@ import manifest from "./manifest.json"
 const MAIN_WORLD_SCRIPTS: Record<string, string> = {
   "bc-main-world.js": "src/platforms/bc/main-world.ts",
   "ce-main-world.js": "src/platforms/ce/main-world.ts",
+  "ce-error-watch.js": "src/platforms/ce/error-watch.ts",
 }
 
 function mainWorldScripts(): Plugin {
-  const outDir = path.resolve(__dirname, "public/scripts")
+  const outDir = path.resolve(ROOT, "public/scripts")
   const normalize = (file: string) => path.resolve(file).toLowerCase()
   // Every source file the scripts are built from, from the last build, so an
   // edit elsewhere (a panel component) doesn't rebuild them
@@ -27,7 +36,7 @@ function mainWorldScripts(): Plugin {
     const results = await Promise.all(
       Object.entries(MAIN_WORLD_SCRIPTS).map(([file, input]) =>
         rolldown({
-          input: path.resolve(__dirname, input),
+          input: path.resolve(ROOT, input),
           output: { file: path.join(outDir, file), format: "iife" },
           write: true,
         })
@@ -58,8 +67,8 @@ const REACT_DEFINITION =
   "__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE="
 
 // Fails the build if React ends up in the output twice, which blanks the side
-// panel ("Cannot read properties of null (reading 'useState')"). It has
-// happened on some builds and not others of the same code, so check every one.
+// panel ("Cannot read properties of null (reading 'useState')"). It happened
+// when Vite started from "c:…" rather than "C:…" (see ROOT); this makes sure.
 function singleReact(): Plugin {
   return {
     name: "single-react",
@@ -88,6 +97,7 @@ function singleReact(): Plugin {
 // manifest.json is the source; @crxjs bundles every entry it names (side panel,
 // service worker, content scripts) and writes the final manifest to dist/.
 export default defineConfig({
+  root: ROOT,
   plugins: [
     mainWorldScripts(),
     react(),
@@ -97,7 +107,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(ROOT, "./src"),
     },
   },
   // React reads process.env.NODE_ENV; the ?script&iife bundle (the query
@@ -114,10 +124,9 @@ export default defineConfig({
       output: {
         // React must load once per page. If its CommonJS module is emitted
         // twice, hooks from one copy run in the other's renderer ("Cannot
-        // read properties of null (reading 'useState')"). Rollup's
-        // manualChunks, which rolldown only emulates, has let that happen on
-        // some builds of the same code, so the chunk uses rolldown's own
-        // grouping and singleReact() checks the result. The injected query
+        // read properties of null (reading 'useState')"): the chunk names it
+        // in one place, ROOT keeps one spelling of every path, and
+        // singleReact() checks the result. The injected query
         // builder is a separate one-file build (?script&iife) and isn't split.
         codeSplitting: {
           groups: [

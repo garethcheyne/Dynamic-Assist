@@ -1,4 +1,5 @@
 import {
+  DatabaseIcon,
   DatabaseZapIcon,
   EyeOffIcon,
   FoldVerticalIcon,
@@ -214,10 +215,22 @@ export function ToolsView({
       >
         <TileGrid>
           <ActionTile
+            icon={<DatabaseIcon />}
+            title="Query builder"
+            description="Query any table you can read (companion app)"
+            detail="Opens the query builder over this page, on this page's table if it has one; pick any other table from there. Filter, join related tables, sort, and export to Excel, CSV or JSON, or turn the query into AL or an API. Needs the Dynamic Assist Companion app."
+            busy={busy === "queryBuilder"}
+            onClick={() =>
+              act("queryBuilder", () =>
+                openBcQuery(tab, { app: "bc", tableId: tableId ?? undefined })
+              )
+            }
+          />
+          <ActionTile
             icon={<DatabaseZapIcon />}
             title="Query this table"
             description="This page's table in the query builder (companion app)"
-            detail="Opens this page's source table in the query builder and runs it: filter, join related tables, sort, page through thousands of rows, and export to Excel, CSV or JSON, or turn the query into AL or an API. Needs the Dynamic Assist Companion app."
+            detail="Opens this page's source table in the query builder and runs it: filter, join related tables, sort, load every row, however many, and export to Excel, CSV or JSON, or turn the query into AL or an API. Needs the Dynamic Assist Companion app."
             unavailable="Open a page that has a source table."
             disabled={!tableId}
             busy={busy === "queryTable"}

@@ -70,7 +70,7 @@ export function FilterEditor({
     <div className="flex flex-col gap-2">
       {state.groups.length === 0 && (
         <p className="text-xs text-muted-foreground">
-          No filters: every row is returned (up to the row limit).
+          No filters: every row is returned.
         </p>
       )}
       {state.groups.map((group, i) => (

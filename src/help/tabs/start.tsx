@@ -102,6 +102,18 @@ export const START: HelpTab = {
           ),
         },
         {
+          id: "label-or-name",
+          name: "Labels or logical names",
+          what: (
+            <>
+              The <b>Label | Name</b> switch above a field list shows each field
+              by its label, as on the page, or by its logical (schema) name; the
+              other one is on hover. It applies to every list in both products
+              and is remembered.
+            </>
+          ),
+        },
+        {
           id: "hints",
           name: "Hover for more",
           what: (

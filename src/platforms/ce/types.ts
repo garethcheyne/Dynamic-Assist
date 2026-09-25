@@ -1,3 +1,4 @@
+import type { CeLogSlice } from "./error-log"
 /** Shapes shared by the CE page-world script, its content script relay and the side panel. */
 
 /** window.postMessage types between main-world.ts and ce-content.ts (top frame only). */
@@ -252,6 +253,10 @@ export type CeCommands = {
     result: CeAccessDetail
   }
   myMailbox: { args: void; result: { id: string | null } }
+  /** The Errors tab: entries after a seq, and clearing them */
+  errors: { args: { since: number }; result: CeLogSlice }
+  clearErrors: { args: void; result: void }
+  errorsConsole: { args: { on: boolean }; result: void }
 }
 
 export type CeCommand = keyof CeCommands

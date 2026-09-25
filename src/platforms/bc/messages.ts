@@ -48,5 +48,21 @@ export type CompanionAnswer =
   | { ready: true; ok: true; result: unknown }
   | { ready: true; ok: false; error: string }
 
+/**
+ * Query builder on any BC page → service worker: run one companion method
+ * through the query page of this environment and company, opened in the
+ * background if need be. Answered with a CompanionRelayAnswer.
+ */
+export const COMPANION_RELAY = "bc:companion-relay"
+export type BcCompanionRelay = {
+  type: typeof COMPANION_RELAY
+  /** The builder's page URL: environment and company to reach */
+  url: string
+  method: string
+  params?: object
+}
+export type CompanionRelayAnswer =
+  { ok: true; result: unknown } | { ok: false; error: string }
+
 /** Tabs the panel opened on the query page to reach the companion (session storage) */
 export const CHANNEL_TABS_KEY = "bc:channelTabs"

@@ -11,7 +11,7 @@ BUSINESS CENTRAL
 • Page tools: blur data for screenshots, expand every FastTab, copy a link to the record
 • Go to any page, table, report or query by number, plus shortcuts to admin and developer pages (extensions, permissions, job queue, change log, table information, performance profiler, event recorder and more)
 • Read from the web client itself, so it doesn't start a second session the way the page inspector does
-• Query builder: query any table you're allowed to read, with Business Central filters, sorting and FlowFields, and export to Excel, CSV or JSON. Needs the free, open-source Dynamic Assist Companion app installed in the environment; it's read-only and uses your own permissions
+• Query builder: query any table you're allowed to read, over the page you're on, with Business Central filters, sorting and FlowFields, and export to Excel, CSV or JSON. Needs the free, open-source Dynamic Assist Companion app installed in the environment; it's read-only and uses your own permissions
 
 DYNAMICS 365 APPS (model-driven apps)
 • Record details: table, record ID, form, entity set, and every form field with its value, required level and changes
@@ -19,6 +19,7 @@ DYNAMICS 365 APPS (model-driven apps)
 • Form tools: god mode, logical names on the form and on list and subgrid column headers with copy buttons (hover for the column's type and details), expand tabs, refresh subgrids, fill required fields, clone record, blur values for screenshots
 • List tools: copy the current view's FetchXML, or open the view in the Web API
 • Debug switches: form monitor, ribbon debug and performance panel
+• Errors: every script error, unhandled promise, failed script and failed request on the page (and console messages, if you switch them on), with Dataverse's own message, filtered to your web resources in one click
 • Go to: search any table by name and open a record, a new form or the list, plus admin, maker and developer shortcuts
 • Session: your user, security roles, app and environment details
 • Access: the privileges of you or any user you pick on the table (with their level: user, business unit, organisation), their rights on the open record and why they have them (owner, team, share, business unit), what they can do with the form's lookups and subgrids, and secured columns
@@ -26,6 +27,7 @@ DYNAMICS 365 APPS (model-driven apps)
 • Business Central: find the records coupled to this one in a Business Central company and open them
 • Impersonate: run the app as another user to see what they see (needs the "Act on Behalf of Another User" privilege)
 • Query builder: build and run a query in a large window over the page, or edit its FetchXML; export the results to Excel, CSV or JSON
+• Save your queries and run them again in any org or environment, export and import them as a file, and minimise builders to tiles while you work on the page
 
 POWER APPS MAKER PORTAL
 • The environment's name and ID, and the solution ID when you're in a solution

@@ -9,7 +9,17 @@
     return "The query builder isn't open: open page 77500 with the extension installed."
 
   // --- Driving the UI ------------------------------------------------------
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+  // Timers in a hidden tab (a minimised or covered browser window) fire as
+  // rarely as once a minute; message-channel ticks aren't throttled, so the
+  // suite runs as fast in the background as in front
+  const wait = (ms) =>
+    new Promise((resolve) => {
+      const end = performance.now() + ms
+      const { port1, port2 } = new MessageChannel()
+      port1.onmessage = () =>
+        performance.now() >= end ? resolve() : port2.postMessage(0)
+      port2.postMessage(0)
+    })
   async function until(test, ms = 20000) {
     const start = Date.now()
     while (Date.now() - start < ms) {

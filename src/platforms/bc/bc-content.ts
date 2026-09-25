@@ -18,6 +18,7 @@ import {
   TOOL_RESULT_MESSAGE,
   type BcPageInfo,
 } from "./page-info"
+import { sendToExtension } from "@/shared/send"
 
 // Runs in every businesscentral.dynamics.com frame, in the extension's isolated
 // world. main-world.ts (same frame, page world) reads BC's form model and posts
@@ -35,7 +36,7 @@ function report() {
   }
   const event: BcEvent = { type: "bc:state", state }
   // Fails when the side panel is closed; it asks again when it opens.
-  chrome.runtime.sendMessage(event).catch(() => {})
+  sendToExtension(event)
 }
 
 window.addEventListener("message", (event) => {
@@ -60,7 +61,7 @@ if (window === window.top) {
       type: BRIDGE_READY,
       dark: matchMedia("(prefers-color-scheme: dark)").matches,
     }
-    chrome.runtime.sendMessage(ready).catch(() => {})
+    sendToExtension(ready)
   })
 }
 

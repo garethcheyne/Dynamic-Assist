@@ -3,6 +3,7 @@
  * metadata from the Web API (same origin, the user's own session), fetched the
  * first time it's hovered and cached per table and column.
  */
+import { quietFetch } from "./error-log"
 import type { TipCard } from "@/shared/page-tip"
 
 type Label = { UserLocalizedLabel?: { Label?: string } | null }
@@ -32,7 +33,7 @@ const cache = new Map<string, Promise<TipCard>>()
 const label = (l?: Label) => l?.UserLocalizedLabel?.Label || null
 
 async function getJson<T>(base: string, path: string): Promise<T | null> {
-  const res = await fetch(`${base}/api/data/v9.2/${path}`, {
+  const res = await quietFetch(`${base}/api/data/v9.2/${path}`, {
     headers: { Accept: "application/json" },
   }).catch(() => null)
   return res?.ok ? ((await res.json()) as T) : null

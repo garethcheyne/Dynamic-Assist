@@ -26,7 +26,14 @@
   })
   for (let i = 0; i < 20 && !target; i++) {
     frames(window).forEach((f) => f.postMessage({ tag: TAG, type: "ping" }, O))
-    await new Promise((r) => setTimeout(r, 300))
+    // A message-channel wait: timers are throttled in a hidden tab
+    await new Promise((resolve) => {
+      const end = performance.now() + 300
+      const { port1, port2 } = new MessageChannel()
+      port1.onmessage = () =>
+        performance.now() >= end ? resolve() : port2.postMessage(0)
+      port2.postMessage(0)
+    })
   }
   if (!target) return "No bridge: open page 77500 first"
   let n = 0

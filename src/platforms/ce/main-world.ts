@@ -11,6 +11,12 @@ import { setPageTip, setPageTipAccent } from "@/shared/page-tip"
 
 import { columnCard, viewAliases } from "./column-info"
 import {
+  clearLog,
+  quietFetch as fetch,
+  readLog,
+  setConsoleCapture,
+} from "./error-log"
+import {
   CE_COMMAND,
   CE_RESULT,
   CE_STATE,
@@ -251,65 +257,61 @@ const requireForm = () => {
   return fc
 }
 
-const originalLabels = new Map<any, string>()
-
-function setLabels(on: boolean) {
-  const fc = requireForm()
-  const label = (item: any, name: string) => {
-    if (on) {
-      if (!originalLabels.has(item)) originalLabels.set(item, item.getLabel())
-      item.setLabel(name)
-    } else if (originalLabels.has(item)) {
-      item.setLabel(originalLabels.get(item))
-    }
-  }
-  fc.ui.controls.forEach((c: any) => {
-    const name =
-      read(() => c.getAttribute()?.getName()) ?? read(() => c.getName())
-    if (name && c.setLabel) read(() => label(c, name))
-  })
-  fc.ui.tabs.forEach((t: any) => {
-    read(() => label(t, t.getName()))
-    t.sections.forEach((s: any) => read(() => label(s, s.getName())))
-  })
-  if (!on) originalLabels.clear()
-}
-
-// While logical names are on, each field on the form gets a tinted background
-// and a copy button beside its label. UCI re-renders fields (and only renders
-// expanded tabs), so an observer re-adds buttons as they appear.
-// Field containers carry data-control-name; the label is the <label> inside.
-// Only controls bound to an attribute are marked (not subgrids, timelines…).
+// While logical names are on, each field label, tab, section and grid column
+// gets a badge with its logical name, as Business Central's field names do:
+// hover for the column's details, click to copy. UCI re-renders fields (and
+// only renders expanded tabs), so an observer adds badges as they appear.
 const MARK_STYLE_ID = "dynamic-assist-logical-names"
-const COPY_CLASS = "dynamic-assist-copy"
 const GRID_BADGE = "dynamic-assist-grid-name"
-const COPY_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`
-const CHECK_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`
-const FIELD_ATTR = "data-dynamic-assist-field"
 const MARK_CSS = `
-  [${FIELD_ATTR}] {
-    background: rgba(79, 70, 201, 0.06) !important;
-    box-shadow: inset 0 0 0 1px rgba(79, 70, 201, 0.35);
-    border-radius: 6px;
-  }
-  .${COPY_CLASS} {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; margin-left: 4px; flex-shrink: 0;
-    border: 0; border-radius: 4px; padding: 0; cursor: pointer;
-    background: transparent; color: #4f46c9;
-  }
-  .${COPY_CLASS}:hover { background: rgba(79, 70, 201, 0.14); }
-  .${COPY_CLASS}:focus-visible { outline: 2px solid #4f46c9; outline-offset: 1px; }
   .${GRID_BADGE} {
     display: inline-block; flex: none; align-self: center; margin-left: 6px; padding: 0 4px;
     font: 600 10px/16px Consolas, "Cascadia Mono", monospace; letter-spacing: 0;
     color: #3d33a8; background: #eeecfd; border: 1px solid #c3bdf4; border-radius: 3px;
     cursor: copy; white-space: nowrap; user-select: none; max-width: 180px;
     overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+    text-transform: none; font-style: normal;
   }
   .${GRID_BADGE}:hover { background: #ddd9fb; border-color: #4f46c9; }
   .${GRID_BADGE}[data-copied] { background: #dff6dd; border-color: #9fd89f; color: #0e5c0e; }
 `
+
+type TipCard = Parameters<typeof setPageTip>[1]
+
+/** A logical-name badge: hover for its card, click to copy, never passes clicks on. */
+function makeBadge(
+  name: string,
+  tip: TipCard,
+  details?: () => Promise<TipCard>
+) {
+  const badge = document.createElement("span")
+  badge.className = GRID_BADGE
+  badge.textContent = name
+  setPageTip(badge, tip, details as never)
+  // Don't sort a column, switch a tab or focus a field
+  for (const type of ["mousedown", "pointerdown", "keydown"])
+    badge.addEventListener(type, (e) => e.stopPropagation(), true)
+  badge.addEventListener(
+    "click",
+    (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      void navigator.clipboard.writeText(name).then(
+        () => {
+          badge.setAttribute("data-copied", "")
+          window.setTimeout(() => badge.removeAttribute("data-copied"), 900)
+        },
+        () =>
+          setPageTip(
+            badge,
+            "Couldn't copy: click the page first, then try again"
+          )
+      )
+    },
+    true
+  )
+  return badge
+}
 
 let markObserver: MutationObserver | null = null
 
@@ -358,11 +360,8 @@ function addGridBadges() {
       header.querySelector(".ag-header-cell-label") ??
       header.querySelector(".ag-header-cell-text")?.parentElement ??
       header
-    const badge = document.createElement("span")
-    badge.className = GRID_BADGE
-    badge.textContent = name
-    setPageTip(
-      badge,
+    const badge = makeBadge(
+      name,
       {
         title: name,
         rows: alias ? [["Linked table", alias]] : undefined,
@@ -384,21 +383,6 @@ function addGridBadges() {
         )
       }
     )
-    // Don't sort or open the column menu
-    for (const type of ["mousedown", "pointerdown", "keydown"])
-      badge.addEventListener(type, (e) => e.stopPropagation(), true)
-    badge.addEventListener(
-      "click",
-      (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        void navigator.clipboard.writeText(name).then(() => {
-          badge.setAttribute("data-copied", "")
-          window.setTimeout(() => badge.removeAttribute("data-copied"), 900)
-        })
-      },
-      true
-    )
     host.appendChild(badge)
   }
 }
@@ -408,42 +392,48 @@ function logicalNameOf(controlName: string): string | null {
   return read(() => Xrm.Page.getControl(controlName).getAttribute().getName())
 }
 
-function addCopyButtons() {
-  for (const container of document.querySelectorAll<HTMLElement>(
-    "[data-control-name]"
+// Field labels are <label id="id-…-12-name-field-label">: the control's name
+// sits between the counter and "-field-label" (header_x for header fields)
+const LABEL_ID = /-\d+-(.+)-field-label$/
+
+function addFormBadges() {
+  const entity = read(() => formContext()?.data.entity.getEntityName()) as
+    string | null
+  const hint = "Click to copy the logical name"
+  for (const label of document.querySelectorAll<HTMLElement>(
+    'label[id$="-field-label"]'
   )) {
-    const label = container.querySelector("label")
-    if (!label || label.parentElement?.querySelector(`.${COPY_CLASS}`)) continue
-    const name = logicalNameOf(container.getAttribute("data-control-name")!)
-    if (!name) continue
-    container.setAttribute(FIELD_ATTR, name)
-    const button = document.createElement("button")
-    button.type = "button"
-    button.className = COPY_CLASS
-    const entity = read(() => formContext().data.entity.getEntityName()) as
-      string | null
-    setPageTip(
-      button,
-      { title: name, hint: "Click to copy the logical name" },
-      entity ? () => columnCard(clientUrl(), entity, name) : undefined
+    if (label.parentElement?.querySelector(`.${GRID_BADGE}`)) continue
+    const control = label.id.match(LABEL_ID)?.[1]
+    if (!control) continue
+    const name = logicalNameOf(control) ?? control
+    label.insertAdjacentElement(
+      "afterend",
+      makeBadge(
+        name,
+        { title: name, hint },
+        entity ? () => columnCard(clientUrl(), entity, name) : undefined
+      )
     )
-    button.innerHTML = COPY_ICON
-    button.addEventListener("click", async (event) => {
-      // Don't let the form treat it as a click on the field
-      event.preventDefault()
-      event.stopPropagation()
-      try {
-        await navigator.clipboard.writeText(name)
-        button.innerHTML = CHECK_ICON
-        window.setTimeout(() => (button.innerHTML = COPY_ICON), 1200)
-      } catch {
-        setPageTip(
-          button,
-          "Couldn't copy: click the page first, then try again"
-        )
-      }
-    })
-    label.insertAdjacentElement("afterend", button)
+  }
+  for (const tab of document.querySelectorAll<HTMLElement>(
+    '[role=tablist] [role=tab][data-id^="tablist-"]'
+  )) {
+    if (tab.querySelector(`.${GRID_BADGE}`)) continue
+    const name = tab.getAttribute("data-id")!.slice("tablist-".length)
+    tab.appendChild(
+      makeBadge(name, { title: name, rows: [["Kind", "Tab"]], hint })
+    )
+  }
+  for (const section of document.querySelectorAll<HTMLElement>(
+    "section[data-id]"
+  )) {
+    const heading = section.querySelector(":scope h2")
+    if (!heading || heading.querySelector(`.${GRID_BADGE}`)) continue
+    const name = section.getAttribute("data-id")!
+    heading.appendChild(
+      makeBadge(name, { title: name, rows: [["Kind", "Section"]], hint })
+    )
   }
 }
 
@@ -451,11 +441,7 @@ function markFields(on: boolean) {
   document.getElementById(MARK_STYLE_ID)?.remove()
   markObserver?.disconnect()
   markObserver = null
-  document.querySelectorAll(`.${COPY_CLASS}`).forEach((b) => b.remove())
   document.querySelectorAll(`.${GRID_BADGE}`).forEach((b) => b.remove())
-  document
-    .querySelectorAll(`[${FIELD_ATTR}]`)
-    .forEach((el) => el.removeAttribute(FIELD_ATTR))
   if (!on) return
 
   setPageTipAccent("#4f46c9")
@@ -463,14 +449,14 @@ function markFields(on: boolean) {
   style.id = MARK_STYLE_ID
   style.textContent = MARK_CSS
   document.head.appendChild(style)
-  addCopyButtons()
+  addFormBadges()
   addGridBadges()
 
   let timer: number | undefined
   markObserver = new MutationObserver(() => {
     window.clearTimeout(timer)
     timer = window.setTimeout(() => {
-      addCopyButtons()
+      addFormBadges()
       addGridBadges()
     }, 150)
   })
@@ -482,7 +468,28 @@ const BLUR_STYLE_ID = "dynamic-assist-blur"
 // Table list for the panel's Open box, fetched once per page load.
 let entityList: Promise<CeEntity[]> | null = null
 
+/**
+ * Runs something that expands tabs, then goes back to the tab you were on:
+ * in the unified interface expanding a tab also selects it.
+ */
+function keepingTab<T>(fc: any, work: () => T): T {
+  const selected =
+    document
+      .querySelector('[role=tablist] [role=tab][aria-selected="true"]')
+      ?.getAttribute("data-id")
+      ?.replace(/^tablist-/, "") ??
+    read(() =>
+      fc.ui.tabs.get().find((t: any) => t.getDisplayState() === "expanded")
+    )?.getName()
+  const result = work()
+  if (selected) read(() => fc.ui.tabs.get(selected)?.setFocus())
+  return result
+}
+
 const handlers: { [C in CeCommand]: Handler<C> } = {
+  errors: ({ since }) => readLog(since),
+  clearErrors: () => clearLog(),
+  errorsConsole: ({ on }) => setConsoleCapture(on),
   godMode() {
     const fc = requireForm()
     let controls = 0
@@ -495,18 +502,20 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
       read(() => c.clearNotification?.())
       controls++
     })
-    fc.ui.tabs.forEach((t: any) => {
-      read(() => t.setVisible(true))
-      read(() => t.setDisplayState("expanded"))
-      t.sections.forEach((s: any) => read(() => s.setVisible(true)))
-    })
+    keepingTab(fc, () =>
+      fc.ui.tabs.forEach((t: any) => {
+        read(() => t.setVisible(true))
+        read(() => t.setDisplayState("expanded"))
+        t.sections.forEach((s: any) => read(() => s.setVisible(true)))
+      })
+    )
     modes.godMode = true
     return { controls }
   },
 
   logicalNames({ on }) {
-    // Form labels only on a form; grid column badges anywhere (lists, subgrids)
-    if (formContext()) setLabels(on)
+    // Badges on the form's fields, tabs and sections, and on every grid's
+    // columns (lists, subgrids); the labels themselves stay as they are
     markFields(on)
     modes.logicalNames = on
   },
@@ -514,10 +523,12 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
   expandTabs() {
     const fc = requireForm()
     let tabs = 0
-    fc.ui.tabs.forEach((t: any) => {
-      read(() => t.setDisplayState("expanded"))
-      tabs++
-    })
+    keepingTab(fc, () =>
+      fc.ui.tabs.forEach((t: any) => {
+        read(() => t.setDisplayState("expanded"))
+        tabs++
+      })
+    )
     return { tabs }
   },
 
@@ -1182,6 +1193,8 @@ function post(force = false) {
   window.postMessage({ type: CE_STATE, state }, location.origin)
 }
 
+const NO_XRM = new Set<CeCommand>(["errors", "clearErrors", "errorsConsole"])
+
 window.addEventListener("message", async (event) => {
   if (event.source !== window) return
   const data = event.data
@@ -1194,7 +1207,9 @@ window.addEventListener("message", async (event) => {
   try {
     const handler = handlers[message.command] as Handler<CeCommand>
     if (!handler) throw new Error(`Unknown command ${message.command}`)
-    if (!hasXrm()) throw new Error("This page isn't a Dynamics 365 app page.")
+    // The error log works on any page, even one whose app failed to load
+    if (!hasXrm() && !NO_XRM.has(message.command))
+      throw new Error("This page isn't a Dynamics 365 app page.")
     const result = await handler(message.args as never)
     window.postMessage(
       { type: CE_RESULT, id: message.id, ok: true, result },

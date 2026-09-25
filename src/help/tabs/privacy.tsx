@@ -25,8 +25,10 @@ export const PRIVACY: HelpTab = {
               The page you have open (records, fields, IDs, the signed-in user,
               company and environment) on Business Central, Dynamics 365, the
               Power Apps maker portal and Power Automate only. It does nothing
-              on other sites. What it asks the service's API for is listed with
-              each tool on the other tabs.
+              on other sites. If you switch on the Errors tab, it also watches
+              Dynamics 365 pages for errors, which stay in the page. What it
+              asks the service's API for is listed with each tool on the other
+              tabs.
             </>
           ),
         },
@@ -58,12 +60,12 @@ export const PRIVACY: HelpTab = {
           name: "What it keeps",
           what: (
             <>
-              In this browser only: your History, pins and names; which Business
-              Central company goes with which Dynamics 365 org; the names of a
-              Business Central environment's installed apps, for a day; and
-              preferences like the theme and collapsed sections. Record data is
-              shown, never kept, unless you export it to a file. Uninstalling
-              the extension removes everything.
+              In this browser only: your History, pins and names; your saved
+              queries; which Business Central company goes with which Dynamics
+              365 org; the names of a Business Central environment's installed
+              apps, for a day; and preferences like the theme and collapsed
+              sections. Record data is shown, never kept, unless you export it
+              to a file. Uninstalling the extension removes everything.
             </>
           ),
         },

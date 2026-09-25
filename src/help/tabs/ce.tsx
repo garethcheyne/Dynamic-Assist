@@ -12,8 +12,8 @@ export const CE: HelpTab = {
       On any model-driven app (Sales, Customer Service, Field Service or your
       own) the panel reads the form or view through the app's own client API,
       and asks the organisation's Web API for anything the page doesn't hold.
-      Both run as you. It has four tabs: <b>Record</b>, <b>Tools</b>,{" "}
-      <b>Go to</b> and <b>Session</b>.
+      Both run as you. It has five tabs: <b>Record</b>, <b>Tools</b>,{" "}
+      <b>Go to</b>, <b>Session</b> and <b>Errors</b>.
     </>
   ),
   groups: [
@@ -339,6 +339,49 @@ export const CE: HelpTab = {
               the Web API, its service document and entity metadata.{" "}
               <b>Other orgs</b>: the other Dynamics 365 orgs in your History.{" "}
               <b>Me</b>: your mailbox record.
+            </>
+          ),
+        },
+      ],
+    },
+    {
+      title: "Errors tab",
+      tools: [
+        {
+          id: "errors",
+          name: "Errors",
+          where: "Errors tab",
+          what: (
+            <>
+              What's going wrong on the page, newest first: uncaught errors (a
+              form script that throws in OnLoad or OnChange), promises no one
+              caught, scripts that fail to load, and failed requests with
+              Dataverse's own message ("Principal user is missing prvReadContact
+              privilege"). The tab shows how many errors there are. Filter to{" "}
+              <b>Web resources</b> (your own scripts), errors only or failed
+              requests; routine warnings Dynamics writes to the console are
+              hidden until you ask for them. Tick <b>Console messages</b> to
+              capture console.error and console.warn too (remembered per org;
+              off by default, because while it's on, Chrome's extension error
+              list in developer mode shows the page's messages under Dynamic
+              Assist). Click an entry for its source and stack; <b>Copy</b> puts
+              what's shown on the clipboard for a ticket.
+            </>
+          ),
+          how: (
+            <>
+              Off until you tick <b>Watch for errors</b> in the tab. Then a
+              small script watches every Dynamics 365 page from the moment it
+              starts to load, in every frame (HTML web resources too). It only
+              observes: the page runs exactly as before. The log stays in the
+              page and is gone when you reload it; the extension's own requests
+              aren't in it.
+            </>
+          ),
+          needs: (
+            <>
+              Reload the page once after installing or updating the extension,
+              so the watcher is there from the start.
             </>
           ),
         },

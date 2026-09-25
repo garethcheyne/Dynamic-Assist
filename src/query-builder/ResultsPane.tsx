@@ -8,6 +8,7 @@ import {
   FileSpreadsheetIcon,
   FileTextIcon,
   Loader2Icon,
+  SquareIcon,
 } from "lucide-react"
 import { cn } from "cn"
 
@@ -54,10 +55,14 @@ export function ResultsPane({
   hint = "Build a query and press Run (Ctrl+Enter).",
   onLoadMore,
   loadingMore = false,
+  onStop,
 }: {
-  /** Fetches the next page, when the results say more match */
+  /** Fetches the rest, when the results say more match (after a Stop) */
   onLoadMore?: () => void
+  /** Pages are still arriving */
   loadingMore?: boolean
+  /** Stops fetching more pages */
+  onStop?: () => void
   /** The query as text: FetchXML, or AL and an API query for Business Central */
   sources: QuerySource[]
   hint?: string
@@ -66,6 +71,7 @@ export function ResultsPane({
   running: boolean
   name: string
 }) {
+  const scroller = React.useRef<HTMLDivElement>(null)
   // "results", or the index of a source tab
   const [view, setView] = React.useState<"results" | number>("results")
   const source = view === "results" ? null : sources[view]
@@ -73,7 +79,7 @@ export function ResultsPane({
     results && exportResults(format, name, results.columns, results.rows)
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3 text-xs">
         <div className="flex rounded-md bg-muted p-0.5">
           {(["results", ...sources.map((_, i) => i)] as const).map((v) => (
@@ -96,8 +102,19 @@ export function ResultsPane({
           <span className="text-muted-foreground">
             {results.rows.length.toLocaleString()} row
             {results.rows.length === 1 ? "" : "s"}
-            {results.more ? " (more match)" : ""} · {results.ms} ms
+            {loadingMore
+              ? ", loading more…"
+              : results.more
+                ? " (more match)"
+                : ""}{" "}
+            · {results.ms.toLocaleString()} ms
           </span>
+        )}
+        {loadingMore && onStop && view === "results" && (
+          <Button variant="outline" size="xs" onClick={onStop}>
+            <SquareIcon data-icon="inline-start" />
+            Stop
+          </Button>
         )}
         <div className="ml-auto flex items-center gap-1">
           {source ? (
@@ -137,7 +154,7 @@ export function ResultsPane({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div ref={scroller} className="min-h-0 flex-1 overflow-auto">
         {source ? (
           (source.view ?? (
             <pre className="p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
@@ -157,53 +174,9 @@ export function ResultsPane({
         ) : results.rows.length === 0 ? (
           <p className="p-4 text-xs text-muted-foreground">No rows match.</p>
         ) : (
-          <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
-            <thead className="sticky top-0 z-10 bg-card">
-              <tr>
-                <th className="border-b px-2 py-1.5 text-right font-normal text-muted-foreground">
-                  #
-                </th>
-                {results.columns.map((c) => (
-                  <Hint label={c.key}>
-                    <th
-                      key={c.key}
-                      className="max-w-72 border-b px-2 py-1.5 text-left font-semibold whitespace-nowrap"
-                    >
-                      {c.label}
-                    </th>
-                  </Hint>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {results.rows.map((row, i) => (
-                <tr key={i} className="hover:bg-muted/60">
-                  <td className="border-b px-2 py-1 text-right text-muted-foreground tabular-nums">
-                    {i + 1}
-                  </td>
-                  {results.columns.map((c) => {
-                    const cell = row[c.key]
-                    const raw =
-                      cell?.value === null || cell?.value === undefined
-                        ? ""
-                        : String(cell.value)
-                    return (
-                      <Hint label={raw}>
-                        <td
-                          key={c.key}
-                          className="max-w-72 truncate border-b px-2 py-1"
-                        >
-                          {cell?.formatted ?? raw}
-                        </td>
-                      </Hint>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Grid results={results} scroller={scroller} />
         )}
-        {view === "results" && results?.more && onLoadMore && (
+        {view === "results" && results?.more && !loadingMore && onLoadMore && (
           <div className="flex justify-center p-3">
             <Button
               variant="outline"
@@ -217,11 +190,119 @@ export function ResultsPane({
                   className="animate-spin"
                 />
               )}
-              Load more rows
+              Load the rest
             </Button>
           </div>
         )}
       </div>
     </div>
+  )
+}
+
+/** Rows drawn beyond the visible ones, above and below */
+const OVERSCAN = 30
+
+/**
+ * The results table, drawing only the rows in view (and a few either side):
+ * a query can return hundreds of thousands of rows. Rows are one line, so
+ * they're all as tall as the first.
+ */
+function Grid({
+  results,
+  scroller,
+}: {
+  results: Results
+  scroller: React.RefObject<HTMLDivElement | null>
+}) {
+  const [view, setView] = React.useState({ top: 0, height: 800 })
+  const [rowHeight, setRowHeight] = React.useState(28)
+  const firstRow = React.useRef<HTMLTableRowElement>(null)
+
+  React.useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    const update = () =>
+      setView({ top: el.scrollTop, height: el.clientHeight || 800 })
+    update()
+    el.addEventListener("scroll", update, { passive: true })
+    const resize = new ResizeObserver(update)
+    resize.observe(el)
+    return () => {
+      el.removeEventListener("scroll", update)
+      resize.disconnect()
+    }
+  }, [scroller])
+
+  // Measured once rows are drawn (and again if the columns change)
+  React.useLayoutEffect(() => {
+    const h = firstRow.current?.getBoundingClientRect().height
+    if (h && Math.abs(h - rowHeight) > 0.5) setRowHeight(h)
+  }, [rowHeight, results.columns])
+
+  const total = results.rows.length
+  const start = Math.max(0, Math.floor(view.top / rowHeight) - OVERSCAN)
+  const end = Math.min(
+    total,
+    Math.ceil((view.top + view.height) / rowHeight) + OVERSCAN
+  )
+  const span = results.columns.length + 1
+
+  return (
+    <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
+      <thead className="sticky top-0 z-10 bg-card">
+        <tr>
+          <th className="border-b px-2 py-1.5 text-right font-normal text-muted-foreground">
+            #
+          </th>
+          {results.columns.map((c) => (
+            <Hint key={c.key} label={c.key}>
+              <th className="max-w-72 border-b px-2 py-1.5 text-left font-semibold whitespace-nowrap">
+                {c.label}
+              </th>
+            </Hint>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {start > 0 && (
+          <tr aria-hidden style={{ height: start * rowHeight }}>
+            <td colSpan={span} />
+          </tr>
+        )}
+        {results.rows.slice(start, end).map((row, i) => {
+          const index = start + i
+          return (
+            <tr
+              key={index}
+              ref={i === 0 ? firstRow : undefined}
+              className="hover:bg-muted/60"
+            >
+              <td className="border-b px-2 py-1 text-right whitespace-nowrap text-muted-foreground tabular-nums">
+                {index + 1}
+              </td>
+              {results.columns.map((c) => {
+                const cell = row[c.key]
+                const raw =
+                  cell?.value === null || cell?.value === undefined
+                    ? ""
+                    : String(cell.value)
+                return (
+                  <Hint key={c.key} label={raw}>
+                    <td className="max-w-72 truncate border-b px-2 py-1 whitespace-nowrap">
+                      {cell?.formatted ?? raw}
+                    </td>
+                  </Hint>
+                )
+              })}
+            </tr>
+          )
+        })}
+        {end < total && (
+          <tr aria-hidden style={{ height: (total - end) * rowHeight }}>
+            <td colSpan={span} />
+          </tr>
+        )}
+      </tbody>
+    </table>
   )
 }

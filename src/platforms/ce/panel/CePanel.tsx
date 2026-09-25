@@ -1,5 +1,6 @@
 import * as React from "react"
 import {
+  BugIcon,
   CompassIcon,
   FileSearchIcon,
   Loader2Icon,
@@ -19,13 +20,15 @@ import { ceAppUrl } from "../urls"
 import type { CeState } from "../types"
 import { useCeTab } from "../use-ce-tab"
 import { CeSessionView } from "./CeSessionView"
+import { ErrorsView } from "./ErrorsView"
+import { useCeErrors } from "./use-ce-errors"
 import { ImpersonateSection } from "./ImpersonateSection"
 import { NavigateView } from "./NavigateView"
 import { RecordView } from "./RecordView"
 import { ToolsView } from "./ToolsView"
 import { Hint } from "@/components/hint"
 
-type Tab = "record" | "tools" | "navigate" | "session"
+type Tab = "record" | "tools" | "navigate" | "session" | "errors"
 
 const TRIGGER = "text-xs [&_svg]:size-3.5"
 
@@ -35,6 +38,8 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
   const host = tab.url ? new URL(tab.url).host : ""
   const impersonation = useImpersonation(tab.id, host)
   const [current, setCurrent] = React.useState<Tab>("record")
+  const errors = useCeErrors(run, tab.id)
+  const errorCount = errors.entries.filter((e) => e.level === "error").length
 
   // Name this org (and the app you were in) in History
   const orgName = state?.environment.friendlyName ?? null
@@ -93,6 +98,22 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
               "Can't reach this tab yet. Reload it once after installing or updating the extension."
             )}
           </div>
+          {/* A page that won't load is when its errors matter most */}
+          {errors.entries.length > 0 && (
+            <div className="mt-3 flex min-h-0 flex-col gap-2 overflow-y-auto">
+              <p className="px-1 text-xs font-semibold text-muted-foreground">
+                Errors on this page
+              </p>
+              <ErrorsView
+                entries={errors.entries}
+                onClear={errors.clear}
+                consoleOn={errors.consoleOn}
+                onConsole={(on) => void errors.watchConsole(on)}
+                watching={errors.watching}
+                onWatch={(on) => void errors.watch(on)}
+              />
+            </div>
+          )}
         </div>
       ) : (
         <Tabs
@@ -118,6 +139,15 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
                 <UserRoundIcon />
                 Session
               </TabsTrigger>
+              <TabsTrigger value="errors" className={TRIGGER}>
+                <BugIcon />
+                Errors
+                {errorCount > 0 && (
+                  <span className="rounded-full bg-destructive px-1 text-[10px] leading-4 font-semibold text-white tabular-nums">
+                    {errorCount > 99 ? "99+" : errorCount}
+                  </span>
+                )}
+              </TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="record" className="min-h-0 overflow-y-auto p-3">
@@ -139,6 +169,16 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
           </TabsContent>
           <TabsContent value="navigate" className="min-h-0 overflow-y-auto p-3">
             <NavigateView state={state} run={run} act={act} busy={busy} />
+          </TabsContent>
+          <TabsContent value="errors" className="min-h-0 overflow-y-auto p-3">
+            <ErrorsView
+              entries={errors.entries}
+              onClear={errors.clear}
+              consoleOn={errors.consoleOn}
+              onConsole={(on) => void errors.watchConsole(on)}
+              watching={errors.watching}
+              onWatch={(on) => void errors.watch(on)}
+            />
           </TabsContent>
           <TabsContent value="session" className="min-h-0 overflow-y-auto p-3">
             <CeSessionView

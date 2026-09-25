@@ -8,12 +8,15 @@ export type { Results }
 
 const FORMATTED = "@OData.Community.Display.V1.FormattedValue"
 
-export async function runFetchXml(
+/** One page of results, and Dataverse's cookie for the next. */
+type Page = Results & { cookie: string | null }
+
+async function runFetchXml(
   fetchXml: string,
   entitySetName: string,
   fields: QueryBuilderField[],
   columnOrder: string[]
-): Promise<Results> {
+): Promise<Page> {
   const started = performance.now()
   const res = await fetch(
     `/api/data/v9.2/${entitySetName}?fetchXml=${encodeURIComponent(fetchXml)}`,
@@ -69,6 +72,92 @@ export async function runFetchXml(
     rows,
     more: body["@Microsoft.Dynamics.CRM.morerecords"] === true,
     ms: Math.round(performance.now() - started),
+    cookie: pagingCookie(body["@Microsoft.Dynamics.CRM.fetchxmlpagingcookie"]),
+  }
+}
+
+/**
+ * The paging cookie for the next page: Dataverse returns it as
+ * <cookie pagingcookie="…"/>, the value URL-encoded twice.
+ */
+function pagingCookie(annotation: unknown): string | null {
+  if (typeof annotation !== "string") return null
+  const encoded = annotation.match(/pagingcookie="([^"]*)"/)?.[1]
+  if (!encoded) return null
+  try {
+    return decodeURIComponent(decodeURIComponent(encoded))
+  } catch {
+    return null
+  }
+}
+
+/** Dataverse's largest page */
+const PAGE_SIZE = 5000
+
+/**
+ * Runs FetchXML and, when it has no row limit, follows every page (5,000 at
+ * a time) until the last, handing each page's rows over as they arrive.
+ * A top, or an aggregate, is one request. `stopped` ends it early; the
+ * result then says more match.
+ */
+export async function runFetchXmlAll(
+  fetchXml: string,
+  entitySetName: string,
+  fields: QueryBuilderField[],
+  columnOrder: string[],
+  onPage: (soFar: Results) => void,
+  stopped: () => boolean
+): Promise<Results> {
+  const doc = new DOMParser().parseFromString(
+    fetchXml.trim(),
+    "application/xml"
+  )
+  const fetchEl = doc.documentElement
+  const pageable =
+    !doc.querySelector("parsererror") &&
+    !fetchEl.getAttribute("top") &&
+    fetchEl.getAttribute("aggregate") !== "true"
+  if (!pageable) {
+    const one = await runFetchXml(fetchXml, entitySetName, fields, columnOrder)
+    onPage(one)
+    return one
+  }
+
+  let all: Results | null = null
+  let cookie: string | null = null
+  // The previous page's first row: a page that starts the same is the
+  // server repeating itself, not new rows
+  let firstRow = ""
+  for (let page = 1; ; page++) {
+    fetchEl.setAttribute("count", String(PAGE_SIZE))
+    fetchEl.setAttribute("page", String(page))
+    if (cookie) fetchEl.setAttribute("paging-cookie", cookie)
+    const xml = new XMLSerializer().serializeToString(doc)
+    const next = await runFetchXml(xml, entitySetName, fields, columnOrder)
+    const first = JSON.stringify(next.rows[0] ?? null)
+    if (all && (next.rows.length === 0 || first === firstRow)) {
+      const done = { ...all, more: false }
+      onPage(done)
+      return done
+    }
+    firstRow = first
+    all = all
+      ? {
+          // A later page can bring a column the first didn't have
+          columns: [
+            ...all.columns,
+            ...next.columns.filter(
+              (c) => !all!.columns.some((a) => a.key === c.key)
+            ),
+          ],
+          rows: all.rows.concat(next.rows),
+          more: next.more,
+          ms: all.ms + next.ms,
+        }
+      : { columns: next.columns, rows: next.rows, more: next.more, ms: next.ms }
+    onPage(all)
+    if (!next.more || stopped()) return all
+    cookie = next.cookie
   }
 }
 

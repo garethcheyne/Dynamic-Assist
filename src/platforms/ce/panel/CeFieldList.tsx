@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 
 import { FieldGroup, FieldRow, type DetailRow } from "@/components/field-row"
+import { FieldNamingToggle } from "@/components/field-naming"
 import { FilterChip } from "@/components/filter-chip"
 import { SearchBox } from "@/components/search-box"
 import { groupBy } from "@/lib/group-by"
@@ -66,7 +67,7 @@ export function CeFieldList({ fields }: { fields: CeField[] }) {
         onChange={setQuery}
         placeholder="Search label, logical name or value"
       />
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <FilterChip
           label="Has value"
           icon={<TextCursorInputIcon />}
@@ -99,6 +100,7 @@ export function CeFieldList({ fields }: { fields: CeField[] }) {
           tip="Include fields hidden on the form"
           onToggle={() => toggle("hidden")}
         />
+        <FieldNamingToggle className="ml-auto" />
       </div>
 
       {shown.length === 0 ? (

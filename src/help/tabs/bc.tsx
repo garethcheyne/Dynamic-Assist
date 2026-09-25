@@ -186,6 +186,19 @@ export const BC: HelpTab = {
           ),
         },
         {
+          id: "query-builder",
+          name: "Query builder",
+          where: "Tools tab, or the database icon",
+          what: (
+            <>
+              Opens the query builder over the page you're on, on its table when
+              it has one; pick any other table from there. Always available, on
+              any page.
+            </>
+          ),
+          needs: COMPANION,
+        },
+        {
           id: "query-table",
           name: "Query this table",
           where: "Tools tab, Page tab",
