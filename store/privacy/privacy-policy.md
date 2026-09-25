@@ -30,7 +30,7 @@ Query results are shown on the page. They are saved as a file only when you choo
 - **Linked environments**: which Business Central company goes with which Dynamics 365 organisation, so the panel can link them. Stored in your browser's extension storage.
 - **App names**: the names, publishers and versions of the apps installed in a Business Central environment, kept for a day so field details can say which extension added a field. Stored in your browser's extension storage.
 - **Saved queries**: the queries you save in the query builder, with their names, table and where you saved them. Stored in your browser's extension storage; Export writes them to a file only when you ask.
-- **Preferences**: light or dark mode, which panel sections are collapsed and how the query builder shows filters. Stored in your browser.
+- **Preferences**: light or dark mode, which panel sections are collapsed, how the query builder shows filters and whether it lists example queries. Stored in your browser.
 
 Nothing else is stored. The extension never reads or stores passwords or sign-in tokens. Record data shown in the panel is not kept.
 
