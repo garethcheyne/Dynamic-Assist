@@ -5,6 +5,13 @@ import {
   visitFromUrl,
   type HistoryOp,
 } from "@/lib/history"
+import {
+  BRIDGE_READY,
+  CHANNEL_TABS_KEY,
+  type BcBridgeReady,
+} from "@/platforms/bc/messages"
+import { takePendingQuery } from "@/platforms/bc/query/pending"
+import { openQueryBuilder } from "@/query-builder/open"
 
 // Open the side panel when the toolbar icon is clicked.
 chrome.sidePanel
@@ -66,6 +73,28 @@ chrome.runtime.onMessage.addListener(
     return false
   }
 )
+
+// The companion app's query page loaded in a BC tab: open the query builder
+// over it (the page itself only hosts the bridge).
+chrome.runtime.onMessage.addListener((message: BcBridgeReady, sender) => {
+  if (message?.type === BRIDGE_READY && sender.tab?.id !== undefined) {
+    const tabId = sender.tab.id
+    chrome.storage.session
+      .get(CHANNEL_TABS_KEY)
+      .then(async (stored) => {
+        // A query page the panel opened in the background to reach the
+        // companion (coupled records): no builder over it
+        const channels =
+          (stored[CHANNEL_TABS_KEY] as number[] | undefined) ?? []
+        if (channels.includes(tabId)) return
+        // A query asked for from another page (All fields, Query this table…)
+        const pending = await takePendingQuery()
+        await openQueryBuilder(tabId, pending ?? { app: "bc" }, message.dark)
+      })
+      .catch((error) => console.warn("Couldn't open the query builder", error))
+  }
+  return false
+})
 
 // Impersonation rules are per tab (platforms/ce/impersonation.ts); drop a
 // closed tab's rule so its ID can't carry over to a tab that reuses it.

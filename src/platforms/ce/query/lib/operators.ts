@@ -889,14 +889,6 @@ export const getOperatorValueType = (operator: string): 'number' | 'date' | 'str
 };
 
 /**
- * Check if operator is FetchXML-only (no OData equivalent)
- */
-export const isOperatorFetchXmlOnly = (operator: string): boolean => {
-    const def = ALL_OPERATORS[operator];
-    return def?.fetchXmlOnly ?? false;
-};
-
-/**
  * FetchXML-only operators the serializer can still approximate in OData.
  * `like` becomes contains/startswith/endswith, `not-in` becomes chained `ne`,
  * and `between` becomes a ge/le pair.
@@ -919,14 +911,4 @@ export const isOperatorConvertibleToOData = (operator: string): boolean => {
     const def = ALL_OPERATORS[operator];
     if (!def) return true; // Unknown operators fall through to a plain comparison
     return !def.fetchXmlOnly || ODATA_APPROXIMATED_OPERATORS.has(operator);
-};
-
-/**
- * Legacy function for backward compatibility - converts to simplified format
- */
-export const getOperatorsForTypeSimple = (dataType: QueryBuilderDataType): Array<{ value: string; label: string }> => {
-    return getOperatorsForType(dataType).map(op => ({
-        value: op.value,
-        label: op.label,
-    }));
 };

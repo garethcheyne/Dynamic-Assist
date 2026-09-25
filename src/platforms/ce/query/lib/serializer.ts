@@ -20,7 +20,7 @@ import { getOperatorByValue, isOperatorConvertibleToOData } from './operators';
 const FALLBACK_FIELD: QueryBuilderField = { id: 'name', label: 'Name', dataType: 'string' };
 
 /** Root <fetch> defaults, matching what the Dynamics 365 advanced-find editor emits */
-export const DEFAULT_QUERY_OPTIONS: Required<Omit<QueryBuilderQueryOptions, 'top'>> = {
+const DEFAULT_QUERY_OPTIONS: Required<Omit<QueryBuilderQueryOptions, 'top'>> = {
     distinct: true,
     noLock: false,
 };
@@ -117,7 +117,7 @@ const WILDCARD_PATTERNS: Record<string, (value: string) => string> = {
 /**
  * Convert a single condition to FetchXML
  */
-export const conditionToFetchXml = (
+const conditionToFetchXml = (
     condition: QueryBuilderCondition,
     field: QueryBuilderField
 ): string => {
@@ -200,7 +200,7 @@ export const conditionToFetchXml = (
 /**
  * Generate link-entity XML for related entity conditions
  */
-export const relatedEntityToLinkEntity = (
+const relatedEntityToLinkEntity = (
     condition: QueryBuilderCondition,
     defaultField: QueryBuilderField
 ): string => {
@@ -268,7 +268,7 @@ const quoteODataValue = (val: any, field: QueryBuilderField): string => {
 /**
  * Convert a single condition to OData filter
  */
-export const conditionToOData = (condition: QueryBuilderCondition, field: QueryBuilderField): string => {
+const conditionToOData = (condition: QueryBuilderCondition, field: QueryBuilderField): string => {
     // Related entity conditions are handled separately
     if (condition.kind === 'relatedEntity') {
         return '';
@@ -379,7 +379,7 @@ export const conditionToOData = (condition: QueryBuilderCondition, field: QueryB
 /**
  * Generate OData filter for related entity conditions
  */
-export const relatedEntityToOData = (
+const relatedEntityToOData = (
     condition: QueryBuilderCondition,
     defaultField: QueryBuilderField
 ): string => {

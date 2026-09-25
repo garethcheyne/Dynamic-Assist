@@ -1,9 +1,14 @@
 import { GUID } from "./links"
 
-export type Platform = "bc" | "ce" | "maker" | "none"
+export type Platform = "bc" | "ce" | "maker" | "flow" | "none"
 
 const BC_HOST = "businesscentral.dynamics.com"
 const MAKER_HOSTS = ["make.powerapps.com", "make.preview.powerapps.com"]
+const FLOW_HOSTS = [
+  "make.powerautomate.com",
+  "make.preview.powerautomate.com",
+  "flow.microsoft.com",
+]
 
 /** Which product a tab URL belongs to. */
 export function detectPlatform(url: string | undefined): Platform {
@@ -21,15 +26,20 @@ export function detectPlatform(url: string | undefined): Platform {
   if (/\.crm\d*\.dynamics\.com$/.test(host) && !host.startsWith("port."))
     return "ce"
   if (MAKER_HOSTS.includes(host)) return "maker"
+  if (FLOW_HOSTS.includes(host)) return "flow"
   return "none"
 }
 
-/** Power Apps maker URLs: /environments/{id}/{area}/{solution id?}/… */
+/**
+ * Power Apps and Power Automate URLs: /environments/{id}/{area}/…, with a
+ * solution (solutions/{id}) or a flow (flows/{id}, cloudflows/{id}) in them.
+ */
 export type MakerContext = {
   origin: string
   environmentId: string | null
   area: string | null
   solutionId: string | null
+  flowId: string | null
 }
 
 export function parseMakerUrl(url: string): MakerContext {
@@ -38,11 +48,16 @@ export function parseMakerUrl(url: string): MakerContext {
   const envAt = parts.indexOf("environments")
   const environmentId = envAt >= 0 ? (parts[envAt + 1] ?? null) : null
   const area = envAt >= 0 ? (parts[envAt + 2] ?? null) : null
-  const next = envAt >= 0 ? parts[envAt + 3] : undefined
+  const after = (name: string) => {
+    const at = parts.lastIndexOf(name)
+    const next = at >= 0 ? parts[at + 1] : undefined
+    return next && GUID.test(next) ? next.toLowerCase() : null
+  }
   return {
     origin: u.origin,
     environmentId,
     area,
-    solutionId: area === "solutions" && next && GUID.test(next) ? next : null,
+    solutionId: after("solutions"),
+    flowId: after("flows") ?? after("cloudflows"),
   }
 }

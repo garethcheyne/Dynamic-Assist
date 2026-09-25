@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { cn } from "cn"
 
 import { CopyButton } from "@/components/copy-button"
+import { Hint } from "@/components/hint"
 
 /** Label-over-value pairs in two columns, as on a BC card or an incident. */
 export function DetailGrid({
@@ -41,12 +42,11 @@ export function Detail({
         {label}
       </dt>
       <dd className="flex min-w-0 items-center gap-1">
-        <span
-          className={cn("truncate", mono && "font-mono text-xs")}
-          title={title ?? (typeof value === "string" ? value : undefined)}
-        >
-          {value}
-        </span>
+        <Hint label={title ?? (typeof value === "string" ? value : undefined)}>
+          <span className={cn("truncate", mono && "font-mono text-xs")}>
+            {value}
+          </span>
+        </Hint>
         {copy && (
           <CopyButton
             value={copy}

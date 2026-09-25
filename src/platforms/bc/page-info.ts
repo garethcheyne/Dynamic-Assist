@@ -3,6 +3,15 @@
 /** window.postMessage types between main-world.ts and bc-content.ts (same frame). */
 export const PAGE_MESSAGE = "dynamic-assist:bc-page"
 export const REQUEST_MESSAGE = "dynamic-assist:bc-page-request"
+/** Content script → page world: run a page tool ({ id, command, on }) */
+export const TOOL_MESSAGE = "dynamic-assist:bc-tool"
+/** Page world → content script: what the tool did ({ id, message }) */
+export const TOOL_RESULT_MESSAGE = "dynamic-assist:bc-tool-result"
+
+/** The page tools (page-tools.ts) */
+export type BcToolCommand = "fieldNames" | "blur" | "expandTabs" | "appNames"
+/** Which toggles are on in the page */
+export type BcToolModes = { fieldNames: boolean; blur: boolean }
 
 export type FieldClass = "Normal" | "FlowField" | "FlowFilter"
 
@@ -27,7 +36,7 @@ export type BcField = {
   appName: string | null
 }
 
-export type BcApp = {
+type BcApp = {
   id: string
   name: string
   publisher: string
@@ -68,6 +77,8 @@ export type BcPageInfo = {
     aadTenantId: string | null
   }
   session: BcSession | null
+  /** The page tools that are on */
+  tools?: BcToolModes
   form: BcForm
   parts: BcForm[]
 }
@@ -136,4 +147,40 @@ export function odataName(name: string): string {
 /** Fields as { "Schema Name": "value" }, for the Copy JSON buttons. */
 export function fieldsToJson(fields: BcField[]): Record<string, string> {
   return Object.fromEntries(fields.map((f) => [f.schemaName, f.value ?? ""]))
+}
+
+// Control type → the data type it implies. Strings can't tell Code from Text.
+const DATA_TYPES: Record<string, string> = {
+  StringControl: "Text/Code",
+  DecimalControl: "Decimal",
+  IntegerControl: "Integer",
+  BigIntegerControl: "BigInteger",
+  BooleanControl: "Boolean",
+  SelectionControl: "Option/Enum",
+  DateControl: "Date",
+  DateTimeControl: "DateTime",
+  TimeControl: "Time",
+  DurationControl: "Duration",
+  GuidControl: "Guid",
+  MediaControl: "Media",
+  MediaSetControl: "MediaSet",
+  BlobControl: "Blob",
+}
+
+/** The data type a BC control implies, e.g. "Text/Code[20]". Never throws. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- BC's client model is untyped
+export function dataTypeOf(control: any): string {
+  const read = <T>(fn: () => T): T | null => {
+    try {
+      return fn() ?? null
+    } catch {
+      return null
+    }
+  }
+  const type: string = read(() => control.typeName) ?? ""
+  const base = DATA_TYPES[type] ?? type.replace(/Control$/, "")
+  const max = read(() => control.maximumStringLength)
+  return type === "StringControl" && typeof max === "number" && max > 0
+    ? `${base}[${max}]`
+    : base
 }

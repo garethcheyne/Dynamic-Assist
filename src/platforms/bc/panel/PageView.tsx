@@ -1,4 +1,9 @@
-import { ExternalLinkIcon, LayoutListIcon, TableIcon } from "lucide-react"
+import {
+  DatabaseIcon,
+  ExternalLinkIcon,
+  LayoutListIcon,
+  TableIcon,
+} from "lucide-react"
 
 import { Count, CollapsibleSection } from "@/components/collapsible-section"
 import { CopyButton } from "@/components/copy-button"
@@ -12,10 +17,19 @@ import { buildBcUrl, type BcContext } from "../url"
 import { FieldList } from "./FieldList"
 
 /** The current page: what it is, then its fields. */
-export function PageView({ ctx, form }: { ctx: BcContext; form: BcForm }) {
+export function PageView({
+  ctx,
+  form,
+  onQuery,
+}: {
+  ctx: BcContext
+  form: BcForm
+  /** Opens the query builder on a table */
+  onQuery: (tableId: number) => void
+}) {
   return (
     <div className="flex flex-col gap-3">
-      <PageSummary ctx={ctx} form={form} />
+      <PageSummary ctx={ctx} form={form} onQuery={onQuery} />
       <CollapsibleSection
         id="bc.fields"
         title="Fields"
@@ -34,7 +48,15 @@ export function PageView({ ctx, form }: { ctx: BcContext; form: BcForm }) {
   )
 }
 
-function PageSummary({ ctx, form }: { ctx: BcContext; form: BcForm }) {
+function PageSummary({
+  ctx,
+  form,
+  onQuery,
+}: {
+  ctx: BcContext
+  form: BcForm
+  onQuery: (tableId: number) => void
+}) {
   const key = form.primaryKey
     .map(
       (no) => form.fields.find((f) => f.fieldNo === no)?.schemaName ?? `#${no}`
@@ -70,6 +92,17 @@ function PageSummary({ ctx, form }: { ctx: BcContext; form: BcForm }) {
               onClick={() => open({ table: form.tableId! })}
             >
               <TableIcon />
+            </Button>
+          )}
+          {form.tableId !== null && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Query this table (needs the companion app)"
+              aria-label="Query this table"
+              onClick={() => onQuery(form.tableId!)}
+            >
+              <DatabaseIcon />
             </Button>
           )}
         </div>

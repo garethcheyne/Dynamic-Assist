@@ -23,7 +23,11 @@ import {
   getDefaultValueForField,
   isOperatorValidForType,
 } from "../lib/utils"
-import { PlainSelect, SearchSelect, type SelectItem } from "./SearchSelect"
+import {
+  PlainSelect,
+  SearchSelect,
+  type SelectItem,
+} from "@/query-builder/SearchSelect"
 
 const inputClass =
   "h-7 min-w-0 rounded-md border border-input bg-background px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"

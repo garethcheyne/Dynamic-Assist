@@ -53,10 +53,48 @@ function mainWorldScripts(): Plugin {
   }
 }
 
+// React's own module sets this once; seen twice in a bundle means two Reacts
+const REACT_DEFINITION =
+  "__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE="
+
+// Fails the build if React ends up in the output twice, which blanks the side
+// panel ("Cannot read properties of null (reading 'useState')"). It has
+// happened on some builds and not others of the same code, so check every one.
+function singleReact(): Plugin {
+  return {
+    name: "single-react",
+    generateBundle(_, bundle) {
+      const chunks = Object.values(bundle).filter((c) => c.type === "chunk")
+      const copies = chunks.flatMap((c) =>
+        c.code
+          .split(REACT_DEFINITION)
+          .slice(1)
+          .map(() => c)
+      )
+      if (copies.length <= 1) return
+      const detail = [...new Set(copies)]
+        .map(
+          (c) =>
+            `${c.fileName}:\n  ${c.moduleIds.filter((id) => /node_modules[\\/]react/.test(id)).join("\n  ")}`
+        )
+        .join("\n")
+      this.error(
+        `React is in this build ${copies.length} times; rebuild.\n${detail}`
+      )
+    },
+  }
+}
+
 // manifest.json is the source; @crxjs bundles every entry it names (side panel,
 // service worker, content scripts) and writes the final manifest to dist/.
 export default defineConfig({
-  plugins: [mainWorldScripts(), react(), tailwindcss(), crx({ manifest })],
+  plugins: [
+    mainWorldScripts(),
+    react(),
+    tailwindcss(),
+    crx({ manifest }),
+    singleReact(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -72,5 +110,24 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        // React must load once per page. If its CommonJS module is emitted
+        // twice, hooks from one copy run in the other's renderer ("Cannot
+        // read properties of null (reading 'useState')"). Rollup's
+        // manualChunks, which rolldown only emulates, has let that happen on
+        // some builds of the same code, so the chunk uses rolldown's own
+        // grouping and singleReact() checks the result. The injected query
+        // builder is a separate one-file build (?script&iife) and isn't split.
+        codeSplitting: {
+          groups: [
+            {
+              name: "react",
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            },
+          ],
+        },
+      },
+    },
   },
 })

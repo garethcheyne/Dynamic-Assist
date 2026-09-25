@@ -56,5 +56,8 @@ export function useBcTab(tabId: number | undefined) {
     chrome.tabs.sendMessage(tabId, ping).catch(() => {})
   }, [tabId])
 
-  return { connected: states.length > 0, page, refresh }
+  // A page is on screen but none could be read: BC changed under us
+  const unsupported = !page && states.some((s) => s.unsupported)
+
+  return { connected: states.length > 0, page, unsupported, refresh }
 }

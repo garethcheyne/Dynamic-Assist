@@ -1,12 +1,10 @@
 import * as React from "react"
+import { TooltipPortalContainer } from "@/components/ui/tooltip"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   CodeXmlIcon,
   DatabaseIcon,
-  FileJsonIcon,
-  FileSpreadsheetIcon,
-  FileTextIcon,
   FilterIcon,
   ListOrderedIcon,
   Loader2Icon,
@@ -19,10 +17,8 @@ import {
 } from "lucide-react"
 import { cn } from "cn"
 
-import { CopyButton } from "@/components/copy-button"
 import { Button } from "@/components/ui/button"
 
-import { exportResults, type ExportFormat } from "../export"
 import type { QueryBuilderField } from "../lib/types"
 import { loadFields, loadTables, type TableInfo } from "../metadata"
 import {
@@ -34,7 +30,9 @@ import {
 } from "../query"
 import { entitySetOf, runFetchXml, type Results } from "../run"
 import { FilterEditor } from "./FilterEditor"
-import { SearchSelect, type SelectItem } from "./SearchSelect"
+import { ResultsPane, Section } from "@/query-builder/ResultsPane"
+import { SearchSelect, type SelectItem } from "@/query-builder/SearchSelect"
+import { Hint } from "@/components/hint"
 
 export type OpenRequest = {
   entityName?: string | null
@@ -53,6 +51,8 @@ export function QueryApp({
   dark: boolean
   onClose: () => void
 }) {
+  // Tooltips render inside the builder's shadow root, in its styles and theme
+  const [rootEl, setRootEl] = React.useState<HTMLDivElement | null>(null)
   const [tables, setTables] = React.useState<TableInfo[]>([])
   const [fields, setFields] = React.useState<QueryBuilderField[]>([])
   const [loadingFields, setLoadingFields] = React.useState(true)
@@ -177,185 +177,172 @@ export function QueryApp({
   )
 
   return (
-    <div
-      className={cn("da-root", dark && "dark")}
-      data-platform="ce"
-      onKeyDown={(e) => {
-        if (e.key === "Escape") onClose()
-        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault()
-          void run()
-        }
-      }}
-    >
-      <div className="fixed inset-0 z-[2147483000] bg-black/40 backdrop-blur-[2px]" />
+    <TooltipPortalContainer.Provider value={rootEl}>
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Query builder"
-        className="fixed inset-x-[3vw] inset-y-[4vh] z-[2147483001] flex flex-col overflow-hidden rounded-xl border bg-background text-foreground shadow-2xl"
+        ref={setRootEl}
+        className={cn("da-root", dark && "dark")}
+        data-platform="ce"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose()
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault()
+            void run()
+          }
+        }}
       >
-        {/* Header */}
-        <div className="relative flex h-12 shrink-0 items-center gap-3 border-b bg-linear-to-b from-background to-card px-4">
-          <DatabaseIcon className="size-4.5 text-primary" />
-          <span className="text-sm font-semibold tracking-tight">
-            Query builder
-          </span>
-          <SearchSelect
-            className="w-72"
-            ariaLabel="Table"
-            placeholder="Search tables"
-            items={tableItems}
-            loading={!tables.length}
-            value={query?.entityName ?? null}
-            onChange={(entity) => switchTable(entity)}
-          />
-          <div className="flex rounded-md bg-muted p-0.5">
-            {(["builder", "fetchxml"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => switchMode(m)}
-                className={cn(
-                  "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium",
-                  mode === m
-                    ? "bg-background shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
+        <div className="fixed inset-0 z-[2147483000] bg-black/40 backdrop-blur-[2px]" />
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Query builder"
+          className="fixed inset-x-[3vw] inset-y-[4vh] z-[2147483001] flex flex-col overflow-hidden rounded-xl border bg-background text-foreground shadow-2xl"
+        >
+          {/* Header */}
+          <div className="relative flex h-12 shrink-0 items-center gap-3 border-b bg-linear-to-b from-background to-card px-4">
+            <DatabaseIcon className="size-4.5 text-primary" />
+            <span className="text-sm font-semibold tracking-tight">
+              Query builder
+            </span>
+            <SearchSelect
+              className="w-72"
+              ariaLabel="Table"
+              placeholder="Search tables"
+              items={tableItems}
+              loading={!tables.length}
+              value={query?.entityName ?? null}
+              onChange={(entity) => switchTable(entity)}
+            />
+            <div className="flex rounded-md bg-muted p-0.5">
+              {(["builder", "fetchxml"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => switchMode(m)}
+                  className={cn(
+                    "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium",
+                    mode === m
+                      ? "bg-background shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {m === "builder" ? (
+                    <WrenchIcon className="size-3.5" />
+                  ) : (
+                    <CodeXmlIcon className="size-3.5" />
+                  )}
+                  {m === "builder" ? "Builder" : "FetchXML"}
+                </button>
+              ))}
+            </div>
+            <div className="ml-auto flex items-center gap-1">
+              <Button
+                size="sm"
+                onClick={() => void run()}
+                disabled={running || !xml.trim()}
+                title="Run (Ctrl+Enter)"
               >
-                {m === "builder" ? (
-                  <WrenchIcon className="size-3.5" />
+                {running ? (
+                  <Loader2Icon
+                    data-icon="inline-start"
+                    className="animate-spin"
+                  />
                 ) : (
-                  <CodeXmlIcon className="size-3.5" />
+                  <PlayIcon data-icon="inline-start" />
                 )}
-                {m === "builder" ? "Builder" : "FetchXML"}
-              </button>
-            ))}
+                Run
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Close (Esc)"
+                aria-label="Close"
+                onClick={onClose}
+              >
+                <XIcon />
+              </Button>
+            </div>
+            <span
+              aria-hidden
+              className="absolute inset-x-0 -bottom-px h-0.5"
+              style={{ background: "var(--brand-gradient)" }}
+            />
           </div>
-          <div className="ml-auto flex items-center gap-1">
-            <Button
-              size="sm"
-              onClick={() => void run()}
-              disabled={running || !xml.trim()}
-              title="Run (Ctrl+Enter)"
-            >
-              {running ? (
-                <Loader2Icon
-                  data-icon="inline-start"
-                  className="animate-spin"
-                />
+
+          {notice && (
+            <div className="border-b bg-sandbox px-4 py-1.5 text-xs text-sandbox-foreground">
+              {notice}
+            </div>
+          )}
+
+          <div className="flex min-h-0 flex-1">
+            {/* Left: the query */}
+            <div className="flex w-[420px] shrink-0 flex-col border-r">
+              {mode === "builder" ? (
+                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+                  {loadingFields || !query ? (
+                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2Icon className="size-3.5 animate-spin" /> Loading
+                      columns…
+                    </p>
+                  ) : (
+                    <>
+                      <Section icon={<TableIcon />} title="Columns">
+                        <ColumnsEditor
+                          fields={fields}
+                          table={table}
+                          columns={query.columns}
+                          onChange={(columns) =>
+                            setQuery({ ...query, columns })
+                          }
+                        />
+                      </Section>
+                      <Section icon={<FilterIcon />} title="Filters">
+                        <FilterEditor
+                          fields={fields}
+                          defaultFieldId={table?.primaryNameAttribute}
+                          state={query.filters}
+                          onChange={(filters) =>
+                            setQuery({ ...query, filters })
+                          }
+                        />
+                      </Section>
+                      <Section icon={<ListOrderedIcon />} title="Sort">
+                        <SortEditor
+                          fields={fields}
+                          defaultFieldId={table?.primaryNameAttribute}
+                          query={query}
+                          onChange={setQuery}
+                        />
+                      </Section>
+                      <Section icon={<SettingsIcon />} title="Options">
+                        <OptionsEditor query={query} onChange={setQuery} />
+                      </Section>
+                    </>
+                  )}
+                </div>
               ) : (
-                <PlayIcon data-icon="inline-start" />
+                <textarea
+                  aria-label="FetchXML"
+                  spellCheck={false}
+                  value={xmlText}
+                  onChange={(e) => setXmlText(e.target.value)}
+                  className="min-h-0 flex-1 resize-none bg-muted/30 p-4 font-mono text-xs leading-relaxed outline-none"
+                />
               )}
-              Run
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Close (Esc)"
-              aria-label="Close"
-              onClick={onClose}
-            >
-              <XIcon />
-            </Button>
-          </div>
-          <span
-            aria-hidden
-            className="absolute inset-x-0 -bottom-px h-0.5"
-            style={{ background: "var(--brand-gradient)" }}
-          />
-        </div>
+            </div>
 
-        {notice && (
-          <div className="border-b bg-sandbox px-4 py-1.5 text-xs text-sandbox-foreground">
-            {notice}
+            {/* Right: results */}
+            <ResultsPane
+              sources={[{ label: "FetchXML", text: xml }]}
+              results={results}
+              error={error}
+              running={running}
+              name={query?.entityName ?? "query"}
+            />
           </div>
-        )}
-
-        <div className="flex min-h-0 flex-1">
-          {/* Left: the query */}
-          <div className="flex w-[420px] shrink-0 flex-col border-r">
-            {mode === "builder" ? (
-              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-                {loadingFields || !query ? (
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2Icon className="size-3.5 animate-spin" /> Loading
-                    columns…
-                  </p>
-                ) : (
-                  <>
-                    <Section icon={<TableIcon />} title="Columns">
-                      <ColumnsEditor
-                        fields={fields}
-                        table={table}
-                        columns={query.columns}
-                        onChange={(columns) => setQuery({ ...query, columns })}
-                      />
-                    </Section>
-                    <Section icon={<FilterIcon />} title="Filters">
-                      <FilterEditor
-                        fields={fields}
-                        defaultFieldId={table?.primaryNameAttribute}
-                        state={query.filters}
-                        onChange={(filters) => setQuery({ ...query, filters })}
-                      />
-                    </Section>
-                    <Section icon={<ListOrderedIcon />} title="Sort">
-                      <SortEditor
-                        fields={fields}
-                        defaultFieldId={table?.primaryNameAttribute}
-                        query={query}
-                        onChange={setQuery}
-                      />
-                    </Section>
-                    <Section icon={<SettingsIcon />} title="Options">
-                      <OptionsEditor query={query} onChange={setQuery} />
-                    </Section>
-                  </>
-                )}
-              </div>
-            ) : (
-              <textarea
-                aria-label="FetchXML"
-                spellCheck={false}
-                value={xmlText}
-                onChange={(e) => setXmlText(e.target.value)}
-                className="min-h-0 flex-1 resize-none bg-muted/30 p-4 font-mono text-xs leading-relaxed outline-none"
-              />
-            )}
-          </div>
-
-          {/* Right: results */}
-          <ResultsPane
-            xml={xml}
-            results={results}
-            error={error}
-            running={running}
-            name={query?.entityName ?? "query"}
-          />
         </div>
       </div>
-    </div>
-  )
-}
-
-function Section({
-  icon,
-  title,
-  children,
-}: {
-  icon: React.ReactNode
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="flex flex-col gap-2">
-      <h3 className="flex items-center gap-1.5 text-xs font-semibold [&_svg]:size-3.5 [&_svg]:text-primary">
-        {icon}
-        {title}
-      </h3>
-      {children}
-    </section>
+    </TooltipPortalContainer.Provider>
   )
 }
 
@@ -387,21 +374,22 @@ function ColumnsEditor({
           </span>
         )}
         {columns.map((c) => (
-          <span
-            key={c}
-            title={c}
-            className="flex items-center gap-1 rounded-md border bg-accent py-0.5 pr-0.5 pl-1.5 text-[11px] text-accent-foreground"
-          >
-            {labelOf.get(c) ?? c}
-            <button
-              type="button"
-              aria-label={`Remove ${c}`}
-              className="rounded p-0.5 hover:bg-background/60"
-              onClick={() => onChange(columns.filter((x) => x !== c))}
+          <Hint label={c}>
+            <span
+              key={c}
+              className="flex items-center gap-1 rounded-md border bg-accent py-0.5 pr-0.5 pl-1.5 text-[11px] text-accent-foreground"
             >
-              <XIcon className="size-3" />
-            </button>
-          </span>
+              {labelOf.get(c) ?? c}
+              <button
+                type="button"
+                aria-label={`Remove ${c}`}
+                className="rounded p-0.5 hover:bg-background/60"
+                onClick={() => onChange(columns.filter((x) => x !== c))}
+              >
+                <XIcon className="size-3" />
+              </button>
+            </span>
+          </Hint>
         ))}
       </div>
       <SearchSelect
@@ -546,153 +534,4 @@ function OptionsEditor({
   )
 }
 
-function ResultsPane({
-  xml,
-  results,
-  error,
-  running,
-  name,
-}: {
-  xml: string
-  results: Results | null
-  error: string | null
-  running: boolean
-  name: string
-}) {
-  const [view, setView] = React.useState<"results" | "xml">("results")
-  const exportAs = (format: ExportFormat) =>
-    results && exportResults(format, name, results.columns, results.rows)
-
-  return (
-    <div className="flex min-w-0 flex-1 flex-col">
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3 text-xs">
-        <div className="flex rounded-md bg-muted p-0.5">
-          {(["results", "xml"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              className={cn(
-                "rounded px-2 py-0.5 font-medium",
-                view === v
-                  ? "bg-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {v === "results" ? "Results" : "FetchXML"}
-            </button>
-          ))}
-        </div>
-        {results && view === "results" && (
-          <span className="text-muted-foreground">
-            {results.rows.length.toLocaleString()} row
-            {results.rows.length === 1 ? "" : "s"}
-            {results.more ? " (more match)" : ""} · {results.ms} ms
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-1">
-          {view === "xml" ? (
-            <CopyButton value={xml} what="FetchXML" />
-          ) : (
-            <>
-              <span className="mr-1 text-muted-foreground">Export</span>
-              <Button
-                variant="outline"
-                size="xs"
-                disabled={!results?.rows.length}
-                onClick={() => exportAs("xlsx")}
-              >
-                <FileSpreadsheetIcon data-icon="inline-start" />
-                Excel
-              </Button>
-              <Button
-                variant="outline"
-                size="xs"
-                disabled={!results?.rows.length}
-                onClick={() => exportAs("csv")}
-              >
-                <FileTextIcon data-icon="inline-start" />
-                CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="xs"
-                disabled={!results?.rows.length}
-                onClick={() => exportAs("json")}
-              >
-                <FileJsonIcon data-icon="inline-start" />
-                JSON
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-auto">
-        {view === "xml" ? (
-          <pre className="p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
-            {xml}
-          </pre>
-        ) : error ? (
-          <div className="m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-            {error}
-          </div>
-        ) : running && !results ? (
-          <p className="flex items-center gap-2 p-4 text-xs text-muted-foreground">
-            <Loader2Icon className="size-3.5 animate-spin" /> Running…
-          </p>
-        ) : !results ? (
-          <p className="p-4 text-xs text-muted-foreground">
-            Build a query and press Run (Ctrl+Enter).
-          </p>
-        ) : results.rows.length === 0 ? (
-          <p className="p-4 text-xs text-muted-foreground">No rows match.</p>
-        ) : (
-          <table className="w-max min-w-full border-separate border-spacing-0 text-xs">
-            <thead className="sticky top-0 z-10 bg-card">
-              <tr>
-                <th className="border-b px-2 py-1.5 text-right font-normal text-muted-foreground">
-                  #
-                </th>
-                {results.columns.map((c) => (
-                  <th
-                    key={c.key}
-                    title={c.key}
-                    className="max-w-72 border-b px-2 py-1.5 text-left font-semibold whitespace-nowrap"
-                  >
-                    {c.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {results.rows.map((row, i) => (
-                <tr key={i} className="hover:bg-muted/60">
-                  <td className="border-b px-2 py-1 text-right text-muted-foreground tabular-nums">
-                    {i + 1}
-                  </td>
-                  {results.columns.map((c) => {
-                    const cell = row[c.key]
-                    const raw =
-                      cell?.value === null || cell?.value === undefined
-                        ? ""
-                        : String(cell.value)
-                    return (
-                      <td
-                        key={c.key}
-                        title={raw}
-                        className="max-w-72 truncate border-b px-2 py-1"
-                      >
-                        {cell?.formatted ?? raw}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  )
-}
+/** A tab beside the results showing the query as text, with a copy button. */

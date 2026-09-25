@@ -1,0 +1,315 @@
+{
+ "url": "https://contoso.crm.dynamics.com/main.aspx?appid=00000000-0000-0000-0000-000000000001&pagetype=entityrecord&etn=account",
+ "state": {
+  "environment": {
+   "clientUrl": "https://contoso.crm.dynamics.com",
+   "orgUniqueName": "contoso",
+   "orgId": "11111111-2222-3333-4444-555555555555",
+   "version": "9.2.26083.00167",
+   "environmentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "friendlyName": "Contoso Sales (Sandbox)",
+   "geo": "OCE",
+   "tenantId": "00000000-0000-0000-0000-000000000000"
+  },
+  "user": {
+   "name": "Alex Wilber",
+   "id": "9f8e7d6c-5b4a-3928-1706-f5e4d3c2b1a0",
+   "roles": [
+    "Basic User",
+    "Salesperson",
+    "System Customizer"
+   ],
+   "languageId": 1033,
+   "timeZoneOffsetMinutes": 720
+  },
+  "app": {
+   "id": "00000000-0000-0000-0000-000000000001",
+   "displayName": "Sales Hub",
+   "uniqueName": "msdynce_saleshub"
+  },
+  "page": {
+   "pageType": "entityrecord",
+   "entityName": "account",
+   "entityId": "c0ffee00-1234-4abc-9def-000000000001",
+   "viewId": null,
+   "viewType": null
+  },
+  "modes": {
+   "godMode": false,
+   "logicalNames": false,
+   "blurred": false
+  },
+  "form": {
+   "entityName": "account",
+   "entityDisplayName": "Account",
+   "entitySetName": "accounts",
+   "primaryIdAttribute": "accountid",
+   "objectTypeCode": 1,
+   "id": "c0ffee00-1234-4abc-9def-000000000001",
+   "primaryName": "Adventure Works (sample)",
+   "formId": "8448b78f-8f42-454e-8e2a-f8196b0419af",
+   "formName": "Account for Sales Insights",
+   "formType": 2,
+   "isDirty": true,
+   "tabs": [
+    {
+     "name": "SUMMARY_TAB",
+     "label": "Summary",
+     "visible": true,
+     "expanded": true
+    },
+    {
+     "name": "DETAILS_TAB",
+     "label": "Details",
+     "visible": true,
+     "expanded": false
+    }
+   ],
+   "fields": [
+    {
+     "logicalName": "name",
+     "label": "Account Name",
+     "type": "string",
+     "format": null,
+     "display": "Adventure Works (sample)",
+     "raw": "\"Adventure Works (sample)\"",
+     "lookups": null,
+     "requiredLevel": "required",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "telephone1",
+     "label": "Phone",
+     "type": "string",
+     "format": null,
+     "display": "555-0152",
+     "raw": "\"555-0152\"",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "fax",
+     "label": "Fax",
+     "type": "string",
+     "format": null,
+     "display": "",
+     "raw": "\"\"",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "websiteurl",
+     "label": "Website",
+     "type": "string",
+     "format": "url",
+     "display": "http://www.adventure-works.com",
+     "raw": "\"http://www.adventure-works.com\"",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "parentaccountid",
+     "label": "Parent Account",
+     "type": "lookup",
+     "format": null,
+     "display": "Contoso Pharmaceuticals (sample)",
+     "raw": "[{\"id\":\"{...}\",\"name\":\"Contoso Pharmaceuticals (sample)\",\"entityType\":\"account\"}]",
+     "lookups": [
+      {
+       "id": "c0ffee00-1234-4abc-9def-000000000002",
+       "name": "Contoso Pharmaceuticals (sample)",
+       "entityType": "account"
+      }
+     ],
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "tickersymbol",
+     "label": "Ticker Symbol",
+     "type": "string",
+     "format": null,
+     "display": "ADV",
+     "raw": "\"ADV\"",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "customertypecode",
+     "label": "Relationship Type",
+     "type": "optionset",
+     "format": null,
+     "display": "Customer",
+     "raw": "3",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": true,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "industrycode",
+     "label": "Industry",
+     "type": "optionset",
+     "format": null,
+     "display": "Consulting",
+     "raw": "7",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": true,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "revenue",
+     "label": "Annual Revenue",
+     "type": "money",
+     "format": null,
+     "display": "$10,000.00",
+     "raw": "10000",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "numberofemployees",
+     "label": "Number of Employees",
+     "type": "integer",
+     "format": null,
+     "display": "4,300",
+     "raw": "4300",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "primarycontactid",
+     "label": "Primary Contact",
+     "type": "lookup",
+     "format": null,
+     "display": "Nancy Anderson (sample)",
+     "raw": "[{\"name\":\"Nancy Anderson (sample)\"}]",
+     "lookups": [
+      {
+       "id": "c0ffee00-1234-4abc-9def-000000000003",
+       "name": "Nancy Anderson (sample)",
+       "entityType": "contact"
+      }
+     ],
+     "requiredLevel": "recommended",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "address1_city",
+     "label": "Address 1: City",
+     "type": "string",
+     "format": null,
+     "display": "Santa Cruz",
+     "raw": "\"Santa Cruz\"",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "emailaddress1",
+     "label": "Email",
+     "type": "string",
+     "format": "email",
+     "display": "someone1@example.com",
+     "raw": "\"someone1@example.com\"",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Summary",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "ownerid",
+     "label": "Owner",
+     "type": "lookup",
+     "format": null,
+     "display": "Alex Wilber",
+     "raw": "[{\"name\":\"Alex Wilber\"}]",
+     "lookups": [
+      {
+       "id": "9f8e7d6c-5b4a-3928-1706-f5e4d3c2b1a0",
+       "name": "Alex Wilber",
+       "entityType": "systemuser"
+      }
+     ],
+     "requiredLevel": "required",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Details",
+     "section": "Account information"
+    },
+    {
+     "logicalName": "description",
+     "label": "Description",
+     "type": "memo",
+     "format": null,
+     "display": "",
+     "raw": "\"\"",
+     "lookups": null,
+     "requiredLevel": "none",
+     "dirty": false,
+     "visible": true,
+     "disabled": false,
+     "tab": "Details",
+     "section": "Account information"
+    }
+   ]
+  }
+ }
+}

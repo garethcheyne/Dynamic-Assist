@@ -17,7 +17,7 @@ import type {
   QueryBuilderState,
 } from "./lib/types"
 
-export type SortOrder = { attribute: string; descending: boolean }
+type SortOrder = { attribute: string; descending: boolean }
 
 export type Query = {
   entityName: string
@@ -29,7 +29,7 @@ export type Query = {
   filters: QueryBuilderState
 }
 
-export const emptyFilters = (): QueryBuilderState => ({ groups: [] })
+const emptyFilters = (): QueryBuilderState => ({ groups: [] })
 
 export function newQuery(entityName: string): Query {
   return {
@@ -49,13 +49,13 @@ const isEmpty = (v: QueryBuilderCondition["value"]) =>
   (Array.isArray(v) && v.length === 0)
 
 /** A condition still being filled in: its operator needs a value it doesn't have. */
-export const isIncomplete = (c: QueryBuilderCondition) =>
+const isIncomplete = (c: QueryBuilderCondition) =>
   c.kind !== "relatedEntity" &&
   operatorRequiresValue(c.operator) &&
   isEmpty(c.value)
 
 /** Filters without half-written conditions (or groups left empty by them). */
-export function completeFilters(state: QueryBuilderState): QueryBuilderState {
+function completeFilters(state: QueryBuilderState): QueryBuilderState {
   return {
     ...state,
     groups: state.groups

@@ -6,7 +6,7 @@ export const CE_STATE_REQUEST = "dynamic-assist:ce-state-request"
 export const CE_COMMAND = "dynamic-assist:ce-command"
 export const CE_RESULT = "dynamic-assist:ce-result"
 
-export type CeFieldType =
+type CeFieldType =
   | "string"
   | "memo"
   | "boolean"
@@ -20,7 +20,7 @@ export type CeFieldType =
   | "multiselectoptionset"
   | (string & {})
 
-export type CeLookup = { id: string; name: string | null; entityType: string }
+type CeLookup = { id: string; name: string | null; entityType: string }
 
 export type CeField = {
   logicalName: string
@@ -40,7 +40,7 @@ export type CeField = {
   section: string | null
 }
 
-export type CeTab = {
+type CeTab = {
   name: string
   label: string
   visible: boolean
@@ -83,7 +83,7 @@ export type CeEnvironment = {
   tenantId: string | null
 }
 
-export type CeUser = {
+type CeUser = {
   name: string
   id: string
   roles: string[]
@@ -147,6 +147,69 @@ export type CePermissions = {
   recordAccess: string[] | null
 }
 
+/** Levels on a related table, for the form's lookups and subgrids */
+export type CeRelatedAccess = {
+  /** The form control: a lookup or a subgrid */
+  kind: "lookup" | "subgrid"
+  control: string
+  label: string
+  table: string
+  tableLabel: string
+  read: CeDepth
+  create: CeDepth
+  append: CeDepth
+  appendTo: CeDepth
+}
+
+/** A column-security field and what the user may do with it */
+export type CeSecuredColumn = {
+  column: string
+  label: string
+  read: boolean
+  update: boolean
+  create: boolean
+}
+
+/** Where a user's access to a record comes from, besides their roles' levels */
+export type CeRecordReasons = {
+  owner: {
+    name: string
+    kind: "user" | "team"
+    isUser: boolean
+    isUsersTeam: boolean
+  }
+  /** Shares that reach the user: to them, a team they are in, or everyone */
+  shares:
+    | {
+        principal: string
+        kind: "user" | "team" | "organization"
+        rights: string[]
+      }[]
+    | null
+  userBusinessUnit: string | null
+  recordBusinessUnit: string | null
+  sameBusinessUnit: boolean
+}
+
+/** Access beyond the table: the form's related tables, secured columns, the record */
+export type CeAccessDetail = {
+  user: { id: string; name: string }
+  related: CeRelatedAccess[]
+  /** null when the org wouldn't say (no permission to read field security) */
+  secured: CeSecuredColumn[] | null
+  /** The user has System Administrator, which sees every secured column */
+  systemAdministrator: boolean
+  record: CeRecordReasons | null
+}
+
+/** A user's security roles: their own, and those they get from teams */
+export type CeUserRoles = {
+  user: { id: string; name: string; businessUnit: string | null }
+  direct: string[]
+  /** Role name and the team it comes from */
+  viaTeams: { role: string; team: string }[]
+}
+
 export type CeUserSummary = {
   id: string
   name: string
@@ -179,6 +242,15 @@ export type CeCommands = {
     result: CePermissions
   }
   searchUsers: { args: { query: string }; result: CeUserSummary[] }
+  userRoles: { args: { userId?: string | null }; result: CeUserRoles }
+  accessDetail: {
+    args: {
+      entityName: string
+      recordId?: string | null
+      userId?: string | null
+    }
+    result: CeAccessDetail
+  }
   myMailbox: { args: void; result: { id: string | null } }
 }
 

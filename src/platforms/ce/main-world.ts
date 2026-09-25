@@ -7,6 +7,9 @@
  * Everything here is defensive: a missing API reports nothing rather than
  * throwing into the page.
  */
+import { setPageTip, setPageTipAccent } from "@/shared/page-tip"
+
+import { columnCard, viewAliases } from "./column-info"
 import {
   CE_COMMAND,
   CE_RESULT,
@@ -20,6 +23,11 @@ import {
   type CeDepth,
   type CeEntity,
   type CePermissions,
+  type CeUserRoles,
+  type CeAccessDetail,
+  type CeRelatedAccess,
+  type CeSecuredColumn,
+  type CeRecordReasons,
   type CePrivilegeType,
   type CeUserSummary,
   type CeEnvironment,
@@ -274,26 +282,126 @@ function setLabels(on: boolean) {
 // Only controls bound to an attribute are marked (not subgrids, timelines…).
 const MARK_STYLE_ID = "dynamic-assist-logical-names"
 const COPY_CLASS = "dynamic-assist-copy"
+const GRID_BADGE = "dynamic-assist-grid-name"
 const COPY_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`
 const CHECK_ICON = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`
 const FIELD_ATTR = "data-dynamic-assist-field"
 const MARK_CSS = `
   [${FIELD_ATTR}] {
-    background: rgba(0, 118, 124, 0.07) !important;
-    box-shadow: inset 0 0 0 1px rgba(0, 118, 124, 0.35);
+    background: rgba(79, 70, 201, 0.06) !important;
+    box-shadow: inset 0 0 0 1px rgba(79, 70, 201, 0.35);
     border-radius: 6px;
   }
   .${COPY_CLASS} {
     display: inline-flex; align-items: center; justify-content: center;
     width: 20px; height: 20px; margin-left: 4px; flex-shrink: 0;
     border: 0; border-radius: 4px; padding: 0; cursor: pointer;
-    background: transparent; color: #00767c;
+    background: transparent; color: #4f46c9;
   }
-  .${COPY_CLASS}:hover { background: rgba(0, 118, 124, 0.15); }
-  .${COPY_CLASS}:focus-visible { outline: 2px solid #00767c; outline-offset: 1px; }
+  .${COPY_CLASS}:hover { background: rgba(79, 70, 201, 0.14); }
+  .${COPY_CLASS}:focus-visible { outline: 2px solid #4f46c9; outline-offset: 1px; }
+  .${GRID_BADGE} {
+    display: inline-block; flex: none; align-self: center; margin-left: 6px; padding: 0 4px;
+    font: 600 10px/16px Consolas, "Cascadia Mono", monospace; letter-spacing: 0;
+    color: #3d33a8; background: #eeecfd; border: 1px solid #c3bdf4; border-radius: 3px;
+    cursor: copy; white-space: nowrap; user-select: none; max-width: 180px;
+    overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+  }
+  .${GRID_BADGE}:hover { background: #ddd9fb; border-color: #4f46c9; }
+  .${GRID_BADGE}[data-copied] { background: #dff6dd; border-color: #9fd89f; color: #0e5c0e; }
 `
 
 let markObserver: MutationObserver | null = null
+
+// Grids (list views and subgrids) are Power Apps' grid control: each column
+// header has col-id = the column's logical name, or alias.column for a
+// linked table's column. Internal columns (__row_status…) start with "__".
+
+// A list view's linked-table aliases, fetched once per view
+const aliasMaps = new Map<string, Promise<Map<string, string>>>()
+
+/** The table a grid column belongs to: a subgrid's, the list's, or a linked table's. */
+async function gridTable(header: HTMLElement, alias: string | null) {
+  const holder = header
+    .closest("[data-control-name]")
+    ?.getAttribute("data-control-name")
+  const subgridTable = holder
+    ? (read(() => Xrm.Page.getControl(holder)?.getEntityName?.()) as
+        string | null)
+    : null
+  const page = readPage()
+  if (!alias) return subgridTable ?? page.entityName
+  // Linked columns: only a list view's FetchXML says which table an alias is
+  if (subgridTable || page.pageType !== "entitylist" || !page.viewId)
+    return null
+  let map = aliasMaps.get(page.viewId)
+  if (!map) {
+    map = viewAliases(clientUrl(), page.viewId, page.viewType === "4230").catch(
+      () => new Map()
+    )
+    aliasMaps.set(page.viewId, map)
+  }
+  return (await map).get(alias) ?? null
+}
+
+function addGridBadges() {
+  for (const header of document.querySelectorAll<HTMLElement>(
+    ".ag-header-cell[col-id]"
+  )) {
+    const colId = header.getAttribute("col-id")!
+    if (colId.startsWith("__") || header.querySelector(`.${GRID_BADGE}`))
+      continue
+    const dot = colId.lastIndexOf(".")
+    const name = dot >= 0 ? colId.slice(dot + 1) : colId
+    const alias = dot >= 0 ? colId.slice(0, dot) : null
+    const host =
+      header.querySelector(".ag-header-cell-label") ??
+      header.querySelector(".ag-header-cell-text")?.parentElement ??
+      header
+    const badge = document.createElement("span")
+    badge.className = GRID_BADGE
+    badge.textContent = name
+    setPageTip(
+      badge,
+      {
+        title: name,
+        rows: alias ? [["Linked table", alias]] : undefined,
+        hint: "Click to copy the logical name",
+      },
+      async () => {
+        const table = await gridTable(header, alias)
+        if (!table)
+          return {
+            title: name,
+            rows: alias ? [["Linked table", alias]] : [],
+            hint: "Click to copy the logical name",
+          }
+        return columnCard(
+          clientUrl(),
+          table,
+          name,
+          alias ? [["Linked via", alias]] : []
+        )
+      }
+    )
+    // Don't sort or open the column menu
+    for (const type of ["mousedown", "pointerdown", "keydown"])
+      badge.addEventListener(type, (e) => e.stopPropagation(), true)
+    badge.addEventListener(
+      "click",
+      (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        void navigator.clipboard.writeText(name).then(() => {
+          badge.setAttribute("data-copied", "")
+          window.setTimeout(() => badge.removeAttribute("data-copied"), 900)
+        })
+      },
+      true
+    )
+    host.appendChild(badge)
+  }
+}
 
 /** Attribute logical name behind a form control (header_x controls map to x); null if unbound. */
 function logicalNameOf(controlName: string): string | null {
@@ -312,8 +420,13 @@ function addCopyButtons() {
     const button = document.createElement("button")
     button.type = "button"
     button.className = COPY_CLASS
-    button.title = `Copy ${name}`
-    button.setAttribute("aria-label", `Copy logical name ${name}`)
+    const entity = read(() => formContext().data.entity.getEntityName()) as
+      string | null
+    setPageTip(
+      button,
+      { title: name, hint: "Click to copy the logical name" },
+      entity ? () => columnCard(clientUrl(), entity, name) : undefined
+    )
     button.innerHTML = COPY_ICON
     button.addEventListener("click", async (event) => {
       // Don't let the form treat it as a click on the field
@@ -324,7 +437,10 @@ function addCopyButtons() {
         button.innerHTML = CHECK_ICON
         window.setTimeout(() => (button.innerHTML = COPY_ICON), 1200)
       } catch {
-        button.title = "Couldn't copy"
+        setPageTip(
+          button,
+          "Couldn't copy: click the page first, then try again"
+        )
       }
     })
     label.insertAdjacentElement("afterend", button)
@@ -336,21 +452,27 @@ function markFields(on: boolean) {
   markObserver?.disconnect()
   markObserver = null
   document.querySelectorAll(`.${COPY_CLASS}`).forEach((b) => b.remove())
+  document.querySelectorAll(`.${GRID_BADGE}`).forEach((b) => b.remove())
   document
     .querySelectorAll(`[${FIELD_ATTR}]`)
     .forEach((el) => el.removeAttribute(FIELD_ATTR))
   if (!on) return
 
+  setPageTipAccent("#4f46c9")
   const style = document.createElement("style")
   style.id = MARK_STYLE_ID
   style.textContent = MARK_CSS
   document.head.appendChild(style)
   addCopyButtons()
+  addGridBadges()
 
   let timer: number | undefined
   markObserver = new MutationObserver(() => {
     window.clearTimeout(timer)
-    timer = window.setTimeout(addCopyButtons, 150)
+    timer = window.setTimeout(() => {
+      addCopyButtons()
+      addGridBadges()
+    }, 150)
   })
   markObserver.observe(document.body, { subtree: true, childList: true })
 }
@@ -383,7 +505,8 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
   },
 
   logicalNames({ on }) {
-    setLabels(on)
+    // Form labels only on a form; grid column badges anywhere (lists, subgrids)
+    if (formContext()) setLabels(on)
     markFields(on)
     modes.logicalNames = on
   },
@@ -650,6 +773,338 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
       entityName,
       privileges,
       recordAccess,
+    }
+    return result
+  },
+
+  async accessDetail({ entityName, recordId, userId }) {
+    const g = global()
+    const uid = trimId(userId ?? g.userSettings.userId)!
+    const api = `${clientUrl()}/api/data/v9.2/`
+    const F = "@OData.Community.Display.V1.FormattedValue"
+    const get = async (path: string) => {
+      const res = await fetch(api + path, {
+        headers: {
+          Accept: "application/json",
+          Prefer: 'odata.include-annotations="*"',
+        },
+      })
+      if (!res.ok) throw new Error(`Web API ${res.status}`)
+      return res.json()
+    }
+    const rank: CeDepth[] = ["None", "Basic", "Local", "Deep", "Global"]
+
+    // The user, their business unit, teams and roles (for System Administrator)
+    const user = await get(
+      `systemusers(${uid})?$select=fullname,_businessunitid_value&$expand=teammembership_association($select=name,teamid),systemuserroles_association($select=name,roleid)`
+    )
+    const teamIds = new Set(
+      (user.teammembership_association as { teamid: string }[]).map((t) =>
+        t.teamid.toLowerCase()
+      )
+    )
+    const systemAdministrator = (
+      user.systemuserroles_association as { name: string }[]
+    ).some((r) => r.name === "System Administrator")
+
+    // Levels on one table, as the widest any of the user's roles grants
+    const tableLevels = async (table: string) => {
+      const md = await get(
+        `EntityDefinitions(LogicalName='${table}')?$select=LogicalName,DisplayName,Privileges`
+      )
+      const levels: Partial<Record<CePrivilegeType, CeDepth>> = {}
+      await Promise.all(
+        (md.Privileges as { Name: string; PrivilegeType: CePrivilegeType }[])
+          .filter((p) =>
+            ["Read", "Create", "Append", "AppendTo"].includes(p.PrivilegeType)
+          )
+          .map(async (p) => {
+            const r = await get(
+              `systemusers(${uid})/Microsoft.Dynamics.CRM.RetrieveUserPrivilegeByPrivilegeName(PrivilegeName='${p.Name}')`
+            ).catch(() => ({ RolePrivileges: [] }))
+            levels[p.PrivilegeType] = (
+              r.RolePrivileges as { Depth: CeDepth }[]
+            ).reduce<CeDepth>(
+              (best, rp) =>
+                rank.indexOf(rp.Depth) > rank.indexOf(best) ? rp.Depth : best,
+              "None"
+            )
+          })
+      )
+      return {
+        label: md.DisplayName?.UserLocalizedLabel?.Label ?? table,
+        levels,
+      }
+    }
+
+    // The form's lookups and subgrids, and the tables behind them
+    const fc = formContext()
+    const controls: {
+      kind: "lookup" | "subgrid"
+      control: string
+      label: string
+      tables: string[]
+    }[] = []
+    // A column on the form twice (header and body) is checked once
+    const seen = new Set<string>()
+    if (fc) {
+      fc.ui.controls.forEach((c: any) => {
+        const type = read(() => c.getControlType()) as string | null
+        const name = read(() => c.getName()) as string
+        const label = (read(() => c.getLabel()) as string | null) ?? name
+        if (type === "lookup") {
+          const tables =
+            (read(() => c.getEntityTypes()) as string[] | null) ?? []
+          const column =
+            (read(() => c.getAttribute()?.getName()) as string | null) ?? name
+          if (!tables.length || seen.has(column)) return
+          seen.add(column)
+          controls.push({ kind: "lookup", control: name, label, tables })
+        } else if (type === "subgrid") {
+          const table = read(() => c.getEntityName()) as string | null
+          if (table)
+            controls.push({
+              kind: "subgrid",
+              control: name,
+              label,
+              tables: [table],
+            })
+        }
+      })
+    }
+    const tables = [...new Set(controls.flatMap((c) => c.tables))]
+    const levelsByTable = new Map(
+      await Promise.all(
+        tables.map(
+          async (t) => [t, await tableLevels(t).catch(() => null)] as const
+        )
+      )
+    )
+    const related: CeRelatedAccess[] = controls.flatMap((c) =>
+      c.tables.flatMap((t) => {
+        const found = levelsByTable.get(t)
+        if (!found) return []
+        const l = found.levels
+        return [
+          {
+            kind: c.kind,
+            control: c.control,
+            // A subgrid nobody labelled keeps the designer's "New SG control
+            // 1789…": name it by its table instead
+            label: /^New SG control \d+$/.test(c.label) ? found.label : c.label,
+            table: t,
+            tableLabel: found.label,
+            read: l.Read ?? "None",
+            create: l.Create ?? "None",
+            append: l.Append ?? "None",
+            appendTo: l.AppendTo ?? "None",
+          },
+        ]
+      })
+    )
+
+    // Column security: the table's secured columns and the user's rights on each
+    let secured: CeSecuredColumn[] | null
+    try {
+      const attrs = await get(
+        `EntityDefinitions(LogicalName='${entityName}')/Attributes?$select=LogicalName,MetadataId,DisplayName&$filter=IsSecured eq true`
+      )
+      const list = attrs.value as {
+        LogicalName: string
+        MetadataId: string
+        DisplayName?: any
+      }[]
+      if (!list.length) secured = []
+      else {
+        const privs = await get(
+          `systemusers(${uid})/Microsoft.Dynamics.CRM.RetrievePrincipalAttributePrivileges()`
+        )
+        const byId = new Map(
+          (
+            (privs.AttributePrivileges ?? []) as {
+              AttributeId: string
+              CanRead: number
+              CanUpdate: number
+              CanCreate: number
+            }[]
+          ).map((p) => [p.AttributeId.toLowerCase(), p])
+        )
+        // 4 is "allowed" in field permissions; System Administrator sees everything
+        const yes = (v: number | undefined) => systemAdministrator || v === 4
+        secured = list.map((a) => {
+          const p = byId.get(a.MetadataId.toLowerCase())
+          return {
+            column: a.LogicalName,
+            label: a.DisplayName?.UserLocalizedLabel?.Label ?? a.LogicalName,
+            read: yes(p?.CanRead),
+            update: yes(p?.CanUpdate),
+            create: yes(p?.CanCreate),
+          }
+        })
+      }
+    } catch {
+      secured = null
+    }
+
+    // The record: its owner, who it's shared with, and whose business unit it's in
+    let record: CeAccessDetail["record"] = null
+    const rid = trimId(recordId ?? null)
+    if (rid) {
+      const md = await get(
+        `EntityDefinitions(LogicalName='${entityName}')?$select=EntitySetName,OwnershipType`
+      )
+      const set = md.EntitySetName as string
+      const row = await get(
+        `${set}(${rid})?$select=_ownerid_value,_owningbusinessunit_value`
+      ).catch(() => null)
+      if (row?._ownerid_value) {
+        const ownerId = String(row._ownerid_value).toLowerCase()
+        const ownerKind =
+          row["_ownerid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] ===
+          "team"
+            ? "team"
+            : "user"
+        let shares: CeRecordReasons["shares"]
+        try {
+          const target = encodeURIComponent(
+            JSON.stringify({ "@odata.id": `${set}(${rid})` })
+          )
+          const r = await get(
+            `RetrieveSharedPrincipalsAndAccess(Target=@t)?@t=${target}`
+          )
+          shares = (
+            r.PrincipalAccesses as { AccessMask: string; Principal: any }[]
+          )
+            .map((pa) => {
+              const p = pa.Principal ?? {}
+              // "#Microsoft.Dynamics.CRM.systemuser", "…team", "…organization"
+              const type = String(p["@odata.type"] ?? "")
+                .split(".")
+                .pop()
+              const kind =
+                type === "team"
+                  ? ("team" as const)
+                  : type === "organization"
+                    ? ("organization" as const)
+                    : ("user" as const)
+              const id = String(
+                p.teamid ?? p.systemuserid ?? p.organizationid ?? ""
+              ).toLowerCase()
+              return {
+                id,
+                kind,
+                rights: String(pa.AccessMask)
+                  .split(",")
+                  .map((x) => x.trim())
+                  .filter(Boolean),
+              }
+            })
+            // Shares that reach this user: to them, a team they're in, or everyone
+            .filter((s) =>
+              s.kind === "team"
+                ? teamIds.has(s.id)
+                : s.kind === "user"
+                  ? s.id === uid
+                  : true
+            )
+            .map((s) => ({
+              principal:
+                s.kind === "team"
+                  ? ((
+                      user.teammembership_association as {
+                        teamid: string
+                        name: string
+                      }[]
+                    ).find((t) => t.teamid.toLowerCase() === s.id)?.name ??
+                    "A team")
+                  : s.kind === "organization"
+                    ? "Everyone in the organisation"
+                    : user.fullname,
+              kind: s.kind,
+              rights: s.rights,
+            }))
+        } catch {
+          shares = null
+        }
+        const userBu = user._businessunitid_value
+          ? String(user._businessunitid_value).toLowerCase()
+          : null
+        const recordBu = row._owningbusinessunit_value
+          ? String(row._owningbusinessunit_value).toLowerCase()
+          : null
+        record = {
+          owner: {
+            name: row[`_ownerid_value${F}`] ?? ownerId,
+            kind: ownerKind,
+            isUser: ownerKind === "user" && ownerId === uid,
+            isUsersTeam: ownerKind === "team" && teamIds.has(ownerId),
+          },
+          shares,
+          userBusinessUnit: user[`_businessunitid_value${F}`] ?? null,
+          recordBusinessUnit: row[`_owningbusinessunit_value${F}`] ?? null,
+          sameBusinessUnit: !!userBu && userBu === recordBu,
+        }
+      }
+    }
+
+    const result: CeAccessDetail = {
+      user: { id: uid, name: user.fullname },
+      related,
+      secured,
+      systemAdministrator,
+      record,
+    }
+    return result
+  },
+
+  async userRoles({ userId }) {
+    const g = global()
+    const uid = trimId(userId ?? g.userSettings.userId)!
+    const api = `${clientUrl()}/api/data/v9.2/`
+    const get = async (path: string) => {
+      const res = await fetch(api + path, {
+        headers: {
+          Accept: "application/json",
+          Prefer:
+            'odata.include-annotations="OData.Community.Display.V1.FormattedValue"',
+        },
+      })
+      if (!res.ok) throw new Error(`Web API ${res.status}`)
+      return res.json()
+    }
+    const [user, teams] = await Promise.all([
+      get(
+        `systemusers(${uid})?$select=fullname,_businessunitid_value&$expand=systemuserroles_association($select=name)`
+      ),
+      get(
+        `systemusers(${uid})/teammembership_association?$select=name&$expand=teamroles_association($select=name)`
+      ).catch(() => ({ value: [] })),
+    ])
+    const result: CeUserRoles = {
+      user: {
+        id: uid,
+        name: user.fullname,
+        businessUnit:
+          user[
+            "_businessunitid_value@OData.Community.Display.V1.FormattedValue"
+          ] ?? null,
+      },
+      direct: (user.systemuserroles_association as { name: string }[])
+        .map((r) => r.name)
+        .sort((a, b) => a.localeCompare(b)),
+      viaTeams: (
+        teams.value as {
+          name: string
+          teamroles_association?: { name: string }[]
+        }[]
+      )
+        .flatMap((t) =>
+          (t.teamroles_association ?? []).map((r) => ({
+            role: r.name,
+            team: t.name,
+          }))
+        )
+        .sort((a, b) => a.role.localeCompare(b.role)),
     }
     return result
   },

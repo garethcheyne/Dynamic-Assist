@@ -345,38 +345,3 @@ const parseLinkEntity = (
         nestedFields: [],
     };
 };
-
-/**
- * Validate FetchXML syntax (basic XML validation)
- */
-export const validateFetchXmlSyntax = (xml: string): { valid: boolean; error?: string } => {
-    try {
-        const trimmed = xml.trim();
-        if (!trimmed) {
-            return { valid: false, error: 'Empty FetchXML' };
-        }
-
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(trimmed, 'application/xml');
-        const parseError = doc.querySelector('parsererror');
-        
-        if (parseError) {
-            return { valid: false, error: parseError.textContent || 'XML parsing error' };
-        }
-
-        // Check for required elements
-        const fetch = doc.querySelector('fetch');
-        if (!fetch) {
-            return { valid: false, error: 'Missing <fetch> element' };
-        }
-
-        const entity = doc.querySelector('entity');
-        if (!entity) {
-            return { valid: false, error: 'Missing <entity> element' };
-        }
-
-        return { valid: true };
-    } catch (err) {
-        return { valid: false, error: err instanceof Error ? err.message : 'Unknown error' };
-    }
-};

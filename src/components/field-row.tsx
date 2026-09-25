@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useCopy } from "@/lib/copy"
+import { Hint } from "@/components/hint"
 
 export type CopyFormat = { label: string; value: string }
 export type DetailRow = { label: string; value: string; long?: boolean }
@@ -70,23 +71,23 @@ export function FieldRow({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           <span className="flex max-w-[55%] min-w-0 shrink-0 items-center gap-1">
-            <span
-              className="truncate text-xs text-muted-foreground"
-              title={`${label} · ${name}`}
-            >
-              {label}
-            </span>
+            <Hint label={`${label} · ${name}`}>
+              <span className="truncate text-xs text-muted-foreground">
+                {label}
+              </span>
+            </Hint>
             {markers}
           </span>
-          <span
-            className={cn(
-              "min-w-0 flex-1 truncate text-right text-xs",
-              value ? "font-medium" : "text-muted-foreground/60"
-            )}
-            title={value || undefined}
-          >
-            {value || "—"}
-          </span>
+          <Hint label={value || undefined}>
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate text-right text-xs",
+                value ? "font-medium" : "text-muted-foreground/60"
+              )}
+            >
+              {value || "—"}
+            </span>
+          </Hint>
         </button>
 
         <div className="absolute inset-y-0 right-0 hidden items-center gap-0.5 rounded-r-md bg-muted pl-2 group-focus-within/row:flex group-hover/row:flex">
@@ -112,15 +113,16 @@ export function FieldRow({
           {details.map((d) => (
             <React.Fragment key={d.label}>
               <dt className="text-muted-foreground">{d.label}</dt>
-              <dd
-                className={cn(
-                  "font-mono",
-                  d.long ? "break-all whitespace-pre-wrap" : "truncate"
-                )}
-                title={d.value}
-              >
-                {d.value}
-              </dd>
+              <Hint label={d.value}>
+                <dd
+                  className={cn(
+                    "font-mono",
+                    d.long ? "break-all whitespace-pre-wrap" : "truncate"
+                  )}
+                >
+                  {d.value}
+                </dd>
+              </Hint>
             </React.Fragment>
           ))}
         </dl>
@@ -141,22 +143,23 @@ function RowAction({
   children: React.ReactNode
 }) {
   return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      disabled={disabled}
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-      className={cn(
-        buttonVariants({ variant: "ghost", size: "icon-xs" }),
-        "hover:bg-background"
-      )}
-    >
-      {children}
-    </button>
+    <Hint label={label}>
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon-xs" }),
+          "hover:bg-background"
+        )}
+      >
+        {children}
+      </button>
+    </Hint>
   )
 }
 
@@ -170,16 +173,17 @@ function FormatsMenu({
   const copy = useCopy()
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        title="More ways to copy"
-        aria-label="More ways to copy"
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "icon-xs" }),
-          "hover:bg-background"
-        )}
-      >
-        <EllipsisIcon />
-      </DropdownMenuTrigger>
+      <Hint label="More ways to copy">
+        <DropdownMenuTrigger
+          aria-label="More ways to copy"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "icon-xs" }),
+            "hover:bg-background"
+          )}
+        >
+          <EllipsisIcon />
+        </DropdownMenuTrigger>
+      </Hint>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="truncate">Copy {label}</DropdownMenuLabel>
         <DropdownMenuSeparator />

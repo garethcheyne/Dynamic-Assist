@@ -6,9 +6,10 @@ import {
   SparklesIcon,
 } from "lucide-react"
 
-import bcLogo from "@/assets/brand/bc.png"
-import ceLogo from "@/assets/brand/ce.png"
-import paLogo from "@/assets/brand/pa.png"
+import bcLogo from "@/assets/brand/ms/business-central.svg"
+import ceLogo from "@/assets/brand/ms/dynamics-365.svg"
+import paLogo from "@/assets/brand/ms/power-apps.svg"
+import flowLogo from "@/assets/brand/ms/power-automate.svg"
 import { CollapsibleSection } from "@/components/collapsible-section"
 
 const { version } = chrome.runtime.getManifest()
@@ -83,7 +84,7 @@ export function CreditsView() {
           brings that tooling together in one side panel, with the same look and
           the same habits wherever you are:
         </p>
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1">
             <img src={bcLogo} alt="" className="size-3.5" />
             Business Central
@@ -95,6 +96,10 @@ export function CreditsView() {
           <span className="flex items-center gap-1">
             <img src={paLogo} alt="" className="size-3.5" />
             Power Apps
+          </span>
+          <span className="flex items-center gap-1">
+            <img src={flowLogo} alt="" className="size-3.5" />
+            Power Automate
           </span>
         </div>
         <p className="text-xs">
@@ -156,9 +161,11 @@ export function CreditsView() {
       </CollapsibleSection>
 
       <p className="px-2 text-center text-[10px] leading-snug text-muted-foreground">
-        Microsoft, Dynamics 365, Business Central and Power Apps, and their
-        logos, are trademarks of the Microsoft group of companies; the logos
-        only show which platform you're working in. Dynamic Assist is an
+        Microsoft, Dynamics 365, Business Central, Power Platform, Power Apps,
+        Power Automate, Dataverse, Power BI, Copilot Studio, Azure, Azure DevOps
+        and Microsoft Entra, and their icons, are trademarks of the Microsoft
+        group of companies. The icons are Microsoft's own, unmodified, and only
+        show which product a link or page belongs to. Dynamic Assist is an
         independent project, not affiliated with or endorsed by Microsoft.
       </p>
     </div>

@@ -24,6 +24,7 @@ import {
 } from "@/lib/history"
 import { useStorage } from "@/lib/use-storage"
 import { PRODUCTS } from "@/shared/products"
+import { Hint } from "@/components/hint"
 
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" })
 function ago(time: number) {
@@ -36,7 +37,11 @@ function ago(time: number) {
 }
 
 /** Pinned instances first, then everything you've visited by product. */
-export function HistoryView() {
+/**
+ * Every environment you've opened. `embedded`: a block within another page
+ * (the home page) rather than a page of its own that scrolls.
+ */
+export function HistoryView({ embedded = false }: { embedded?: boolean }) {
   const [entries] = useStorage<HistoryEntry[]>(HISTORY_KEY, [])
   const [query, setQuery] = React.useState("")
   const q = query.trim().toLowerCase()
@@ -52,7 +57,12 @@ export function HistoryView() {
 
   if (entries.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+      <div
+        className={cn(
+          "flex flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground",
+          embedded ? "rounded-xl border border-dashed p-5" : "flex-1 p-6"
+        )}
+      >
         <HistoryIcon className="size-6 text-primary" />
         <p className="max-w-64">
           No history yet. Business Central environments, Dynamics 365 orgs and
@@ -63,7 +73,12 @@ export function HistoryView() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+    <div
+      className={cn(
+        "flex flex-col gap-3",
+        !embedded && "min-h-0 flex-1 overflow-y-auto p-3"
+      )}
+    >
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <SearchBox
@@ -156,40 +171,41 @@ function HistoryRow({
 
   return (
     <div className="group/history flex items-center gap-0.5 rounded-md hover:bg-muted/60">
-      <button
-        type="button"
-        title={`Open ${e.url}`}
-        onClick={() => chrome.tabs.create({ url: e.url })}
-        className="flex min-w-0 flex-1 items-center gap-2 px-1.5 py-1.5 text-left"
-      >
-        {showProduct && (
-          <img
-            src={PRODUCTS[e.platform].logo}
-            alt={PRODUCTS[e.platform].name}
-            className="size-4 shrink-0"
-          />
-        )}
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-xs font-medium">{name}</span>
-            {e.envType && (
-              <span
-                className={cn(
-                  "rounded px-1 text-[9px] font-semibold tracking-wide uppercase",
-                  e.envType === "production"
-                    ? "bg-production text-production-foreground"
-                    : "bg-sandbox text-sandbox-foreground"
-                )}
-              >
-                {e.envType}
-              </span>
-            )}
+      <Hint label={`Open ${e.url}`}>
+        <button
+          type="button"
+          onClick={() => chrome.tabs.create({ url: e.url })}
+          className="flex min-w-0 flex-1 items-center gap-2 px-1.5 py-1.5 text-left"
+        >
+          {showProduct && (
+            <img
+              src={PRODUCTS[e.platform].logo}
+              alt={PRODUCTS[e.platform].name}
+              className="size-4 shrink-0"
+            />
+          )}
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-xs font-medium">{name}</span>
+              {e.envType && (
+                <span
+                  className={cn(
+                    "rounded px-1 text-[9px] font-semibold tracking-wide uppercase",
+                    e.envType === "production"
+                      ? "bg-production text-production-foreground"
+                      : "bg-sandbox text-sandbox-foreground"
+                  )}
+                >
+                  {e.envType}
+                </span>
+              )}
+            </span>
+            <span className="truncate text-[11px] text-muted-foreground">
+              {detail}
+            </span>
           </span>
-          <span className="truncate text-[11px] text-muted-foreground">
-            {detail}
-          </span>
-        </span>
-      </button>
+        </button>
+      </Hint>
       <RowButton
         label={e.pinned ? "Unpin" : "Pin"}
         visible={e.pinned}

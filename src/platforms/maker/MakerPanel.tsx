@@ -1,17 +1,14 @@
 import * as React from "react"
 import {
   AppWindowIcon,
-  DatabaseIcon,
   HistoryIcon,
-  HouseIcon,
   PackageIcon,
   RefreshCwIcon,
-  ServerCogIcon,
-  WorkflowIcon,
 } from "lucide-react"
 
-import ceLogo from "@/assets/brand/ce.png"
+import ceLogo from "@/assets/brand/ms/dynamics-365.svg"
 import { ActionTile, TileGrid } from "@/components/action-tile"
+import { ProductIcon } from "@/components/product-icon"
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Detail, DetailGrid } from "@/components/detail-grid"
 import { Button } from "@/components/ui/button"
@@ -22,6 +19,13 @@ import {
   type HistoryEntry,
 } from "@/lib/history"
 import { useStorage } from "@/lib/use-storage"
+import {
+  ConnectionReferences,
+  EnvVariables,
+  FlowsManager,
+  OrgMissing,
+} from "@/platforms/flow/FlowTools"
+import { useOrg } from "@/platforms/flow/use-org"
 import { parseMakerUrl } from "@/shared/detect"
 import { powerPlatform } from "@/shared/links"
 
@@ -67,6 +71,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
   const [stableName, setStableName] = React.useState<string | null>(null)
   const lastRead = React.useRef<string | null>(null)
   const [history] = useStorage<HistoryEntry[]>(HISTORY_KEY, [])
+  const dv = useOrg(tab.id, env)
 
   const refresh = React.useCallback(() => {
     if (tab.id === undefined) return
@@ -166,7 +171,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
                     onClick={() => open(org.url)}
                   />
                   <ActionTile
-                    icon={<DatabaseIcon />}
+                    icon={<ProductIcon product="dataverse" />}
                     title="Web API"
                     description="This org's service document"
                     onClick={() =>
@@ -182,6 +187,24 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
               )}
             </CollapsibleSection>
 
+            {m.solutionId &&
+              (dv.org ? (
+                <>
+                  <FlowsManager
+                    org={dv.org}
+                    env={env}
+                    solutionId={m.solutionId}
+                  />
+                  <ConnectionReferences
+                    org={dv.org}
+                    solutionId={m.solutionId}
+                  />
+                  <EnvVariables org={dv.org} solutionId={m.solutionId} />
+                </>
+              ) : (
+                <OrgMissing loading={dv.loading} onRetry={dv.retry} />
+              ))}
+
             <CollapsibleSection
               id="maker.links"
               title="This environment"
@@ -189,7 +212,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
             >
               <TileGrid>
                 <ActionTile
-                  icon={<HouseIcon />}
+                  icon={<ProductIcon product="powerApps" />}
                   title="Home"
                   description="Maker home"
                   onClick={() => open(maker("home"))}
@@ -201,7 +224,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
                   onClick={() => open(maker("solutions"))}
                 />
                 <ActionTile
-                  icon={<DatabaseIcon />}
+                  icon={<ProductIcon product="dataverse" />}
                   title="Tables"
                   description="Dataverse tables"
                   onClick={() => open(maker("entities"))}
@@ -213,7 +236,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
                   onClick={() => open(maker("apps"))}
                 />
                 <ActionTile
-                  icon={<WorkflowIcon />}
+                  icon={<ProductIcon product="powerAutomate" />}
                   title="Flows"
                   description="In Power Automate"
                   onClick={() => open(powerPlatform.flows(env))}
@@ -225,7 +248,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
                   onClick={() => open(maker("history"))}
                 />
                 <ActionTile
-                  icon={<ServerCogIcon />}
+                  icon={<ProductIcon product="powerPlatform" />}
                   title="Admin center"
                   description="This environment in Power Platform admin"
                   onClick={() => open(powerPlatform.adminCenter(env))}

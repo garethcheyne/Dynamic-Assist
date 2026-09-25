@@ -1,0 +1,747 @@
+<!doctype html>
+<!--
+  The Dynamic Assist brochure: A4 pages, rendered to PDF by
+  marketing/brochure.mjs (npm run marketing:brochure).
+  Panels are real side panel screenshots with demo data (marketing/capture.mjs):
+  fictitious names only. No Microsoft Entra icon anywhere (its icon terms don't
+  allow marketing use), so the home-bottom and launcher-bottom shots stay out.
+  Edit the copy here and render again; ?theme=dark uses the dark screenshots.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dynamic Assist brochure</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      :root {
+        --bc: #19b0b4;
+        --bc-deep: #0b6f86;
+        --ce: #5b4fc7;
+        --ce-deep: #3d33a8;
+        --pa: #a33a9f;
+        --flow: #2f7bff;
+        --ink: #101528;
+        --body: #3b4258;
+        --muted: #6b7390;
+        --line: #e4e7f0;
+        --paper: #ffffff;
+        --night: #0a1030;
+        --font: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+        --mono: "Cascadia Mono", Consolas, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #6b7084;
+        font-family: var(--font);
+        color: var(--body);
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .page {
+        position: relative;
+        width: 210mm;
+        height: 297mm;
+        overflow: hidden;
+        background: var(--paper);
+        page-break-after: always;
+        break-after: page;
+      }
+      @media screen {
+        .page {
+          margin: 24px auto;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+        }
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        color: var(--ink);
+        letter-spacing: -0.025em;
+      }
+      p {
+        margin: 0;
+        line-height: 1.5;
+      }
+      b {
+        color: var(--ink);
+        font-weight: 650;
+      }
+
+      /* Dark pages: cover and back */
+      .night {
+        color: #dfe4f7;
+        background:
+          radial-gradient(60% 45% at 95% 20%, color-mix(in srgb, var(--flow) 45%, transparent), transparent 70%),
+          radial-gradient(55% 40% at 70% 100%, color-mix(in srgb, var(--pa) 50%, transparent), transparent 70%),
+          radial-gradient(60% 45% at 0% 0%, color-mix(in srgb, var(--bc) 45%, transparent), transparent 70%),
+          radial-gradient(40% 30% at 40% 55%, color-mix(in srgb, var(--ce) 30%, transparent), transparent 70%),
+          linear-gradient(160deg, #0a1030 0%, #0c0f2a 55%, #160a2b 100%);
+      }
+      .night::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+        background-size: 20px 20px;
+        mask-image: linear-gradient(180deg, #000 0%, transparent 55%);
+      }
+      .night h1,
+      .night h2,
+      .night h3,
+      .night b {
+        color: #fff;
+      }
+      .grad {
+        background: linear-gradient(90deg, #3fd3d6, #9d94ff 45%, #ff86dd 75%, #8cc0ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 650;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+      }
+      .brand img {
+        width: 40px;
+        height: 40px;
+        border-radius: 22%;
+        box-shadow: 0 6px 24px rgba(25, 176, 180, 0.45);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 12px 5px 10px;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+      .chip i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--c);
+        box-shadow: 0 0 10px var(--c);
+      }
+
+      /* Panel screenshots as cards */
+      .shot {
+        position: relative;
+        overflow: hidden;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid rgba(16, 21, 40, 0.1);
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.8) inset,
+          0 24px 50px -18px rgba(16, 21, 40, 0.45),
+          0 0 0 5px color-mix(in srgb, var(--accent) 10%, transparent);
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+      }
+      .shot::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 14%;
+        background: linear-gradient(transparent, #fff);
+      }
+      .shot.dark::after {
+        background: linear-gradient(transparent, #18181b);
+      }
+      .night .shot {
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow:
+          0 30px 60px -14px rgba(0, 0, 0, 0.7),
+          0 0 70px -12px var(--accent);
+      }
+      .caption {
+        margin-top: 8px;
+        font-size: 10.5px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      /* Interior pages */
+      .band {
+        position: relative;
+        padding: 16mm 16mm 9mm;
+        color: #fff;
+        background:
+          radial-gradient(70% 140% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 60%),
+          linear-gradient(120deg, var(--a1), var(--a2));
+      }
+      .band .kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+      .band .kicker i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .band h2 {
+        margin-top: 8px;
+        color: #fff;
+        font-size: 30px;
+        line-height: 1.1;
+        font-weight: 750;
+      }
+      .band p {
+        margin-top: 8px;
+        max-width: 150mm;
+        font-size: 13.5px;
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .content {
+        padding: 9mm 16mm 0;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: 62mm 1fr;
+        gap: 9mm;
+      }
+      .shots {
+        display: flex;
+        flex-direction: column;
+        gap: 6mm;
+      }
+      .features {
+        display: grid;
+        gap: 4.2mm;
+        align-content: start;
+      }
+      .feature {
+        display: grid;
+        grid-template-columns: 26px 1fr;
+        gap: 10px;
+      }
+      .feature .n {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, white);
+      }
+      .feature h3 {
+        font-size: 14px;
+        font-weight: 650;
+      }
+      .feature p {
+        margin-top: 2px;
+        font-size: 11.5px;
+        line-height: 1.45;
+      }
+      .note {
+        margin-top: 5mm;
+        padding: 10px 13px;
+        border-radius: 10px;
+        font-size: 11px;
+        line-height: 1.45;
+        background: color-mix(in srgb, var(--accent) 7%, white);
+        border: 1px solid color-mix(in srgb, var(--accent) 22%, white);
+      }
+      .note b {
+        color: var(--accent);
+      }
+      .foot {
+        position: absolute;
+        left: 16mm;
+        right: 16mm;
+        bottom: 9mm;
+        display: flex;
+        justify-content: space-between;
+        font-size: 9.5px;
+        color: var(--muted);
+      }
+      .night .foot {
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      /* Cards and code */
+      .cards {
+        display: grid;
+        gap: 5mm;
+      }
+      .card {
+        padding: 13px 15px;
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 10px 30px -18px rgba(16, 21, 40, 0.35);
+      }
+      .card h3 {
+        font-size: 14px;
+      }
+      .card p {
+        margin-top: 4px;
+        font-size: 11.5px;
+      }
+      .dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin-right: 7px;
+        border-radius: 50%;
+        background: var(--c);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 18%, transparent);
+      }
+      .code {
+        overflow: hidden;
+        border-radius: 12px;
+        font: 10px/1.55 var(--mono);
+        color: #dfe4f7;
+        background: #0f1430;
+        box-shadow: 0 20px 40px -20px rgba(16, 21, 40, 0.6);
+      }
+      .code .bar {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        padding: 7px 12px;
+        font: 600 10px var(--font);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #aab3cf;
+        background: rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .code .bar i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--c);
+      }
+      .code pre {
+        margin: 0;
+        padding: 10px 12px;
+        white-space: pre;
+      }
+      .k {
+        color: #8cc0ff;
+      }
+      .s {
+        color: #ffb3e6;
+      }
+      .c {
+        color: #7c86a8;
+      }
+      .t {
+        color: #7ee0d8;
+      }
+      ul.ticks {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 7px;
+      }
+      ul.ticks li {
+        position: relative;
+        padding-left: 20px;
+        font-size: 11.5px;
+        line-height: 1.45;
+      }
+      ul.ticks li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-weight: 800;
+        color: var(--accent);
+      }
+      .night ul.ticks li::before {
+        color: #7ee0d8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="doc"></div>
+    <script type="module">
+      const theme = new URLSearchParams(location.search).get("theme") ?? "light"
+      const shot = (name, t = theme) => `/marketing/out/shots/${name}-${t}.png`
+      const icon = "/icons/icon128.png"
+      const version = new URLSearchParams(location.search).get("version") ?? ""
+
+      const P = {
+        bc: ["Business Central", "var(--bc)"],
+        ce: ["Dynamics 365", "var(--ce)"],
+        pa: ["Power Apps", "var(--pa)"],
+        flow: ["Power Automate", "var(--flow)"],
+      }
+      const chips = Object.values(P)
+        .map(([n, c]) => `<span class="chip" style="--c:${c}"><i></i>${n}</span>`)
+        .join("")
+
+      /** A screenshot card showing `crop` of the panel's height */
+      const card = (name, { crop = 0.62, caption = "", t = theme, style = "" } = {}) => `
+        <figure style="margin:0;${style}">
+          <div class="shot ${t}" style="aspect-ratio:1/${(2.05 * crop).toFixed(3)}"><img src="${shot(name, t)}" alt=""></div>
+          ${caption ? `<figcaption class="caption">${caption}</figcaption>` : ""}
+        </figure>`
+
+      const features = (list) =>
+        `<div class="features">${list
+          .map(
+            ([title, text], i) => `
+          <div class="feature"><span class="n">${String(i + 1).padStart(2, "0")}</span>
+            <div><h3>${title}</h3><p>${text}</p></div></div>`
+          )
+          .join("")}</div>`
+
+      let pageNo = 0
+      const foot = (label) =>
+        `<div class="foot"><span>Dynamic Assist${label ? ` · ${label}` : ""}</span><span>${++pageNo}</span></div>`
+
+      const band = (kicker, title, lead, a1, a2) => `
+        <header class="band" style="--a1:${a1};--a2:${a2}">
+          <span class="kicker"><i></i>${kicker}</span>
+          <h2>${title}</h2>
+          <p>${lead}</p>
+        </header>`
+
+      const pages = []
+
+      // 1. Cover
+      pages.push(`
+        <section class="page night" style="--accent:var(--ce)">
+          <div style="position:absolute;left:18mm;top:20mm;right:18mm;z-index:2;display:flex;flex-direction:column;gap:16px">
+            <div class="brand"><img src="${icon}" alt="">Dynamic Assist</div>
+            <h1 style="margin-top:22mm;font-size:52px;line-height:1.02;font-weight:760">Four Microsoft apps.<br><span class="grad">One side panel.</span></h1>
+            <p style="max-width:128mm;font-size:16px;color:#c6cde6">Admin and developer tools for Business Central, Dynamics 365, Power Apps and Power Automate. See what's behind any page, check anyone's access, query any table and switch on a solution's flows in one go. As you, with your permissions.</p>
+            <div class="chips" style="margin-top:4px">${chips}</div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:12mm;height:140mm;perspective:1600px">
+            <div style="position:absolute;left:14mm;top:14mm;width:56mm;transform:rotateY(18deg) rotateZ(-4deg);--accent:var(--bc)">${card("bc-page", { crop: 0.8 })}</div>
+            <div style="position:absolute;left:74mm;top:0;width:62mm;z-index:2;--accent:var(--ce)">${card("ce-access-detail", { crop: 0.88 })}</div>
+            <div style="position:absolute;left:140mm;top:14mm;width:56mm;transform:rotateY(-18deg) rotateZ(4deg);--accent:var(--flow)">${card("flow-bulk", { crop: 0.8 })}</div>
+          </div>
+          <div class="foot" style="z-index:2"><span>Chrome and Edge extension · free and open source</span><span>${version ? `Version ${version}` : ""}</span></div>
+        </section>`)
+      pageNo++
+
+      // 2. Overview
+      pages.push(`
+        <section class="page" style="--accent:var(--ce)">
+          ${band(
+            "Why Dynamic Assist",
+            "Everything behind the page,<br>right beside it.",
+            "Admins and developers spend their day between Business Central, Dynamics 365 and the Power Platform, digging for IDs, field names, permissions and settings. Dynamic Assist opens beside the page you're on and shows what's behind it, then takes you wherever you need to go next.",
+            "#0b6f86",
+            "#5b4fc7"
+          )}
+          <div class="content">
+            <div class="cards" style="grid-template-columns:1fr 1fr">
+              ${[
+                ["bc", "Page and table IDs, every field with its table name and number, the app that added it, and admin and developer pages by number."],
+                ["ce", "Record details, every column, logical names on forms and lists, god mode, FetchXML, and anyone's access to the record."],
+                ["pa", "The environment and solution you're in, and what needs attention after an import: flows, connection references, variables."],
+                ["flow", "Turn a solution's flows on in bulk, see failed runs, and read any flow's definition as JSON."],
+              ]
+                .map(
+                  ([k, text]) => `<div class="card"><h3><span class="dot" style="--c:${P[k][1]}"></span>${P[k][0]}</h3><p>${text}</p></div>`
+                )
+                .join("")}
+            </div>
+
+            <h3 style="margin:8mm 0 4mm;font-size:18px">Built the way admins work</h3>
+            <div class="cards" style="grid-template-columns:repeat(3,1fr)">
+              <div class="card"><h3>Reads the page itself</h3><p>Straight from the web client, so it's instant. In Business Central it doesn't start a second session the way the page inspector does.</p></div>
+              <div class="card"><h3>Runs as you</h3><p>Your existing sign-in, your permissions. There's nothing to set up, no app registration, no new credentials.</p></div>
+              <div class="card"><h3>Nothing leaves your browser</h3><p>No server, no account, no analytics. It only calls the Microsoft service you already have open.</p></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;margin-top:8mm;text-align:center">
+              ${[
+                ["4", "products, one panel"],
+                ["60+", "tools, shortcuts and checks"],
+                ["0", "servers or accounts"],
+                ["1 click", "from any page to its admin pages"],
+              ]
+                .map(
+                  ([n, l]) => `<div><div style="font-size:30px;font-weight:760;letter-spacing:-.03em;color:var(--ink)"><span class="grad" style="background:linear-gradient(90deg,#0b8e93,#5b4fc7);-webkit-background-clip:text;background-clip:text;color:transparent">${n}</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px">${l}</div></div>`
+                )
+                .join("")}
+            </div>
+
+            <h3 style="margin:9mm 0 4mm;font-size:18px">Who it's for</h3>
+            <div class="cards" style="grid-template-columns:repeat(4,1fr);gap:4mm">
+              <div class="card"><h3>Administrators</h3><p>Check anyone's access and why, jump to any admin centre or setup page, and bring a solution's flows back online after an import.</p></div>
+              <div class="card"><h3>Developers</h3><p>Field and table numbers, logical names, the app behind every field, FetchXML, AL and API queries, and form and ribbon debugging.</p></div>
+              <div class="card"><h3>Functional consultants</h3><p>See how a page or form is built, which extension added what, and query the data behind it without writing code.</p></div>
+              <div class="card"><h3>Support teams</h3><p>Answer “why can't they see it?” in seconds, blur data for screenshots, and share links straight to the record.</p></div>
+            </div>
+          </div>
+          ${foot("Overview")}
+        </section>`)
+
+      // 3. Business Central
+      pages.push(`
+        <section class="page" style="--accent:var(--bc)">
+          ${band(
+            "Business Central",
+            "Know every page, field<br>and app that touches it.",
+            "Open any page and the panel shows its page and table, the app that owns it, and every field with its real table name and number. No page inspector, no second session.",
+            "#0b6f86",
+            "#19b0b4"
+          )}
+          <div class="content split">
+            <div class="shots">
+              ${card("bc-page", { crop: 0.72, caption: "Page tab: IDs, app, keys and every field" })}
+              ${card("bc-tools", { crop: 0.64, caption: "Tools that act on the page" })}
+            </div>
+            <div>
+              ${features([
+                ["Page details", "Page and table IDs and names, page type, the owning app and version, primary key, SystemId and bookmark. Open the page, the table's data or a query in one click."],
+                ["Every field", "Grouped by FastTab with its value. Filter to fields with a value, fields added by extensions, FlowFields or hidden ones. Copy a name, a value, an AL reference, API or OData name, or all fields as JSON."],
+                ["Field names on the page", "The table field name and number beside every caption and column header. Hover for type, class and <b>the extension that added it</b>."],
+                ["FactBoxes and subpages", "Each part with its own page, table and fields."],
+                ["Go to anything", "Any page, table, report or query by number, plus extensions, permissions, job queue, change log, table sizes, performance profiler, event recorder and more."],
+                ["Everyday tools", "Blur data for screenshots, expand every FastTab, copy a link to the record, and your session, company, environment and tenant at a glance."],
+                ["Linked to Dynamics 365", "Open the Dataverse record a customer, vendor or item is coupled to, in one click."],
+              ])}
+              <div class="note"><b>With the free companion app:</b> every field of the record (not just the ones on the page), the Dynamics 365 link, app names on field badges, and the query builder.</div>
+            </div>
+          </div>
+          ${foot("Business Central")}
+        </section>`)
+
+      // 4. Dynamics 365
+      pages.push(`
+        <section class="page" style="--accent:var(--ce)">
+          ${band(
+            "Dynamics 365",
+            "Every column, every logical name,<br>every switch you need.",
+            "On any model-driven app (Sales, Customer Service, Field Service or your own), the panel reads the form or view and fills the gaps from the organisation's Web API.",
+            "#3d33a8",
+            "#7b6ff5"
+          )}
+          <div class="content split">
+            <div class="shots">
+              ${card("ce-record", { crop: 0.72, caption: "Record tab: IDs, form fields and more" })}
+              ${card("ce-tools", { crop: 0.64, caption: "Form, list and debug tools" })}
+            </div>
+            <div>
+              ${features([
+                ["Record details", "Table, record ID, form, entity set, primary key and object type code. Open the record in the Web API as JSON, or copy a link to it."],
+                ["Form fields and all columns", "Every field on the form with its required level and changes since load, plus every column of the record from the Web API, even the ones the form hides."],
+                ["Logical names everywhere", "On form labels, and on list and subgrid column headers, with copy buttons. Hover a column for its type, table and relationship."],
+                ["God mode and form tools", "Show every hidden field and tab, unlock and un-require everything, expand tabs, refresh subgrids, fill required fields, clone a record, blur values."],
+                ["Views and debugging", "Copy a view's FetchXML, open its rows in the Web API, and switch on the form monitor, the ribbon's command checker and the performance panel."],
+                ["Go to any table", "Search tables by name, then open the list, a new form or a record by ID, plus admin, customisation and developer shortcuts."],
+                ["Linked to Business Central", "Find the customer, vendor or item coupled to an account or product, and open its card."],
+              ])}
+            </div>
+          </div>
+          ${foot("Dynamics 365")}
+        </section>`)
+
+      // 5. Access
+      pages.push(`
+        <section class="page" style="--accent:var(--ce)">
+          ${band(
+            "Security and access",
+            "“It works for me, not for them.”<br>Answered in seconds.",
+            "Pick any user and see exactly what they can do with this table and this record, and why. Compare two users side by side. All from Dataverse's own security functions, as you.",
+            "#2b2380",
+            "#5b4fc7"
+          )}
+          <div class="content split">
+            <div class="shots">
+              ${card("ce-access-user", { crop: 0.72, caption: "Anyone's privileges, level and record rights" })}
+              ${card("ce-access-detail", { crop: 0.64, caption: "Lookups, subgrids, secured columns, reasons" })}
+            </div>
+            <div>
+              ${features([
+                ["Table privileges and levels", "Create, Read, Write, Delete, Append, Append To, Assign and Share, each at User, Business Unit, BU + child or Organisation level."],
+                ["Rights on this record", "Which of those they actually have on the open record, from ownership, teams, sharing and business unit."],
+                ["Lookups and subgrids", "For every lookup and subgrid on the form: can they see it, set it, add rows? And in plain words what's missing: “Can't read Contact: the lookup shows blank.”"],
+                ["Secured columns", "Every column-security column on the table and whether they can read, update or create it."],
+                ["Why they can reach it", "Owner or owning team, same business unit or not, and who the record is shared with."],
+                ["Compare two users", "The privileges, levels and security roles that differ, and whether a role comes directly or through a team."],
+                ["Impersonate", "Run the app as another user to see exactly what they see. Needs Dataverse's “Act on Behalf of Another User” privilege."],
+              ])}
+              <div class="note"><b>Nothing is bypassed.</b> Checks run through Dataverse's own functions with your permissions: you only see what you're allowed to see.</div>
+            </div>
+          </div>
+          ${foot("Security and access")}
+        </section>`)
+
+      // 6. Power Platform
+      pages.push(`
+        <section class="page" style="--accent:var(--flow)">
+          ${band(
+            "Power Automate and Power Apps",
+            "After an import, switch<br>everything back on at once.",
+            "Solution flows arrive switched off, one at a time. Tick as many as you like and turn them on in one go, and see straight away what's stopping the rest.",
+            "#0b53ce",
+            "#a33a9f"
+          )}
+          <div class="content split">
+            <div class="shots">
+              ${card("flow-bulk", { crop: 0.72, caption: "Bulk on and off, with the reason for any failure" })}
+              ${card("flow-health", { crop: 0.64, caption: "Failed runs, connections and variables" })}
+            </div>
+            <div>
+              ${features([
+                ["Turn flows on in bulk", "The environment's or a solution's cloud flows, starting with the ones that are off. Tick them, click Turn on, and each one reports back. Failures say why."],
+                ["Failed runs", "Recent failures across the solution's flows, newest first, with the error that stopped them."],
+                ["Connection references", "Every reference in the solution, flagged when it has no connection: the usual reason a flow won't start."],
+                ["Environment variables", "Every variable with its value or default, flagged when it has neither."],
+                ["This flow", "State and on/off switch, owner, IDs, recent runs, and the whole definition as JSON to read, copy or download."],
+                ["Power Apps maker portal", "The environment and solution you're in, with shortcuts to its solutions, tables, apps, flows, history and admin centre, and the same flow checks inside a solution."],
+              ])}
+              <div class="note"><b>Through Dataverse, as you.</b> Works on solution-aware flows, using the session you already have. Your security roles decide what you can change.</div>
+            </div>
+          </div>
+          ${foot("Power Platform")}
+        </section>`)
+
+      // 7. Query builder
+      pages.push(`
+        <section class="page" style="--accent:var(--bc)">
+          ${band(
+            "Query builder",
+            "Query any table you can read.<br>Take the query anywhere.",
+            "A large query window opens over the page in Dynamics 365 and Business Central. Pick a table and columns, filter, join, sort, run it as you, and export the results. It never changes data.",
+            "#0b6f86",
+            "#3d33a8"
+          )}
+          <div class="content">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6mm">
+              <div class="code" style="--c:var(--ce)"><div class="bar"><i></i>Dynamics 365 · FetchXML</div><pre><span class="k">&lt;fetch</span> top=<span class="s">"50"</span><span class="k">&gt;</span>
+  <span class="k">&lt;entity</span> name=<span class="s">"account"</span><span class="k">&gt;</span>
+    <span class="k">&lt;attribute</span> name=<span class="s">"name"</span> <span class="k">/&gt;</span>
+    <span class="k">&lt;attribute</span> name=<span class="s">"creditlimit"</span> <span class="k">/&gt;</span>
+    <span class="k">&lt;filter</span> type=<span class="s">"and"</span><span class="k">&gt;</span>
+      <span class="k">&lt;condition</span> attribute=<span class="s">"statecode"</span>
+        operator=<span class="s">"eq"</span> value=<span class="s">"0"</span> <span class="k">/&gt;</span>
+    <span class="k">&lt;/filter&gt;</span>
+    <span class="k">&lt;link-entity</span> name=<span class="s">"contact"</span>
+      from=<span class="s">"contactid"</span> to=<span class="s">"primarycontactid"</span><span class="k">&gt;</span>
+      <span class="k">&lt;attribute</span> name=<span class="s">"fullname"</span> <span class="k">/&gt;</span>
+    <span class="k">&lt;/link-entity&gt;</span>
+  <span class="k">&lt;/entity&gt;</span>
+<span class="k">&lt;/fetch&gt;</span></pre></div>
+              <div class="code" style="--c:var(--bc)"><div class="bar"><i></i>Business Central · AL</div><pre><span class="c">// Customers over 20000 with a balance</span>
+<span class="k">var</span>
+    Customer: <span class="t">Record</span> Customer;
+<span class="k">begin</span>
+    Customer.SetLoadFields(Name, <span class="s">"Balance (LCY)"</span>);
+    Customer.SetFilter(<span class="s">"No."</span>, <span class="s">'&gt;20000'</span>);
+    Customer.SetFilter(<span class="s">"Balance (LCY)"</span>, <span class="s">'&lt;&gt;0'</span>);
+    Customer.SetAutoCalcFields(<span class="s">"Balance (LCY)"</span>);
+    <span class="k">if</span> Customer.FindSet() <span class="k">then</span>
+        <span class="k">repeat</span>
+            <span class="c">// ...</span>
+        <span class="k">until</span> Customer.Next() = 0;
+<span class="k">end</span>;</pre></div>
+            </div>
+            <div class="code" style="--c:var(--flow);margin-top:6mm"><div class="bar"><i></i>Business Central · API request</div><pre><span class="k">GET</span> https://api.businesscentral.dynamics.com/v2.0/<span class="t">{tenant}</span>/<span class="t">{environment}</span>
+    /api/v2.0/companies(<span class="t">{companyId}</span>)/customers
+    ?<span class="s">$select</span>=number,displayName,balanceDue&amp;<span class="s">$filter</span>=number gt <span class="s">'20000'</span>&amp;<span class="s">$top</span>=100</pre></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9mm;margin-top:8mm">
+              ${features([
+                ["Build it or write it", "Columns, nested and/or filters that suit each column's type, option values from a list, linked tables, sort and row limit. Or edit the FetchXML by hand and switch back."],
+                ["Start from a view", "Open the Dynamics 365 list you're looking at in the builder, with its columns, filters and sort."],
+                ["Export", "Excel, CSV or JSON, saved to your computer only."],
+              ])}
+              ${features([
+                ["Business Central filters", "Simple conditions or BC's own filter syntax, FlowFields, and joins through lookup fields to related tables."],
+                ["AL and API out", "Record code and an API query object for your own extension, or the query as a REST request: an installed API page, the companion's endpoint, or your own."],
+                ["Your permissions", "Rows come back exactly as you're allowed to see them, security filters included."],
+              ])}
+            </div>
+            <div class="note" style="margin-top:8mm;display:grid;grid-template-columns:1fr auto;gap:10mm;align-items:center">
+              <div><b>Dynamic Assist Companion for Business Central.</b> A small, free, open-source app that lets the builder read any table: read-only, your permissions, no new web services unless an admin publishes one. Install the .app from the project's GitHub releases and assign the DA QUERY permission set.</div>
+              <div style="font:600 10px var(--mono);color:var(--bc-deep);white-space:nowrap">github.com/garethcheyne/<br>Dynamic-Assist/releases</div>
+            </div>
+          </div>
+          ${foot("Query builder")}
+        </section>`)
+
+      // 8. Everywhere, privacy, get started
+      pages.push(`
+        <section class="page night" style="--accent:var(--ce)">
+          <div style="position:relative;z-index:2;padding:18mm 16mm 0">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9fb0e6">Everywhere</span>
+            <h2 style="margin-top:8px;font-size:30px;line-height:1.1;font-weight:750">The panel is about your page.<br><span class="grad">The header goes everywhere else.</span></h2>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7mm;margin-top:9mm">
+              <div style="--accent:var(--ce)">${card("launcher", { crop: 0.78, caption: '<span style="color:#aab3cf">This environment\'s other products and admin centres</span>' })}</div>
+              <div style="--accent:var(--bc)">${card("home", { crop: 0.78, caption: '<span style="color:#aab3cf">Home: the four products, where you left off</span>' })}</div>
+              <div style="--accent:var(--pa)">${card("history", { crop: 0.78, caption: '<span style="color:#aab3cf">History, with pins and your own names</span>' })}</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10mm;margin-top:11mm">
+              <div>
+                <h3 style="font-size:18px;margin-bottom:5mm">Private by design</h3>
+                <ul class="ticks" style="color:#cfd6ee">
+                  <li>No server, no account, no analytics, no tracking.</li>
+                  <li>Never reads or stores passwords or sign-in tokens.</li>
+                  <li>Only calls the Microsoft service you already have open, as you.</li>
+                  <li>Changes data only when you click a tool that does, like turning flows on.</li>
+                  <li>History and settings stay in your browser.</li>
+                  <li>Open source: read every line on GitHub.</li>
+                </ul>
+              </div>
+              <div>
+                <h3 style="font-size:18px;margin-bottom:5mm">Get started</h3>
+                <ul class="ticks" style="color:#cfd6ee">
+                  <li>Install Dynamic Assist in Chrome or Edge.</li>
+                  <li>Open Business Central, a Dynamics 365 app, Power Apps or Power Automate.</li>
+                  <li>Click the toolbar icon. The panel follows you from tab to tab.</li>
+                  <li>For the Business Central query builder, install the free companion app.</li>
+                  <li>Full help for every tool is one click away in the panel.</li>
+                </ul>
+                <div style="margin-top:7mm;display:flex;align-items:center;gap:12px">
+                  <img src="${icon}" alt="" style="width:44px;height:44px;border-radius:22%;box-shadow:0 6px 24px rgba(25,176,180,.45)">
+                  <div><div style="font-weight:650;color:#fff;font-size:15px">Dynamic Assist</div><div style="font:500 11px var(--mono);color:#9fb0e6">github.com/garethcheyne/Dynamic-Assist</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p style="position:absolute;left:16mm;right:16mm;bottom:17mm;z-index:2;font-size:8.5px;line-height:1.45;color:rgba(255,255,255,.5)">Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Business Central, Dynamics 365, Power Platform, Power Apps, Power Automate, Dataverse, Azure, Exchange, Teams, Power BI and Copilot Studio are trademarks of the Microsoft group of companies. Screens show fictitious demo data.</p>
+          ${foot("")}
+        </section>`)
+
+      document.getElementById("doc").innerHTML = pages.join("")
+      Promise.all([...document.images].map((i) => i.decode().catch(() => {}))).then(
+        () => (document.body.dataset.ready = "1")
+      )
+    </script>
+  </body>
+</html>

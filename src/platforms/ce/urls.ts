@@ -11,7 +11,7 @@ export function ceAppUrl(clientUrl: string, appId?: string | null) {
  * Microsoft's "My apps" page lists apps across all your environments. It
  * replaced the old port.crm*.dynamics.com instance picker, which now returns 404.
  */
-export const MY_APPS_URL = "https://home.dynamics.com/"
+const MY_APPS_URL = "https://home.dynamics.com/"
 
 /** Links into the org, the maker portal and the admin center, as Level Up had them. */
 export function ceUrls(s: CeState) {

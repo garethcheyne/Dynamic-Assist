@@ -223,6 +223,32 @@
   --chart-2: #d56db8;
   --brand-gradient: linear-gradient(90deg, #742774, #a33a9f 55%, #e08fc8);
 }
+/* Power Automate: blue #0B53CE → #2F87FF → sky #7FB8FF */
+[data-platform="flow"] {
+  --primary: #0f5fd6;
+  --primary-foreground: #ffffff;
+  --ring: #0f5fd6;
+  --accent: #e8f1ff;
+  --accent-foreground: #0b47a8;
+  --sidebar-primary: #0f5fd6;
+  --sidebar-accent: #e8f1ff;
+  --sidebar-accent-foreground: #0b47a8;
+  --chart-1: #0f5fd6;
+  --chart-2: #5aa2ff;
+  --brand-gradient: linear-gradient(90deg, #0b53ce, #2f87ff 55%, #7fb8ff);
+}
+.dark[data-platform="flow"] {
+  --primary: #7fb3ff;
+  --primary-foreground: #06224f;
+  --ring: #7fb3ff;
+  --accent: #14294d;
+  --accent-foreground: #c4dcff;
+  --sidebar-primary: #7fb3ff;
+  --sidebar-accent: #14294d;
+  --sidebar-accent-foreground: #c4dcff;
+  --chart-1: #7fb3ff;
+  --chart-2: #3d7fe0;
+}
 .dark[data-platform="maker"] {
   --primary: #e59ad3;
   --primary-foreground: #3a0f38;
