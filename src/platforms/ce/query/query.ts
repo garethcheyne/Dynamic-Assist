@@ -3,6 +3,7 @@
  * fluentui-extended QueryBuilder state; this adds what an ad hoc query needs
  * around them and turns the lot into FetchXML (and back).
  */
+import { DEFAULT_ROWS } from "@/query-builder/limits"
 import { operatorRequiresValue } from "./lib/operators"
 import { parseFetchXmlToState } from "./lib/parser"
 import {
@@ -36,8 +37,7 @@ export function newQuery(entityName: string): Query {
     entityName,
     columns: [],
     orders: [],
-    // No limit: every row, page by page (run.ts)
-    top: null,
+    top: DEFAULT_ROWS,
     distinct: true,
     filters: emptyFilters(),
   }

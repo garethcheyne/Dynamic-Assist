@@ -26,11 +26,10 @@ export const QUERY: HelpTab = {
               The builder is on the left: <b>Columns</b>, <b>Filters</b>,{" "}
               <b>Related tables</b>, <b>Sort</b> and <b>Options</b> (such as a
               row limit). Results are on the right, with the query as text
-              beside them. <b>Run</b> with the button or Ctrl+Enter. With no row
-              limit, every matching row loads, page by page: the rows show as
-              they arrive, <b>Stop</b> ends it early and <b>Load the rest</b>{" "}
-              carries on. Only the rows in view are drawn, so large results
-              scroll smoothly. It follows the panel's light or dark theme.
+              beside them. <b>Run</b> with the button or Ctrl+Enter. A query
+              returns 500 rows unless you set <b>Rows</b> (up to 5,000); when
+              more match, the results say so. It follows the panel's light or
+              dark theme.
             </>
           ),
           how: (
@@ -100,11 +99,11 @@ export const QUERY: HelpTab = {
             <>
               Build a FetchXML query without writing it: columns, filter groups
               (and/or) with operators that suit each column's type, option-set
-              and yes/no values picked from a list, linked tables, sort and an
-              optional row limit (empty loads every row, 5,000 at a time).
-              Switch to <b>FetchXML</b> to edit the query by hand and back to{" "}
-              <b>Builder</b> to keep going. <b>Open this view</b> starts from
-              the list you're looking at.
+              and yes/no values picked from a list, linked tables, sort and a
+              row limit (500 by default, up to 5,000). Switch to <b>FetchXML</b>{" "}
+              to edit the query by hand and back to <b>Builder</b> to keep
+              going. <b>Open this view</b> starts from the list you're looking
+              at.
             </>
           ),
           how: (
@@ -136,8 +135,8 @@ export const QUERY: HelpTab = {
               filter them with simple conditions or in Business Central's own
               filter syntax (<code>{">20000"}</code>,{" "}
               <code>{"10000..20000"}</code>, <code>{"@*bike*"}</code>), join
-              related tables through lookup fields, sort, and optionally limit
-              the rows (empty loads them all).
+              related tables through lookup fields, sort, and set the row limit
+              (500 by default, up to 5,000).
             </>
           ),
         },

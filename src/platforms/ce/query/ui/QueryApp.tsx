@@ -29,8 +29,9 @@ import {
   toFetchXml,
   type Query,
 } from "../query"
-import { entitySetOf, runFetchXmlAll, type Results } from "../run"
+import { entitySetOf, runFetchXmlLimited, type Results } from "../run"
 import { FilterEditor } from "./FilterEditor"
+import { DEFAULT_ROWS, MAX_ROWS, parseRows } from "@/query-builder/limits"
 import { ResultsPane, Section } from "@/query-builder/ResultsPane"
 import { SavedQueries } from "@/query-builder/SavedQueries"
 import { SearchSelect, type SelectItem } from "@/query-builder/SearchSelect"
@@ -71,10 +72,7 @@ export function QueryApp({
   const [results, setResults] = React.useState<Results | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [running, setRunning] = React.useState(false)
-  /** Still fetching pages after the first (every row, no limit) */
-  const [loadingMore, setLoadingMore] = React.useState(false)
-  const stop = React.useRef(false)
-  // Each run's number: a newer run, or closing the builder, ends older ones
+  // Each run's number: only the latest run's rows show
   const runId = React.useRef(0)
   React.useEffect(() => () => void runId.current++, [])
 
@@ -141,7 +139,6 @@ export function QueryApp({
     if (!xml.trim()) return
     const id = ++runId.current
     const current = () => runId.current === id
-    stop.current = false
     setRunning(true)
     setError(null)
     try {
@@ -150,33 +147,19 @@ export function QueryApp({
       const set =
         tables.find((t) => t.logicalName === entity)?.entitySetName ??
         (await entitySetOf(entity))
-      let first = true
-      await runFetchXmlAll(
+      const results = await runFetchXmlLimited(
         xml,
         set,
         fields,
-        query?.columns ?? [],
-        (soFar) => {
-          if (!current()) return
-          // Rows show as each page arrives; the rest keep coming
-          setResults(soFar)
-          if (first) {
-            first = false
-            setRunning(false)
-            setLoadingMore(soFar.more)
-          }
-        },
-        () => stop.current || !current()
+        query?.columns ?? []
       )
+      if (current()) setResults(results)
     } catch (e) {
       if (!current()) return
       setResults(null)
       setError(e instanceof Error ? e.message : String(e))
     } finally {
-      if (current()) {
-        setRunning(false)
-        setLoadingMore(false)
-      }
+      if (current()) setRunning(false)
     }
   }, [xml, tables, fields, query])
 
@@ -415,8 +398,6 @@ export function QueryApp({
             {/* Right: results */}
             <ResultsPane
               sources={[{ label: "FetchXML", text: xml }]}
-              loadingMore={loadingMore}
-              onStop={() => (stop.current = true)}
               results={results}
               error={error}
               running={running}
@@ -595,14 +576,14 @@ function OptionsEditor({
         <input
           type="number"
           min={1}
-          max={5000}
-          placeholder="All"
+          max={MAX_ROWS}
+          placeholder={String(DEFAULT_ROWS)}
+          title={`Up to ${MAX_ROWS.toLocaleString()}; empty means ${DEFAULT_ROWS}`}
           className="h-7 w-20 rounded-md border border-input bg-background px-2 text-xs outline-none focus-visible:border-ring"
           value={query.top ?? ""}
-          onChange={(e) => {
-            const n = Number(e.target.value)
-            onChange({ ...query, top: e.target.value && n > 0 ? n : null })
-          }}
+          onChange={(e) =>
+            onChange({ ...query, top: parseRows(e.target.value) })
+          }
         />
       </label>
       <label className="flex items-center gap-1.5">
