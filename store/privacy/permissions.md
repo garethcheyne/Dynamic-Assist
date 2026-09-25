@@ -21,16 +21,8 @@ Used only for impersonation in Dynamics 365, which you start from the panel's Se
 
 ## host permissions
 
-- `https://businesscentral.dynamics.com/*`
-- `https://*.dynamics.com/*`
-- `https://make.powerapps.com/*`
-- `https://make.preview.powerapps.com/*`
-- `https://make.powerautomate.com/*`
-- `https://make.preview.powerautomate.com/*`
-
-- `businesscentral.dynamics.com`: the Business Central web client, where the panel reads the open page's fields, parts and session. If the optional Dynamic Assist Companion app is installed in the environment, the query builder reads from it through the same page.
-- `*.dynamics.com`: Dynamics 365 apps and their Dataverse Web API live on per-organisation subdomains (for example contoso.crm.dynamics.com, contoso.crm6.dynamics.com), so the host can't be listed in advance. On those pages the panel reads the form and calls that organisation's own Web API as the signed-in user. From the maker portal and Power Automate, the panel calls the environment's Dataverse org the same way, with the session you already have, to list solution flows and turn them on or off when you ask. Business Central's host is excluded from these scripts.
-- `make.powerapps.com` and `make.preview.powerapps.com`: the Power Apps maker portal, where the panel reads the environment and solution from the page to offer its shortcuts and list the solution's flows.
-- `make.powerautomate.com` and `make.preview.powerautomate.com`: Power Automate, where the panel reads the environment and flow from the page to show the flow's details and runs.
+- `businesscentral.dynamics.com`: the Business Central web client. The panel reads the open page's fields, parts and session; if the optional Dynamic Assist Companion app is installed, the query builder reads from it through the same page.
+- `*.dynamics.com`: Dynamics 365 apps and their Dataverse Web API are on per-organisation subdomains (e.g. contoso.crm.dynamics.com), so they can't be listed in advance. The panel reads the form and calls that org's own Web API as the signed-in user.
+- `make.powerapps.com`, `make.powerautomate.com` and their preview hosts: the panel reads the environment, solution and flow from the page, and calls that environment's Dataverse org with your existing session to list flows, and to turn them on or off when you ask.
 
 The extension does nothing on any other site.
