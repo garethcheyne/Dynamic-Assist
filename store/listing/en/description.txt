@@ -1,58 +1,58 @@
-Dynamic Assist puts the everyday tools that administrators and developers need for Microsoft Dynamics 365 Business Central, Dynamics 365 apps, the Power Apps maker portal and Power Automate into one side panel. Open one of those sites and the panel shows the tools for it; switch tabs and it follows.
+Dynamic Assist puts the everyday tools that administrators and developers need for Microsoft Business Central, Dynamics 365, Power Apps and Power Automate into one side panel. Open one of those sites and the panel shows the tools for it; switch tabs and it follows.
 
 BUSINESS CENTRAL
-• Page details: page and table IDs, page type, the app and version that own the page, primary key, SystemId and bookmark, with links to open the page or the table's data
-• Every field on the page with its value, grouped by FastTab, searchable and filterable (has value, added by an extension, FlowFields, hidden)
-• Copy a field's schema name or value in one click, or as an AL reference, API name or OData name; copy all fields as a JSON object
+• Page details: page and table IDs, page type, the app and version that own the page, and the record's keys, with links to open the page or the table's data
+• Every field on the page with its value, grouped by section, searchable and filterable
+• Copy a field's name or value in one click, in the format you need, or copy all fields at once
 • Parts: each FactBox and subpage with its own page, table and fields
-• Session: your user, role, company, environment, tenant and platform version, and a link to the admin center
-• Field names on the page: the table field name and number beside every caption and column header, click to copy; hover one for its type, class and the extension that added it
+• Session: your user, role, company and environment, with a link to the admin center
+• Field names on the page: the table field name and number beside every caption and column header, click to copy; hover one for more detail
 • All fields of the record, including ones the page doesn't show, and a one-click jump to the Dynamics 365 record it's coupled to (companion app)
-• Page tools: blur data for screenshots, expand every FastTab, copy a link to the record
-• Go to any page, table, report or query by number, plus shortcuts to admin and developer pages (extensions, permissions, job queue, change log, table information, performance profiler, event recorder and more)
-• Read from the web client itself, so it doesn't start a second session the way the page inspector does
-• Query builder: query any table you're allowed to read, over the page you're on, with Business Central filters, sorting and FlowFields, and export to Excel, CSV or JSON. Needs the free, open-source Dynamic Assist Companion app installed in the environment; it's read-only and uses your own permissions. Download the latest release: https://github.com/garethcheyne/Dynamic-Assist/releases/latest
+• Page tools: blur data for screenshots, expand every section, copy a link to the record
+• Go to any page, table, report or query by number, plus shortcuts to common admin and developer pages
+• Reads from the web client itself, so it doesn't start a second session the way the page inspector does
+• Query builder: query any table you're allowed to read, over the page you're on, with filters and sorting, and export the results. Needs the free, open-source Dynamic Assist Companion app installed in the environment; it's read-only and uses your own permissions.
 
 DYNAMICS 365 APPS (model-driven apps)
-• Record details: table, record ID, form, entity set, and every form field with its value, required level and changes
-• All columns: every column of the record from the Web API, including ones the form doesn't show
-• Form tools: god mode, logical names on the form and on list and subgrid column headers with copy buttons (hover for the column's type and details), expand tabs, refresh subgrids, fill required fields, clone record, blur values for screenshots
-• List tools: copy the current view's FetchXML, or open the view in the Web API
-• Debug switches: form monitor, ribbon debug and performance panel
-• Errors: every script error, unhandled promise, failed script and failed request on the page (and console messages, if you switch them on), with Dataverse's own message, filtered to your web resources in one click
-• Go to: search any table by name and open a record, a new form or the list, plus admin, maker and developer shortcuts
+• Record details: table, record ID, form, and every form field with its value, required level and changes
+• All columns: every column of the record, including ones the form doesn't show
+• Form tools: logical names on forms and column headers with copy buttons, expand tabs, fill required fields, clone record, and more
+• List tools: copy the current view's query, or open the view in the API
+• Debug switches for forms, the ribbon and performance
+• Errors: script errors and failed requests on the page, with the server's own message, filtered to your own code in one click
+• Go to: search any table by name and open a record, a new form or the list
 • Session: your user, security roles, app and environment details
-• Access: the privileges of you or any user you pick on the table (with their level: user, business unit, organisation), their rights on the open record and why they have them (owner, team, share, business unit), what they can do with the form's lookups and subgrids, and secured columns
-• Compare: two users side by side, with the differences in their table privileges and security roles
-• Business Central: find the records coupled to this one in a Business Central company and open them
-• Impersonate: run the app as another user to see what they see (needs the "Act on Behalf of Another User" privilege)
-• Query builder: build and run a query in a large window over the page, or edit its FetchXML; export the results to Excel, CSV or JSON
-• Save your queries and run them again in any org or environment, export and import them as a file, and minimise builders to tiles while you work on the page
+• Access: the privileges of you or any user you pick on the table, their rights on the open record and why they have them
+• Compare: two users side by side, with the differences in their privileges and security roles
+• Find the Business Central records coupled to this one and open them
+• Impersonate: run the app as another user to see what they see (needs the matching privilege)
+• Query builder: build and run a query in a large window over the page, or edit it directly, and export the results
+• Save your queries and run them again in any environment, and export and import them as a file
 
 POWER APPS MAKER PORTAL
 • The environment's name and ID, and the solution ID when you're in a solution
-• Shortcuts to the environment's solutions, tables, apps, flows, solution history and admin center, and to its Dynamics 365 app once you've opened it
+• Shortcuts to the environment's key maker and admin pages
 • In a solution: its cloud flows, connection references and environment variables
 
 POWER AUTOMATE
 • Turn many cloud flows on (or off) at once: tick them and go, with the reason shown for any that fail
-• The flow you're on: state, owner, IDs, on/off switch, and its definition as JSON to view, copy or download
-• Recent and failed runs, connection references without a connection, environment variables with no value
-• Works on solution-aware flows through the environment's Dataverse org, as you
+• The flow you're on: state, owner, IDs, on/off switch, and its definition to view, copy or download
+• Recent and failed runs, connection references without a connection, and environment variables with no value
 
 EVERYWHERE
-• Go anywhere from the header: this environment's other products (Power Platform admin, solutions, flows, the linked Dynamics 365 org or Business Central company), the Microsoft admin centres and docs, and your recent environments
+• Go anywhere from the header: this environment's related admin, maker and product pages, and your recent environments
 • A home page with your pinned and recent environments, one click away from any page's tools
-• Light and dark themes, in each product's colours
+• Light and dark themes
 • Full help in a browser tab: every tool, what it does and what it needs
 
 HISTORY
-• Every environment, org and company you open, newest first; pin the ones you use and give them your own names
+• Every environment and company you open, newest first; pin the ones you use and give them your own names
 
 WHAT IT ACCESSES
-Dynamic Assist works only on businesscentral.dynamics.com, Dynamics 365 app sites (*.dynamics.com), make.powerapps.com and make.powerautomate.com. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser.
+Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser.
 
-Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Business Central, Dynamics 365, Power Platform, Power Apps, Power Automate, Dataverse, Power BI, Copilot Studio, Azure, Azure DevOps and Microsoft Entra, and their icons, are trademarks of the Microsoft group of companies; the icons appear in the panel only to show which product a page or link belongs to.
+Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Microsoft product names and icons are trademarks of the Microsoft group of companies; the icons appear in the panel only to show which product a page or link belongs to.
 
+Full feature list and more: https://www.err403.com/apps/dynamic-assist
 Source code and support: https://github.com/garethcheyne/Dynamic-Assist
 Business Central companion app (for the query builder), latest release: https://github.com/garethcheyne/Dynamic-Assist/releases/latest
