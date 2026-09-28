@@ -13,3 +13,4 @@ file per item. Each file says what was reported, the cause, and what changed.
 | 004 | [Resizable query / results split](2026.10.x/004-query-builder-resizable-split.md) | CE, BC | Fixed |
 | 005 | [FetchXML validation and autocomplete](2026.10.x/005-fetchxml-validation-autocomplete.md) | CE | Built, to test |
 | 006 | [SQL queries in the query builder](2026.10.x/006-dataverse-sql-queries.md) | CE | Built, to test |
+| 007 | [SQL queries in the BC query builder](2026.10.x/007-bc-sql-queries.md) | BC | Planned |
