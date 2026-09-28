@@ -179,6 +179,9 @@ Steps 1–4, on branch `release/2026.10.x`. Step 5 (SQL → Builder) isn't built
    (`to-sql.ts`), and switching Builder/FetchXML → SQL starts from it.
    Operators without a SQL form are listed in a comment and left out. Relative
    dates use DATEADD from now, noted as approximate.
+   **Changed from the plan:** the operator mapping was written from the
+   Dataverse SQL docs, not ported from SQL 4 CDS, so no SQL 4 CDS code is in
+   the build. FetchXml2Sql.cs is still the reference if it needs to grow.
 
 Tests: `tests/unit/query-builder/{sql-lint,sql-complete,to-sql}.test.ts`.
 

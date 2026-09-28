@@ -62,6 +62,8 @@ const LIBRARIES: [string, string][] = [
   ["shadcn/ui", "https://ui.shadcn.com"],
   ["Base UI", "https://base-ui.com"],
   ["Lucide", "https://lucide.dev"],
+  ["CodeMirror", "https://codemirror.net"],
+  ["react-resizable-panels", "https://github.com/bvaughn/react-resizable-panels"],
   ["Geist", "https://vercel.com/font"],
 ]
 
