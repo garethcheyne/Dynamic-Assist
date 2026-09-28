@@ -3,7 +3,7 @@
 **Reported:** 2026-09-29, against 2026.9.25
 **Target release:** 2026.10.x or later (shares its editor with 005)
 **Platform:** Dynamics 365 / Dataverse (CE), query builder
-**Status:** Planned
+**Status:** Built on `release/2026.10.x` (steps 1–4), to test
 
 ## Request
 
@@ -150,3 +150,52 @@ Dataverse's own error text for anything the parser misses.
 3. Checks before sending.
 4. Builder → SQL tab.
 5. SQL → Builder.
+
+## Built (2026-09-29)
+
+Steps 1–4, on branch `release/2026.10.x`. Step 5 (SQL → Builder) isn't built.
+
+1. **SQL mode:** a third mode, **SQL**, in the CE query builder. Runs
+   `GET {entitySet}?sql=…` for the `FROM` table, pages with
+   `odata.maxpagesize` and `@odata.nextLink` up to the row limit, and labels
+   aliased columns with their source column (`runSql` in `run.ts`). Saved
+   queries keep SQL (`sql` on the saved query), and the panel's saved list
+   reopens them in SQL mode.
+2. **Editor:** the same CodeMirror editor, with SQL colours. Suggestions are
+   ours (`editor/sql-complete.ts`): tables after FROM/JOIN (related first),
+   `alias.` columns, columns of every table in the query, join conditions
+   from relationships after `ON`, choice values after `=` and `IN (`, and only
+   supported keywords, aggregates (SELECT) and DATEADD/GETUTCDATE (WHERE).
+3. **Checks before sending:** `editor/sql-lint.ts`. It flags SELECT *,
+   anything other than SELECT, CTEs, several statements, subqueries, HAVING,
+   UNION, CASE, EXISTS, RIGHT/FULL/CROSS joins, unknown functions, functions
+   on columns, aggregates in WHERE, DATEADD outside WHERE/ON, column-to-column
+   comparisons, `ON` without `=`, `= NULL`, leading wildcards, unknown tables,
+   columns and aliases, ambiguous bare columns, and choice labels.
+   **Changed from the plan:** instead of node-sql-parser, a small SQL reader of
+   our own (`editor/sql-parse.ts`). The subset is small, and this keeps the
+   bundle down and the messages ours.
+4. **Builder → SQL:** a **SQL** tab beside FetchXML in Builder mode
+   (`to-sql.ts`), and switching Builder/FetchXML → SQL starts from it.
+   Operators without a SQL form are listed in a comment and left out. Relative
+   dates use DATEADD from now, noted as approximate.
+
+Tests: `tests/unit/query-builder/{sql-lint,sql-complete,to-sql}.test.ts`.
+
+### To test (dev org aucmcomcrd01)
+
+- [ ] Builder → SQL: the builder's query appears as SQL; **Run** returns the
+      same rows as FetchXML.
+- [ ] `SELECT name, statecode FROM account WHERE statecode = 0`: results and
+      exports work; `statecode` shows formatted values.
+- [ ] Answer open question 1: does it work for a user without the TDS endpoint
+      privilege? (Note the error text if not.)
+- [ ] Answer open question 2: does `SELECT TOP 10 name FROM account` run or fail?
+- [ ] A join: `SELECT a.name, c.fullname FROM account a INNER JOIN contact c ON `
+      then pick the suggested join condition.
+- [ ] Aliased column (`a.name AS account_name`): the column header shows
+      `account_name (Account Name)`.
+- [ ] Row limit: a table with more than 500 rows stops at 500 and says more match.
+- [ ] Save a SQL query, reopen it from the panel: it opens in SQL mode and runs.
+- [ ] Open question 4: what do choice columns return (`statecode`, and is
+      `statecodename` accepted)?

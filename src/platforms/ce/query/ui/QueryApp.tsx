@@ -11,6 +11,8 @@ import {
   PlayIcon,
   PlusIcon,
   SettingsIcon,
+  ShieldCheckIcon,
+  SquareTerminalIcon,
   TableIcon,
   WrenchIcon,
   XIcon,
@@ -29,12 +31,27 @@ import {
   toFetchXml,
   type Query,
 } from "../query"
-import { entitySetOf, runFetchXmlLimited, type Results } from "../run"
+import { readSql } from "../editor/sql-parse"
+import {
+  checkFetchXml,
+  entitySetOf,
+  runFetchXmlLimited,
+  runSql,
+  type Results,
+} from "../run"
+import { toSql } from "../to-sql"
+import { fetchXmlExtensions, sqlExtensions, useEditorMeta } from "./editors"
 import { FilterEditor } from "./FilterEditor"
-import { DEFAULT_ROWS, MAX_ROWS, parseRows } from "@/query-builder/limits"
+import { CodeEditor } from "@/query-builder/CodeEditor"
+import {
+  DEFAULT_ROWS,
+  MAX_ROWS,
+  parseRows,
+  rowLimit,
+} from "@/query-builder/limits"
 import { ResultsPane, Section } from "@/query-builder/ResultsPane"
 import { SplitPanes } from "@/query-builder/SplitPanes"
-import { XmlCode, XmlEditor } from "@/query-builder/XmlCode"
+import { XmlCode } from "@/query-builder/XmlCode"
 import { SavedQueries } from "@/query-builder/SavedQueries"
 import { SearchSelect, type SelectItem } from "@/query-builder/SearchSelect"
 import { Hint } from "@/components/hint"
@@ -42,11 +59,43 @@ import { Hint } from "@/components/hint"
 export type OpenRequest = {
   entityName?: string | null
   fetchXml?: string | null
+  /** A SQL query: opens in SQL mode */
+  sql?: string | null
   /** Run it once it's loaded (a saved or example query from the panel) */
   run?: boolean
 }
 
-type Mode = "builder" | "fetchxml"
+type Mode = "builder" | "fetchxml" | "sql"
+
+const MODES: {
+  mode: Mode
+  label: string
+  icon: React.ReactNode
+  tip: string
+}[] = [
+  {
+    mode: "builder",
+    label: "Builder",
+    icon: <WrenchIcon className="size-3.5" />,
+    tip: "Pick columns and filters",
+  },
+  {
+    mode: "fetchxml",
+    label: "FetchXML",
+    icon: <CodeXmlIcon className="size-3.5" />,
+    tip: "Write FetchXML, with suggestions from this org's tables",
+  },
+  {
+    mode: "sql",
+    label: "SQL",
+    icon: <SquareTerminalIcon className="size-3.5" />,
+    tip: "Write Dataverse SQL (read-only SELECT), with suggestions",
+  },
+]
+
+/** The table a SQL query reads FROM. */
+const sqlTable = (sql: string) =>
+  readSql(sql).tables.find((t) => t.join === "from")?.table ?? null
 
 /** The query builder, as a large modal over the Dynamics page. */
 export function QueryApp({
@@ -72,6 +121,8 @@ export function QueryApp({
   const [query, setQuery] = React.useState<Query | null>(null)
   const [mode, setMode] = React.useState<Mode>("builder")
   const [xmlText, setXmlText] = React.useState("")
+  const [sqlText, setSqlText] = React.useState("")
+  const [checking, setChecking] = React.useState(false)
   const [notice, setNotice] = React.useState<string | null>(null)
   const [results, setResults] = React.useState<Results | null>(null)
   const [error, setError] = React.useState<string | null>(null)
@@ -126,11 +177,19 @@ export function QueryApp({
   // Each open request (from the panel) starts from what it carries; the
   // component is keyed per request, so its state starts clean
   const fromXml = request.fetchXml ?? undefined
+  const fromSql = request.sql ?? undefined
   const startEntity =
-    (fromXml && entityOf(fromXml)) || request.entityName || "account"
+    (fromXml && entityOf(fromXml)) ||
+    (fromSql && sqlTable(fromSql)) ||
+    request.entityName ||
+    "account"
   React.useEffect(() => {
-    void openTable(startEntity, fromXml)
-  }, [startEntity, fromXml, openTable])
+    void openTable(startEntity, fromXml).then(() => {
+      if (!fromSql) return
+      setSqlText(fromSql)
+      setMode("sql")
+    })
+  }, [startEntity, fromXml, fromSql, openTable])
 
   const builtXml = React.useMemo(
     () => (query && fields.length ? toFetchXml(query, fields) : ""),
@@ -138,14 +197,36 @@ export function QueryApp({
   )
   const xml = mode === "fetchxml" ? xmlText : builtXml
   const table = tables.find((t) => t.logicalName === query?.entityName)
+  const builtSql = React.useMemo(
+    () => (query && fields.length ? toSql(query, fields, table).sql : ""),
+    [query, fields, table]
+  )
+  /** What Run runs */
+  const text = mode === "sql" ? sqlText : xml
+
+  // Suggestions and checks for the code editors, from this org's metadata
+  const meta = useEditorMeta(tables)
+  const fetchExtensions = React.useMemo(() => fetchXmlExtensions(meta), [meta])
+  const sqlEditorExtensions = React.useMemo(() => sqlExtensions(meta), [meta])
 
   const run = React.useCallback(async () => {
-    if (!xml.trim()) return
+    if (!text.trim()) return
     const id = ++runId.current
     const current = () => runId.current === id
     setRunning(true)
     setError(null)
     try {
+      if (mode === "sql") {
+        const from = sqlTable(sqlText)
+        if (!from) throw new Error("Say which table: SELECT … FROM table.")
+        const set =
+          tables.find((t) => t.logicalName === from)?.entitySetName ??
+          (await entitySetOf(from))
+        const labels = await loadFields(from).catch(() => fields)
+        const results = await runSql(sqlText, set, labels, rowLimit(query?.top))
+        if (current()) setResults(results)
+        return
+      }
       const entity = entityOf(xml)
       if (!entity) throw new Error("The FetchXML has no <entity name=…>.")
       const set =
@@ -165,18 +246,45 @@ export function QueryApp({
     } finally {
       if (current()) setRunning(false)
     }
-  }, [xml, tables, fields, query])
+  }, [text, mode, sqlText, xml, tables, fields, query])
 
   // Asked to run on open: once, when the starting query has loaded
   const runOnOpen = React.useRef(request.run === true)
   React.useEffect(() => {
-    if (!runOnOpen.current || loadingFields || !xml.trim()) return
-    runOnOpen.current = false
-    void run()
-  }, [loadingFields, xml, run])
+    if (!runOnOpen.current || loadingFields || !text.trim()) return
+    // A SQL query runs once it's in SQL mode
+    if (fromSql && mode !== "sql") return
+    // After this render: running updates state
+    const timer = window.setTimeout(() => {
+      runOnOpen.current = false
+      void run()
+    })
+    return () => window.clearTimeout(timer)
+  }, [loadingFields, text, run, fromSql, mode])
 
   const switchMode = (next: Mode) => {
     if (next === mode) return
+    if (mode === "sql") {
+      // SQL isn't read back into the builder (yet): it keeps its last query
+      setNotice("The builder keeps its own query: SQL isn't read back into it.")
+      if (next === "fetchxml") setXmlText(builtXml)
+      setMode(next)
+      return
+    }
+    if (next === "sql") {
+      // From FetchXML, through the builder when it can read it
+      let source = query
+      if (mode === "fetchxml") {
+        const parsed = fromFetchXml(xmlText, fields)
+        if (parsed.query && entityOf(xmlText) === query?.entityName)
+          source = parsed.query
+      }
+      setSqlText(
+        source && fields.length ? toSql(source, fields, table).sql : builtSql
+      )
+      setMode(next)
+      return
+    }
     if (next === "fetchxml") {
       setXmlText(builtXml)
     } else {
@@ -229,8 +337,14 @@ export function QueryApp({
         data-platform="ce"
         onKeyDown={(e) => {
           // Esc minimises: a query isn't lost to a stray key
-          if (e.key === "Escape") (onMinimize ?? onClose)()
-          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          // (unless an editor used it: closing its suggestions, running)
+          if (e.key === "Escape" && !e.defaultPrevented)
+            (onMinimize ?? onClose)()
+          if (
+            e.key === "Enter" &&
+            (e.ctrlKey || e.metaKey) &&
+            !e.defaultPrevented
+          ) {
             e.preventDefault()
             void run()
           }
@@ -259,32 +373,45 @@ export function QueryApp({
               onChange={(entity) => switchTable(entity)}
             />
             <div className="flex rounded-md bg-muted p-0.5">
-              {(["builder", "fetchxml"] as Mode[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => switchMode(m)}
-                  className={cn(
-                    "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium",
-                    mode === m
-                      ? "bg-background shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {m === "builder" ? (
-                    <WrenchIcon className="size-3.5" />
-                  ) : (
-                    <CodeXmlIcon className="size-3.5" />
-                  )}
-                  {m === "builder" ? "Builder" : "FetchXML"}
-                </button>
+              {MODES.map((m) => (
+                <Hint key={m.mode} label={m.tip}>
+                  <button
+                    type="button"
+                    onClick={() => switchMode(m.mode)}
+                    className={cn(
+                      "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium",
+                      mode === m.mode
+                        ? "bg-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {m.icon}
+                    {m.label}
+                  </button>
+                </Hint>
               ))}
             </div>
             <div className="ml-auto flex items-center gap-1">
               <SavedQueries
                 platform="ce"
-                current={() =>
-                  query && xml.trim()
+                current={() => {
+                  if (mode === "sql") {
+                    const from = sqlTable(sqlText)
+                    return sqlText.trim()
+                      ? {
+                          platform: "ce",
+                          fetchXml: "",
+                          sql: sqlText,
+                          table:
+                            tables.find((t) => t.logicalName === from)
+                              ?.displayName ??
+                            from ??
+                            "SQL",
+                          where: location.host,
+                        }
+                      : null
+                  }
+                  return query && xml.trim()
                     ? {
                         platform: "ce",
                         fetchXml: xml,
@@ -292,18 +419,53 @@ export function QueryApp({
                         where: location.host,
                       }
                     : null
-                }
+                }}
                 onLoad={(saved) => {
                   if (saved.platform !== "ce") return
+                  if (saved.sql) {
+                    const from = sqlTable(saved.sql)
+                    if (from && from !== query?.entityName) switchTable(from)
+                    setSqlText(saved.sql)
+                    setMode("sql")
+                    return
+                  }
                   const entity = entityOf(saved.fetchXml)
                   if (!entity) return setError("That saved query has no table.")
                   switchTable(entity, saved.fetchXml)
                 }}
               />
+              {mode === "fetchxml" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={checking || !xmlText.trim()}
+                  title="Ask Dataverse whether it can read this FetchXML, without running it"
+                  onClick={async () => {
+                    setChecking(true)
+                    const problem = await checkFetchXml(xmlText)
+                    setChecking(false)
+                    setNotice(
+                      problem
+                        ? `Dataverse: ${problem}`
+                        : "Dataverse can read this query."
+                    )
+                  }}
+                >
+                  {checking ? (
+                    <Loader2Icon
+                      data-icon="inline-start"
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <ShieldCheckIcon data-icon="inline-start" />
+                  )}
+                  Check
+                </Button>
+              )}
               <Button
                 size="sm"
                 onClick={() => void run()}
-                disabled={running || !xml.trim()}
+                disabled={running || !text.trim()}
                 title="Run (Ctrl+Enter)"
               >
                 {running ? (
@@ -396,11 +558,26 @@ export function QueryApp({
                     </>
                   )}
                 </div>
-              ) : (
-                <XmlEditor
+              ) : mode === "fetchxml" ? (
+                <CodeEditor
+                  key="fetchxml"
                   label="FetchXML"
                   value={xmlText}
                   onChange={setXmlText}
+                  extensions={fetchExtensions}
+                  onRun={() => void run()}
+                  placeholder="<fetch> … type < for suggestions"
+                  className="flex-1"
+                />
+              ) : (
+                <CodeEditor
+                  key="sql"
+                  label="SQL"
+                  value={sqlText}
+                  onChange={setSqlText}
+                  extensions={sqlEditorExtensions}
+                  onRun={() => void run()}
+                  placeholder="SELECT name FROM account WHERE …"
                   className="flex-1"
                 />
               )
@@ -408,11 +585,19 @@ export function QueryApp({
             right={
               <ResultsPane
                 sources={[
-                  {
-                    label: "FetchXML",
-                    text: xml,
-                    view: <XmlCode text={xml} />,
-                  },
+                  ...(mode !== "sql"
+                    ? [
+                        {
+                          label: "FetchXML",
+                          text: xml,
+                          view: <XmlCode text={xml} />,
+                        },
+                      ]
+                    : []),
+                  ...(mode === "builder" && builtSql
+                    ? [{ label: "SQL", text: builtSql }]
+                    : []),
+                  ...(mode === "sql" ? [{ label: "SQL", text: sqlText }] : []),
                 ]}
                 results={results}
                 error={error}

@@ -76,10 +76,10 @@ export const QUERY: HelpTab = {
           how: (
             <>
               Kept in this browser's extension storage. Dynamics 365 queries are
-              saved as FetchXML; Business Central ones as the table and field
-              numbers, so they open in any environment with the same tables.
-              Fields the other environment doesn't have are left out, and the
-              builder says which.
+              saved as FetchXML or SQL; Business Central ones as the table and
+              field numbers, so they open in any environment with the same
+              tables. Fields the other environment doesn't have are left out,
+              and the builder says which.
             </>
           ),
         },
@@ -111,13 +111,38 @@ export const QUERY: HelpTab = {
               row limit (500 by default, up to 5,000). Switch to <b>FetchXML</b>{" "}
               to edit the query by hand and back to <b>Builder</b> to keep
               going. <b>Open this view</b> starts from the list you're looking
-              at.
+              at. The <b>SQL</b> tab beside the results shows the same query as
+              SQL.
             </>
           ),
           how: (
             <>
               Runs the FetchXML against the org's Web API, as you. Column and
               option metadata come from the org's table definitions.
+            </>
+          ),
+        },
+        {
+          id: "ce-code",
+          name: "FetchXML and SQL editors",
+          where: "Query builder → FetchXML or SQL",
+          what: (
+            <>
+              Write the query yourself, with suggestions from this org: tables,
+              the right table's columns, operators that suit the column, choice
+              values with their labels, and joins from the tables'
+              relationships. Mistakes are underlined as you type, with a{" "}
+              <b>Learn more</b> link to Microsoft's rule. <b>Check</b> asks
+              Dataverse whether it can read a FetchXML query without running it.
+              Ctrl+Space shows suggestions; Ctrl+Enter runs.
+            </>
+          ),
+          how: (
+            <>
+              SQL runs through the Web API's read-only SQL: one SELECT with
+              named columns (no SELECT *), INNER and LEFT joins, and WHERE
+              comparing a column with a value. Relative dates become DATEADD(…,
+              GETUTCDATE()). SQL isn't read back into the builder.
             </>
           ),
         },

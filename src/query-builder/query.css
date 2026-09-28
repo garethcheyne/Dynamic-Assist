@@ -71,3 +71,41 @@
 .dark .da-xml-comment {
   color: #6a9955;
 }
+
+/* SQL colours: Visual Studio's T-SQL palette, and VS Code's in dark */
+.da-sql-keyword {
+  color: #0000ff;
+}
+.da-sql-string {
+  color: #a31515;
+}
+.da-sql-number {
+  color: #098658;
+}
+.da-sql-op {
+  color: #808080;
+}
+.da-sql-type {
+  color: #ff00ff;
+}
+.da-sql-ident {
+  color: #001080;
+}
+.dark .da-sql-keyword {
+  color: #569cd6;
+}
+.dark .da-sql-string {
+  color: #ce9178;
+}
+.dark .da-sql-number {
+  color: #b5cea8;
+}
+.dark .da-sql-op {
+  color: #d4d4d4;
+}
+.dark .da-sql-type {
+  color: #dcdcaa;
+}
+.dark .da-sql-ident {
+  color: #9cdcfe;
+}

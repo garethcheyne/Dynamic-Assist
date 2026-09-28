@@ -3,7 +3,7 @@
 **Reported:** 2026-09-28, against 2026.9.25
 **Target release:** 2026.10.x (may slip to a later release; this is the largest item)
 **Platform:** Dynamics 365 / Dataverse (CE), query builder, FetchXML mode
-**Status:** Planned
+**Status:** Built on `release/2026.10.x`, to test
 
 ## Request
 
@@ -137,3 +137,52 @@ Each step is releasable on its own.
   table), and each rule, with FetchXML fixtures in `tests/unit/query-builder/`.
 - Use `FXBTests/AutocompleteTests.cs` only as a list of scenarios to cover.
   Write the cases fresh; don't copy them.
+
+## Built (2026-09-29)
+
+All five steps, on branch `release/2026.10.x`:
+
+1. **Editor:** CodeMirror 6 in FetchXML mode (`src/query-builder/CodeEditor.tsx`):
+   line numbers, undo, bracket matching, auto-closing tags, the 003 colours,
+   Ctrl+Space for suggestions, Ctrl+Enter to run. Replaces the 003 overlay
+   editor. The read-only FetchXML tab still uses the 003 highlighter.
+2. **Schema:** `editor/fetch-schema.ts`, every element, attribute, allowed
+   value and operator from the Microsoft Learn reference. The operator table
+   records which column types each applies to.
+3. **Suggestions:** `editor/fetch-complete.ts`. Elements that fit, attributes
+   not yet used (required first), tables (related first under a link-entity),
+   the right table's columns (following `entityname` aliases), operators for
+   the column's type, labelled choice values in `value=""` and `<value>`,
+   aliases, and one ready-made `link-entity` per relationship of the parent
+   table.
+4. **Checks:** `editor/fetch-lint.ts`, as squiggles with a **Learn more** link.
+   It covers broken XML, structure, unknown tables, columns and aliases,
+   operator and value counts, operators that don't fit the column, choice
+   labels used instead of values, aggregate rules, filter-link rules, top with
+   count or page, alias characters, duplicate aliases, retention limits,
+   link-entity sorting and leading wildcards.
+5. **Dataverse check:** a **Check** button in FetchXML mode calls
+   `FetchXmlToQueryExpression` and shows Dataverse's answer.
+   `ValidateFetchXmlExpression` isn't wired in yet: it's SDK-only in the docs
+   found so far.
+
+Also: `src/lib/xml-tree.ts` is a forgiving XML reader with positions and
+"what's at the cursor", and `loadRelationships` was added to `metadata.ts`.
+Tests: `tests/unit/query-builder/{xml-tree,fetch-complete,fetch-lint}.test.ts`.
+No GPL code was used.
+
+### To test
+
+- [ ] Builder → FetchXML: the query shows with line numbers and colours; typing
+      `<` inside `<entity>` lists its children and the relationship joins.
+- [ ] `<condition attribute="` lists the table's columns; `operator="` only
+      lists operators for that column's type; `value="` on a choice lists
+      numbered options with labels.
+- [ ] Misspell a column: it's underlined, and the hover says "account has no
+      column …" with Learn more.
+- [ ] Put a label in a choice's value (`value="Active"`): the warning suggests
+      the number.
+- [ ] **Check** on a good query says "Dataverse can read this query"; on a bad
+      one it shows Dataverse's message.
+- [ ] Esc while suggestions are open closes them without minimising the builder.
+- [ ] Dark mode: colours and the suggestion popup read well.

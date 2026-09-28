@@ -19,7 +19,15 @@ export type SavedQuery = {
   where: string
   /** The table's name, for showing */
   table: string
-} & ({ platform: "ce"; fetchXml: string } | { platform: "bc"; query: BcQuery })
+} & (
+  | {
+      platform: "ce"
+      fetchXml: string
+      /** A SQL query instead (fetchXml is then empty) */
+      sql?: string
+    }
+  | { platform: "bc"; query: BcQuery }
+)
 
 /** Omit, kept per platform (a plain Omit on a union loses which is which) */
 export type OmitEach<T, K extends PropertyKey> = T extends unknown
