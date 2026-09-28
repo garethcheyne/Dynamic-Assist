@@ -4,7 +4,8 @@
  * (today, fiscal periods, current user, hierarchy…) are left out and listed at
  * the top; relative dates become DATEADD(…, GETUTCDATE()), which counts from
  * now rather than from midnight, so they're marked as approximate.
- * Operator mapping follows SQL 4 CDS's FetchXml2Sql (MIT, Mark Carrington).
+ * Written from the Dataverse SQL docs; SQL 4 CDS's FetchXml2Sql (MIT, Mark
+ * Carrington) is a much fuller converter if this ever needs more.
  */
 import type { QueryBuilderCondition, QueryBuilderField } from "./lib/types"
 import type { TableInfo } from "./metadata"
