@@ -23,6 +23,21 @@ type CeFieldType =
 
 type CeLookup = { id: string; name: string | null; entityType: string }
 
+/** One choice of a choice (option set) or Yes/No column. */
+export type CeOption = { value: number; text: string }
+
+/** A table's choice column and every option it has, from its metadata. */
+export type CeOptionSetColumn = {
+  logicalName: string
+  /** Display name; null when it has none */
+  label: string | null
+  kind: "Choice" | "Choices" | "Status" | "Status reason" | "Yes/No"
+  /** The option set's name, e.g. the global choice it uses */
+  optionSet: string | null
+  global: boolean
+  options: CeOption[]
+}
+
 export type CeField = {
   logicalName: string
   label: string
@@ -33,6 +48,8 @@ export type CeField = {
   /** The underlying value as JSON (option numbers, lookup ids, ISO dates). */
   raw: string
   lookups: CeLookup[] | null
+  /** A choice column's options, as the form offers them; null for other types. */
+  options: CeOption[] | null
   requiredLevel: "none" | "required" | "recommended"
   dirty: boolean
   visible: boolean
@@ -229,6 +246,7 @@ export type CeCommands = {
   save: { args: void; result: void }
   blur: { args: { on: boolean }; result: void }
   allColumns: { args: void; result: CeColumn[] }
+  optionSets: { args: { entityName: string }; result: CeOptionSetColumn[] }
   viewFetchXml: {
     args: void
     result: { name: string; fetchXml: string; entitySetName: string }

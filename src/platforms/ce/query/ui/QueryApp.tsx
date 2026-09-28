@@ -33,6 +33,8 @@ import { entitySetOf, runFetchXmlLimited, type Results } from "../run"
 import { FilterEditor } from "./FilterEditor"
 import { DEFAULT_ROWS, MAX_ROWS, parseRows } from "@/query-builder/limits"
 import { ResultsPane, Section } from "@/query-builder/ResultsPane"
+import { SplitPanes } from "@/query-builder/SplitPanes"
+import { XmlCode, XmlEditor } from "@/query-builder/XmlCode"
 import { SavedQueries } from "@/query-builder/SavedQueries"
 import { SearchSelect, type SelectItem } from "@/query-builder/SearchSelect"
 import { Hint } from "@/components/hint"
@@ -348,10 +350,10 @@ export function QueryApp({
             </div>
           )}
 
-          <div className="flex min-h-0 flex-1">
-            {/* Left: the query */}
-            <div className="flex w-[420px] shrink-0 flex-col border-r">
-              {mode === "builder" ? (
+          <SplitPanes
+            id="ce-query"
+            left={
+              mode === "builder" ? (
                 <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
                   {loadingFields || !query ? (
                     <p className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -395,25 +397,30 @@ export function QueryApp({
                   )}
                 </div>
               ) : (
-                <textarea
-                  aria-label="FetchXML"
-                  spellCheck={false}
+                <XmlEditor
+                  label="FetchXML"
                   value={xmlText}
-                  onChange={(e) => setXmlText(e.target.value)}
-                  className="min-h-0 flex-1 resize-none bg-muted/30 p-4 font-mono text-xs leading-relaxed outline-none"
+                  onChange={setXmlText}
+                  className="flex-1"
                 />
-              )}
-            </div>
-
-            {/* Right: results */}
-            <ResultsPane
-              sources={[{ label: "FetchXML", text: xml }]}
-              results={results}
-              error={error}
-              running={running}
-              name={query?.entityName ?? "query"}
-            />
-          </div>
+              )
+            }
+            right={
+              <ResultsPane
+                sources={[
+                  {
+                    label: "FetchXML",
+                    text: xml,
+                    view: <XmlCode text={xml} />,
+                  },
+                ]}
+                results={results}
+                error={error}
+                running={running}
+                name={query?.entityName ?? "query"}
+              />
+            }
+          />
         </div>
       </div>
     </TooltipPortalContainer.Provider>

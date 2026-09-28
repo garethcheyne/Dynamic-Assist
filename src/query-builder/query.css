@@ -38,3 +38,36 @@
 .da-root ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* FetchXML colours: Visual Studio's XML palette, and VS Code's in dark */
+.da-xml-punct {
+  color: #0000ff;
+}
+.da-xml-tag {
+  color: #a31515;
+}
+.da-xml-attr {
+  color: #e50000;
+}
+.da-xml-value {
+  color: #0000ff;
+}
+.da-xml-comment {
+  color: #008000;
+  font-style: italic;
+}
+.dark .da-xml-punct {
+  color: #808080;
+}
+.dark .da-xml-tag {
+  color: #569cd6;
+}
+.dark .da-xml-attr {
+  color: #9cdcfe;
+}
+.dark .da-xml-value {
+  color: #ce9178;
+}
+.dark .da-xml-comment {
+  color: #6a9955;
+}

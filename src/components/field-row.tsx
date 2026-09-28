@@ -37,6 +37,7 @@ export function FieldRow({
   markers,
   formats,
   details,
+  more,
   dimmed,
   highlight,
 }: {
@@ -49,6 +50,8 @@ export function FieldRow({
   markers?: React.ReactNode
   formats: CopyFormat[]
   details: DetailRow[]
+  /** Shown under the details when the row is open (a choice column's options…) */
+  more?: React.ReactNode
   dimmed?: boolean
   /** Tints the row, e.g. for changed fields */
   highlight?: boolean
@@ -136,6 +139,7 @@ export function FieldRow({
           ))}
         </dl>
       )}
+      {open && more}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   AsteriskIcon,
   EyeOffIcon,
+  ListIcon,
   LockIcon,
   PencilIcon,
   TextCursorInputIcon,
@@ -14,8 +15,11 @@ import { SearchBox } from "@/components/search-box"
 import { groupBy } from "@/lib/group-by"
 
 import type { CeField } from "../types"
+import { selectedValues } from "../option-sets"
+import { OptionList } from "./OptionList"
 
 type Filters = {
+  choices: boolean
   values: boolean
   changed: boolean
   required: boolean
@@ -23,6 +27,7 @@ type Filters = {
 }
 
 const NO_FILTERS: Filters = {
+  choices: false,
   values: false,
   changed: false,
   required: false,
@@ -47,6 +52,7 @@ export function CeFieldList({ fields }: { fields: CeField[] }) {
   const shown = fields.filter(
     (f) =>
       (filters.hidden || f.visible) &&
+      (!filters.choices || !!f.options?.length) &&
       (!filters.values || !!f.display) &&
       (!filters.changed || f.dirty) &&
       (!filters.required || f.requiredLevel === "required") &&
@@ -68,6 +74,14 @@ export function CeFieldList({ fields }: { fields: CeField[] }) {
         placeholder="Search label, logical name or value"
       />
       <div className="flex flex-wrap items-center gap-1">
+        <FilterChip
+          label="Choices"
+          icon={<ListIcon />}
+          count={count((f) => !!f.options?.length)}
+          on={filters.choices}
+          tip="Only choice columns; open one to see its options"
+          onToggle={() => toggle("choices")}
+        />
         <FilterChip
           label="Has value"
           icon={<TextCursorInputIcon />}
@@ -195,6 +209,11 @@ function CeFieldRow({ field: f }: { field: CeField }) {
       }
       formats={formats}
       details={details}
+      more={
+        f.options?.length ? (
+          <OptionList options={f.options} selected={selectedValues(f.raw)} />
+        ) : undefined
+      }
     />
   )
 }
