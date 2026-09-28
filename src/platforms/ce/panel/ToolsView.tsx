@@ -1,3 +1,4 @@
+import * as React from "react"
 import {
   ActivityIcon,
   ClipboardCopyIcon,
@@ -18,6 +19,7 @@ import {
   BugIcon,
   DatabaseZapIcon,
   ListFilterIcon,
+  ListTreeIcon,
 } from "lucide-react"
 
 import { ActionTile, TileGrid } from "@/components/action-tile"
@@ -30,6 +32,7 @@ import { PanelQueries } from "@/query-builder/PanelQueries"
 import type { CeState } from "../types"
 import { ceUrls, withFlag } from "../urls"
 import type { useCeTab } from "../use-ce-tab"
+import { OptionSetsSection } from "./OptionSetsSection"
 
 type Run = ReturnType<typeof useCeTab>["run"]
 
@@ -48,6 +51,8 @@ export function ToolsView({
   busy: string | null
 }) {
   const copy = useCopy()
+  const [revealOptionSets, setRevealOptionSets] = React.useState(0)
+  const table = state.form?.entityName ?? state.page.entityName
   const hasForm = !!state.form
   const isList = state.page.pageType === "entitylist" && !!state.page.viewId
   const urls = ceUrls(state)
@@ -145,6 +150,15 @@ export function ToolsView({
                 return on ? "Showing logical names" : "Labels restored"
               })
             }
+          />
+          <ActionTile
+            icon={<ListTreeIcon />}
+            title="Option sets"
+            description="Every choice column on the table, with its values"
+            detail="Lists every choice, multi-select choice, status, status reason and Yes/No column on this table with each option's value and label, including columns the form doesn't show, in the Option sets section below. Click an option to copy its value."
+            unavailable="Open a record form or a list view."
+            disabled={!table}
+            onClick={() => setRevealOptionSets((n) => n + 1)}
           />
           <ActionTile
             icon={<FoldVerticalIcon />}
@@ -250,6 +264,16 @@ export function ToolsView({
           />
         </TileGrid>
       </CollapsibleSection>
+
+      {table && (
+        <OptionSetsSection
+          key={table}
+          run={run}
+          entityName={table}
+          fields={state.form?.fields ?? null}
+          reveal={revealOptionSets}
+        />
+      )}
 
       <CollapsibleSection
         id="ce.tools.view"

@@ -16,6 +16,12 @@ import {
   readLog,
   setConsoleCapture,
 } from "./error-log"
+import { controlNameFromLabelId } from "./form-labels"
+import {
+  OPTION_SET_CASTS,
+  optionSetPaths,
+  readOptionSetColumns,
+} from "./option-sets"
 import {
   CE_COMMAND,
   CE_RESULT,
@@ -40,6 +46,8 @@ import {
   type CeField,
   type CeForm,
   type CeModes,
+  type CeOption,
+  type CeOptionSetColumn,
   type CePage,
   type CeState,
 } from "./types"
@@ -159,6 +167,17 @@ function display(attribute: any, type: string): string {
   }
 }
 
+/** A choice column's options as the form has them; null for other types. */
+function readOptions(attribute: any, type: string): CeOption[] | null {
+  if (!["optionset", "multiselectoptionset", "boolean"].includes(type))
+    return null
+  const options = read(() => attribute.getOptions()) as any[] | null
+  if (!Array.isArray(options)) return null
+  return options
+    .filter((o) => o && o.value !== null && o.value !== undefined)
+    .map((o) => ({ value: Number(o.value), text: String(o.text ?? "") }))
+}
+
 function readField(attribute: any): CeField {
   const type: string = read(() => attribute.getAttributeType()) ?? "unknown"
   const control = read(() => attribute.controls.get(0))
@@ -181,6 +200,7 @@ function readField(attribute: any): CeField {
             entityType: l.entityType,
           }))
         : null,
+    options: readOptions(attribute, type),
     requiredLevel: read(() => attribute.getRequiredLevel()) ?? "none",
     dirty: read(() => attribute.getIsDirty()) === true,
     visible: read(() => control.getVisible()) !== false,
@@ -263,6 +283,7 @@ const requireForm = () => {
 // only renders expanded tabs), so an observer adds badges as they appear.
 const MARK_STYLE_ID = "dynamic-assist-logical-names"
 const GRID_BADGE = "dynamic-assist-grid-name"
+const FORM_BADGE = "dynamic-assist-form-name"
 const MARK_CSS = `
   .${GRID_BADGE} {
     display: inline-block; flex: none; align-self: center; margin-left: 6px; padding: 0 4px;
@@ -274,6 +295,10 @@ const MARK_CSS = `
   }
   .${GRID_BADGE}:hover { background: #ddd9fb; border-color: #4f46c9; }
   .${GRID_BADGE}[data-copied] { background: #dff6dd; border-color: #9fd89f; color: #0e5c0e; }
+  .${GRID_BADGE}.${FORM_BADGE} {
+    display: block; width: fit-content; max-width: 100%; margin: 2px 0 0;
+    box-sizing: border-box;
+  }
 `
 
 type TipCard = Parameters<typeof setPageTip>[1]
@@ -392,10 +417,6 @@ function logicalNameOf(controlName: string): string | null {
   return read(() => Xrm.Page.getControl(controlName).getAttribute().getName())
 }
 
-// Field labels are <label id="id-…-12-name-field-label">: the control's name
-// sits between the counter and "-field-label" (header_x for header fields)
-const LABEL_ID = /-\d+-(.+)-field-label$/
-
 function addFormBadges() {
   const entity = read(() => formContext()?.data.entity.getEntityName()) as
     string | null
@@ -403,18 +424,19 @@ function addFormBadges() {
   for (const label of document.querySelectorAll<HTMLElement>(
     'label[id$="-field-label"]'
   )) {
-    if (label.parentElement?.querySelector(`.${GRID_BADGE}`)) continue
-    const control = label.id.match(LABEL_ID)?.[1]
+    if (label.querySelector(`.${GRID_BADGE}`)) continue
+    const control = controlNameFromLabelId(label.id)
     if (!control) continue
     const name = logicalNameOf(control) ?? control
-    label.insertAdjacentElement(
-      "afterend",
-      makeBadge(
-        name,
-        { title: name, hint },
-        entity ? () => columnCard(clientUrl(), entity, name) : undefined
-      )
+    // Inside the label, on its own line: beside it, in the label's flex row,
+    // the badge squeezes the label text to a letter per line
+    const badge = makeBadge(
+      name,
+      { title: name, hint },
+      entity ? () => columnCard(clientUrl(), entity, name) : undefined
     )
+    badge.classList.add(FORM_BADGE)
+    label.appendChild(badge)
   }
   for (const tab of document.querySelectorAll<HTMLElement>(
     '[role=tablist] [role=tab][data-id^="tablist-"]'
@@ -695,6 +717,30 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
       })
     }
     return columns.sort((a, b) => a.name.localeCompare(b.name))
+  },
+
+  async optionSets({ entityName }) {
+    const columns = await Promise.all(
+      OPTION_SET_CASTS.map(async (c) => {
+        for (const path of optionSetPaths(entityName, c)) {
+          const res = await fetch(`${clientUrl()}/api/data/v9.2/${path}`, {
+            headers: { Accept: "application/json" },
+          }).catch(() => null)
+          if (res?.ok) return readOptionSetColumns(c, await res.json())
+        }
+        return [] as CeOptionSetColumn[]
+      })
+    )
+    const all = columns.flat()
+    if (all.length === 0) {
+      // An empty table is fine; every request failing is not
+      const res = await fetch(
+        `${clientUrl()}/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')?$select=LogicalName`,
+        { headers: { Accept: "application/json" } }
+      )
+      if (!res.ok) throw new Error(`Web API ${res.status}`)
+    }
+    return all.sort((a, b) => a.logicalName.localeCompare(b.logicalName))
   },
 
   async viewFetchXml() {

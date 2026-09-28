@@ -34,6 +34,7 @@ import {
   Section,
   type QuerySource,
 } from "@/query-builder/ResultsPane"
+import { SplitPanes } from "@/query-builder/SplitPanes"
 import {
   PlainSelect,
   SearchSelect,
@@ -572,77 +573,82 @@ export function BcQueryApp({
                   fail.
                 </div>
               )}
-              <div className="flex min-h-0 flex-1">
-                <div className="flex w-[420px] shrink-0 flex-col gap-4 overflow-y-auto border-r p-4">
-                  {loadingFields || !query ? (
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Loader2Icon className="size-3.5 animate-spin" /> Loading
-                      fields…
-                    </p>
-                  ) : (
-                    <>
-                      <Section icon={<TableIcon />} title="Columns">
-                        <ColumnsEditor
-                          fields={fields}
-                          columns={query.fields}
-                          onChange={(f) => setQuery({ ...query, fields: f })}
-                        />
-                      </Section>
-                      <Section icon={<FilterIcon />} title="Filters">
-                        <FilterModeSwitch
-                          mode={filterMode}
-                          onChange={changeFilterMode}
-                        />
-                        <FiltersEditor
-                          fields={fields}
-                          filters={query.filters}
-                          mode={filterMode}
-                          onChange={(filters) =>
-                            setQuery({ ...query, filters })
-                          }
-                        />
-                      </Section>
-                      <Section icon={<LinkIcon />} title="Related tables">
-                        <JoinsEditor
-                          fields={fields}
-                          tables={tables}
-                          related={related}
-                          joins={query.joins ?? []}
-                          filterMode={filterMode}
-                          onLoad={loadRelated}
-                          onChange={(joins) => setQuery({ ...query, joins })}
-                        />
-                      </Section>
-                      <Section icon={<ListOrderedIcon />} title="Sort">
-                        <SortEditor
-                          fields={fields}
-                          query={query}
-                          onChange={setQuery}
-                        />
-                      </Section>
-                      <Section icon={<SettingsIcon />} title="Options">
-                        <OptionsEditor query={query} onChange={setQuery} />
-                      </Section>
-                    </>
-                  )}
-                </div>
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                  <ResultsPane
-                    sources={sources}
-                    results={results}
-                    error={error}
-                    running={running}
-                    name={(table?.name ?? "query").replace(/[^\w-]+/g, "-")}
-                    hint="Pick columns and filters, then press Run (Ctrl+Enter). Filters use Business Central's syntax: 10000..20000, A*|B*, <>''."
-                  />
-                  {lastRun?.count !== undefined && (
-                    <div className="border-t px-3 py-1.5 text-xs text-muted-foreground">
-                      {lastRun.count.toLocaleString()} record
-                      {lastRun.count === 1 ? "" : "s"} match in all
-                    </div>
-                  )}
-                </div>
-              </div>
+              <SplitPanes
+                id="bc-query"
+                left={
+                  <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+                    {loadingFields || !query ? (
+                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Loader2Icon className="size-3.5 animate-spin" />{" "}
+                        Loading fields…
+                      </p>
+                    ) : (
+                      <>
+                        <Section icon={<TableIcon />} title="Columns">
+                          <ColumnsEditor
+                            fields={fields}
+                            columns={query.fields}
+                            onChange={(f) => setQuery({ ...query, fields: f })}
+                          />
+                        </Section>
+                        <Section icon={<FilterIcon />} title="Filters">
+                          <FilterModeSwitch
+                            mode={filterMode}
+                            onChange={changeFilterMode}
+                          />
+                          <FiltersEditor
+                            fields={fields}
+                            filters={query.filters}
+                            mode={filterMode}
+                            onChange={(filters) =>
+                              setQuery({ ...query, filters })
+                            }
+                          />
+                        </Section>
+                        <Section icon={<LinkIcon />} title="Related tables">
+                          <JoinsEditor
+                            fields={fields}
+                            tables={tables}
+                            related={related}
+                            joins={query.joins ?? []}
+                            filterMode={filterMode}
+                            onLoad={loadRelated}
+                            onChange={(joins) => setQuery({ ...query, joins })}
+                          />
+                        </Section>
+                        <Section icon={<ListOrderedIcon />} title="Sort">
+                          <SortEditor
+                            fields={fields}
+                            query={query}
+                            onChange={setQuery}
+                          />
+                        </Section>
+                        <Section icon={<SettingsIcon />} title="Options">
+                          <OptionsEditor query={query} onChange={setQuery} />
+                        </Section>
+                      </>
+                    )}
+                  </div>
+                }
+                right={
+                  <>
+                    <ResultsPane
+                      sources={sources}
+                      results={results}
+                      error={error}
+                      running={running}
+                      name={(table?.name ?? "query").replace(/[^\w-]+/g, "-")}
+                      hint="Pick columns and filters, then press Run (Ctrl+Enter). Filters use Business Central's syntax: 10000..20000, A*|B*, <>''."
+                    />
+                    {lastRun?.count !== undefined && (
+                      <div className="border-t px-3 py-1.5 text-xs text-muted-foreground">
+                        {lastRun.count.toLocaleString()} record
+                        {lastRun.count === 1 ? "" : "s"} match in all
+                      </div>
+                    )}
+                  </>
+                }
+              />
             </>
           )}
         </div>

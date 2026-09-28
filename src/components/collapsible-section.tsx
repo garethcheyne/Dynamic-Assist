@@ -24,6 +24,7 @@ export function CollapsibleSection({
   summary,
   actions,
   defaultCollapsed = false,
+  reveal = 0,
   className,
   bodyClassName,
   children,
@@ -36,6 +37,8 @@ export function CollapsibleSection({
   /** Right-aligned header controls; they don't toggle the section */
   actions?: React.ReactNode
   defaultCollapsed?: boolean
+  /** Bump to open the section and scroll it into view, e.g. from a tool elsewhere */
+  reveal?: number
   className?: string
   bodyClassName?: string
   children: React.ReactNode
@@ -53,9 +56,22 @@ export function CollapsibleSection({
       return !c
     })
   const bodyId = `section-${id}`
+  const ref = React.useRef<HTMLElement>(null)
+  // A new reveal opens the section (without remembering it as opened), then
+  // scrolls to it once it's drawn
+  const [seenReveal, setSeenReveal] = React.useState(0)
+  if (reveal !== seenReveal) {
+    setSeenReveal(reveal)
+    if (reveal) setCollapsed(false)
+  }
+  React.useEffect(() => {
+    if (reveal)
+      ref.current?.scrollIntoView({ block: "start", behavior: "smooth" })
+  }, [reveal])
 
   return (
     <section
+      ref={ref}
       className={cn(
         "rounded-xl border bg-card text-card-foreground shadow-xs",
         className
