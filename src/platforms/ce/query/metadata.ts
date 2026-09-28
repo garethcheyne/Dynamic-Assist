@@ -146,3 +146,56 @@ async function fetchFields(entityName: string): Promise<QueryBuilderField[]> {
   // Choices and Yes/No labels come from a separate cast per attribute type
   return enrichOptionsetFields(fields, entityName)
 }
+
+/**
+ * A way to join from a table to a related one, as a link-entity would:
+ * `table` is the related table, `from` its column and `to` this table's.
+ */
+export type Relationship = {
+  schemaName: string
+  /** many-to-one: this table's lookup points at `table`; one-to-many: `table`'s lookup points here */
+  kind: "many-to-one" | "one-to-many"
+  table: string
+  from: string
+  to: string
+}
+
+const relationshipCache = new Map<string, Promise<Relationship[]>>()
+
+/** A table's one-to-many and many-to-one relationships. Cached for the page's life. */
+export function loadRelationships(entityName: string): Promise<Relationship[]> {
+  let cached = relationshipCache.get(entityName)
+  if (!cached) {
+    cached = getJson(
+      `EntityDefinitions(LogicalName='${entityName}')?$select=LogicalName` +
+        "&$expand=ManyToOneRelationships($select=SchemaName,ReferencedEntity,ReferencedAttribute,ReferencingAttribute)" +
+        ",OneToManyRelationships($select=SchemaName,ReferencingEntity,ReferencingAttribute,ReferencedAttribute)"
+    )
+      .then((md) => [
+        ...((md.ManyToOneRelationships ?? []) as any[]).map(
+          (r): Relationship => ({
+            schemaName: r.SchemaName,
+            kind: "many-to-one",
+            table: r.ReferencedEntity,
+            from: r.ReferencedAttribute,
+            to: r.ReferencingAttribute,
+          })
+        ),
+        ...((md.OneToManyRelationships ?? []) as any[]).map(
+          (r): Relationship => ({
+            schemaName: r.SchemaName,
+            kind: "one-to-many",
+            table: r.ReferencingEntity,
+            from: r.ReferencingAttribute,
+            to: r.ReferencedAttribute,
+          })
+        ),
+      ])
+      .catch((error) => {
+        relationshipCache.delete(entityName)
+        throw error
+      })
+    relationshipCache.set(entityName, cached)
+  }
+  return cached
+}

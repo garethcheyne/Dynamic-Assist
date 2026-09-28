@@ -105,7 +105,12 @@ export function ToolsView({
           onOpen={(q) => {
             if (q.platform !== "ce") return
             void act(q.id, () =>
-              openQueryBuilder(tab.id!, { fetchXml: q.fetchXml, run: true })
+              openQueryBuilder(
+                tab.id!,
+                q.sql
+                  ? { sql: q.sql, run: true }
+                  : { fetchXml: q.fetchXml, run: true }
+              )
             )
           }}
         />
