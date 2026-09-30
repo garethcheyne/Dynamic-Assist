@@ -54,6 +54,11 @@ function findAlc(): string | null {
 function findSymbols(): string | null {
   const candidates = [
     process.env.AL_SYMBOLS,
+    // The companion's own repo, checked out next to this one
+    path.resolve(
+      __dirname,
+      "../../../../Dynamic-Assist_BusinessCentralAddon/DynamicAssistCompanion/.alpackages"
+    ),
     path.resolve(
       __dirname,
       "../../../../../DYN365_Business_Central/BusinessCentral-Extension-Template/.alpackages"
@@ -172,27 +177,4 @@ describe.skipIf(!alc || !symbols)("generated AL compiles", () => {
     expect(fs.existsSync(path.join(dir, "out.app")), output).toBe(true)
     fs.rmSync(dir, { recursive: true, force: true })
   }, 120_000)
-})
-
-describe.skipIf(!alc)("the companion app compiles", () => {
-  const project = path.resolve(__dirname, "../../../bc-companion")
-  const cache = path.join(project, ".alpackages")
-  it.skipIf(!fs.existsSync(cache))(
-    "builds bc-companion",
-    () => {
-      const out = path.join(os.tmpdir(), `da-companion-${Date.now()}.app`)
-      const output = compile([
-        `/project:${project}`,
-        `/packagecachepath:${cache}`,
-        `/out:${out}`,
-      ])
-      expect(
-        output.split(/\r?\n/).filter((l) => /(error|warning) AL\d+/.test(l)),
-        output
-      ).toEqual([])
-      expect(fs.existsSync(out), output).toBe(true)
-      fs.rmSync(out, { force: true })
-    },
-    120_000
-  )
 })

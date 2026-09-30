@@ -49,7 +49,7 @@ window.addEventListener("message", (event) => {
 })
 
 // The companion app's query page announces itself to the top frame when it
-// loads (bc-companion/src/bridge/bridge.js): open the query builder over it.
+// loads (bridge.js in the companion repo): open the query builder over it.
 if (window === window.top) {
   window.addEventListener("message", (event) => {
     if (

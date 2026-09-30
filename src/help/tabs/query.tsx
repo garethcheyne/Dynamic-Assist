@@ -1,5 +1,7 @@
 import { DatabaseIcon } from "lucide-react"
 
+import { COMPANION_REPO } from "@/shared/links"
+
 import type { HelpTab } from "../types"
 
 export const QUERY: HelpTab = {
@@ -227,10 +229,12 @@ export const QUERY: HelpTab = {
               The app installed in the environment (Business Central 2024 wave 2
               or later), and the <b>DA QUERY</b> permission set for each user,
               alongside their normal permissions. <b>DA QUERY ADMIN</b> adds the
-              query log. The app's source and install steps are in the
-              repository's <code>bc-companion</code> folder. The same app powers{" "}
-              <b>All fields</b>, the <b>Dynamics 365 record</b> link and app
-              names on field badges.
+              query log. Its releases, install steps and source are in the{" "}
+              <a href={COMPANION_REPO} target="_blank" rel="noreferrer">
+                Dynamic-Assist_BusinessCentralAddon
+              </a>{" "}
+              repository. The same app powers <b>All fields</b>, the{" "}
+              <b>Dynamics 365 record</b> link and app names on field badges.
             </>
           ),
         },

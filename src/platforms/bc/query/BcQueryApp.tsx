@@ -49,6 +49,7 @@ import {
   type BcChannelStatus,
   type BcSetupRequest,
 } from "../messages"
+import { COMPANION_REPO } from "@/shared/links"
 import { buildBcUrl, parseBcUrl } from "../url"
 import {
   emptyBoot,
@@ -119,8 +120,7 @@ export type BcOpenRequest = {
   setup?: { returnUrl: string; startedAt: number }
 }
 
-const COMPANION_HELP_URL =
-  "https://github.com/garethcheyne/Dynamic-Assist/tree/main/bc-companion"
+const COMPANION_HELP_URL = COMPANION_REPO
 
 /** Columns picked for a new query: the key, then a few everyday fields. */
 const DEFAULT_COLUMNS = 8

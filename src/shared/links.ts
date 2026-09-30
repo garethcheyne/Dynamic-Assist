@@ -15,9 +15,10 @@ export const powerPlatform = {
       : "https://admin.powerplatform.microsoft.com/environments",
 }
 
-/** The Dynamic Assist Companion app for Business Central: its latest release */
-export const COMPANION_LATEST =
-  "https://github.com/garethcheyne/Dynamic-Assist/releases/latest"
+/** The Dynamic Assist Companion app for Business Central: its repository and latest release */
+export const COMPANION_REPO =
+  "https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon"
+export const COMPANION_LATEST = `${COMPANION_REPO}/releases/latest`
 
 /** Microsoft's Business Central Virtual Table app for Dataverse, and its setup docs */
 export const BC_VIRTUAL_TABLES = {
