@@ -1,8 +1,8 @@
 import * as React from "react"
 
+import { runCe } from "./command"
 import type {
   CeCommand,
-  CeCommandResponse,
   CeCommands,
   CeEvent,
   CeRequest,
@@ -44,13 +44,7 @@ export function useCeTab(tabId: number | undefined) {
       ...args: CeCommands[C]["args"] extends void ? [] : [CeCommands[C]["args"]]
     ): Promise<CeCommands[C]["result"]> => {
       if (tabId === undefined) throw new Error("No tab.")
-      const request: CeRequest = { type: "ce:command", command, args: args[0] }
-      const response = (await chrome.tabs.sendMessage(tabId, request, {
-        frameId: 0,
-      })) as CeCommandResponse | undefined
-      if (!response) throw new Error("The page didn't answer. Reload it.")
-      if (!response.ok) throw new Error(response.error ?? "Failed.")
-      return response.result as CeCommands[C]["result"]
+      return runCe(tabId, command, ...args)
     },
     [tabId]
   )

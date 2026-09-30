@@ -9,7 +9,19 @@ export const TOOL_MESSAGE = "dynamic-assist:bc-tool"
 export const TOOL_RESULT_MESSAGE = "dynamic-assist:bc-tool-result"
 
 /** The page tools (page-tools.ts) */
-export type BcToolCommand = "fieldNames" | "blur" | "expandTabs" | "appNames"
+export type BcToolCommand =
+  | "fieldNames"
+  | "blur"
+  | "expandTabs"
+  | "appNames"
+  /** The right-click menu: the field last right-clicked, as a BcMenuTarget */
+  | "menuTarget"
+/** A table field the right-click menu was opened on */
+export type BcMenuTarget = {
+  name: string
+  fieldNo: number
+  caption: string | null
+}
 /** Which toggles are on in the page */
 export type BcToolModes = { fieldNames: boolean; blur: boolean }
 

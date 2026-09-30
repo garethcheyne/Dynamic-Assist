@@ -63,7 +63,10 @@ const LIBRARIES: [string, string][] = [
   ["Base UI", "https://base-ui.com"],
   ["Lucide", "https://lucide.dev"],
   ["CodeMirror", "https://codemirror.net"],
-  ["react-resizable-panels", "https://github.com/bvaughn/react-resizable-panels"],
+  [
+    "react-resizable-panels",
+    "https://github.com/bvaughn/react-resizable-panels",
+  ],
   ["Geist", "https://vercel.com/font"],
 ]
 
@@ -124,7 +127,6 @@ export function CreditsView() {
             logical names, all fields, clone, the admin shortcuts and more.
             Level Up has helped Dynamics people for years (MIT licence).
           </Credit>
-
         </ul>
       </CollapsibleSection>
 

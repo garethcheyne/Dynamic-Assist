@@ -14,6 +14,7 @@ import {
   FIELD_CLASSES,
   dataTypeOf,
   schemaNameOf,
+  type BcMenuTarget,
   type BcToolCommand,
   type BcToolModes,
 } from "./page-info"
@@ -259,12 +260,89 @@ export function reapplyTools() {
   if (modes.fieldNames) applyFieldNames()
 }
 
+// The right-click menu acts on what you right-clicked: remember it (capture
+// phase, before the client's own handlers)
+let rightClicked: Element | null = null
+document.addEventListener(
+  "contextmenu",
+  (e) => {
+    rightClicked = e.target instanceof Element ? e.target : null
+  },
+  true
+)
+
+/** A badge's own text: "Name · 12" */
+const BADGE_TEXT = /^(.*) · (\d+)$/
+
+/**
+ * The table field behind the element last right-clicked: a card field (its
+ * caption, value or badge) or a list column (its header or any cell in it).
+ */
+function menuTarget(): BcMenuTarget | null {
+  const form = currentForm()
+  if (!form || !rightClicked) return null
+  const byId = new Map<string, Control>()
+  const columns: Control[] = []
+  eachControl(form, (c) => {
+    if (c.typeName === "RepeaterControl")
+      columns.push(...((read(() => c.columns.items) as Control[] | null) ?? []))
+    const id = read(() => c._id)
+    if (typeof id === "string" && id) byId.set(id, c)
+  })
+  const field = (c: Control): BcMenuTarget | null => {
+    const no = read(() => c.tableFieldNo)
+    if (typeof no !== "number" || no < 0) return null
+    const caption = read(() => c.caption) as string | null
+    return {
+      name: schemaNameOf(
+        read(() => c.designName),
+        caption
+      ),
+      fieldNo: no,
+      caption,
+    }
+  }
+  const column = (caption: string | null) => {
+    const col =
+      caption && columns.find((c) => read(() => c.caption) === caption)
+    return col ? field(col) : null
+  }
+
+  for (
+    let el: Element | null = rightClicked, depth = 0;
+    el && depth < 40;
+    el = el.parentElement, depth++
+  ) {
+    if (el.classList.contains(BADGE)) {
+      const m = el.textContent?.match(BADGE_TEXT)
+      if (m) return { name: m[1], fieldNo: Number(m[2]), caption: null }
+    }
+    // Card fields: the control's element has its id; its caption is <id>lbl
+    const id = el.id.endsWith("lbl") ? el.id.slice(0, -3) : el.id
+    const control = id ? byId.get(id) : undefined
+    if (control) {
+      const found = field(control)
+      if (found) return found
+    }
+    // List columns: the header's abbr is the column caption; a cell finds
+    // its header by position
+    if (el.tagName === "TH" && el.hasAttribute("abbr"))
+      return column(el.getAttribute("abbr"))
+    if (el.tagName === "TD") {
+      const cell = el as HTMLTableCellElement
+      const th = cell.closest("table")?.tHead?.rows[0]?.cells[cell.cellIndex]
+      if (th?.hasAttribute("abbr")) return column(th.getAttribute("abbr"))
+    }
+  }
+  return null
+}
+
 /** Runs a command from the panel; returns what to tell the user. */
 export function runTool(
   command: BcToolCommand,
   on?: boolean,
   data?: unknown
-): string {
+): string | { message: string; data: unknown } {
   switch (command) {
     case "appNames":
       appNames = { ...appNames, ...((data as Record<string, AppName>) ?? {}) }
@@ -287,6 +365,15 @@ export function runTool(
       ensureStyle()
       document.documentElement.classList.toggle("da-blur", modes.blur)
       return modes.blur ? "Values blurred" : "Values shown"
+    case "menuTarget": {
+      const target = menuTarget()
+      return {
+        message: target
+          ? `${target.name} (${target.fieldNo})`
+          : "Right-click a field's caption or value, or a list column, first",
+        data: target,
+      }
+    }
     case "expandTabs": {
       const closed = [
         ...document.querySelectorAll(

@@ -6,7 +6,9 @@ import {
   HistoryIcon,
   HouseIcon,
   LifeBuoyIcon,
+  MegaphoneIcon,
   MoonIcon,
+  SettingsIcon,
   SparklesIcon,
   SunIcon,
 } from "lucide-react"
@@ -36,9 +38,10 @@ import { CreditsView } from "./CreditsView"
 import { Launcher } from "./Launcher"
 import { HistoryView } from "./HistoryView"
 import { HomeView } from "./HomeView"
+import { SettingsView } from "./SettingsView"
 import { Hint } from "@/components/hint"
 
-type View = "tools" | "home" | "history" | "credits"
+type View = "tools" | "home" | "history" | "credits" | "settings"
 
 const VIEWS: Record<
   Exclude<View, "tools" | "home">,
@@ -46,6 +49,7 @@ const VIEWS: Record<
 > = {
   history: { title: "History", icon: <HistoryIcon /> },
   credits: { title: "About", icon: <HeartIcon /> },
+  settings: { title: "Settings", icon: <SettingsIcon /> },
 }
 
 /** Help in a tab of its own, opened at the product you're in */
@@ -54,6 +58,13 @@ function openHelp(platform: Platform) {
     url: chrome.runtime.getURL(
       `src/sidepanel/index.html?page=help${platform === "none" ? "" : `#${platform}`}`
     ),
+  })
+}
+
+/** What's new in a tab of its own */
+function openWhatsNew() {
+  void chrome.tabs.create({
+    url: chrome.runtime.getURL("src/sidepanel/index.html?page=whatsnew"),
   })
 }
 
@@ -95,6 +106,8 @@ export function App() {
         <HistoryView />
       ) : view === "credits" ? (
         <CreditsView />
+      ) : view === "settings" ? (
+        <SettingsView />
       ) : platform === "bc" && tab ? (
         <BcPanel key={panelKey} tab={tab} />
       ) : platform === "ce" && tab ? (
@@ -203,6 +216,14 @@ function Header({
           <DropdownMenuItem onClick={() => openHelp(platform)}>
             <LifeBuoyIcon />
             Help
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={openWhatsNew}>
+            <MegaphoneIcon />
+            What&apos;s new
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onGo("settings")}>
+            <SettingsIcon />
+            Settings
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onGo("credits")}>
             <HeartIcon />

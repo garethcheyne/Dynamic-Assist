@@ -260,14 +260,16 @@ window.addEventListener("message", (event) => {
   if (event.source !== window) return
   if (event.data?.type === REQUEST_MESSAGE) post(true)
   if (event.data?.type === TOOL_MESSAGE && currentForm()) {
-    const message = read(() =>
+    const answer = read(() =>
       runTool(event.data.command, event.data.on, event.data.data)
     )
+    const message = typeof answer === "string" ? answer : answer?.message
     window.postMessage(
       {
         type: TOOL_RESULT_MESSAGE,
         id: event.data.id,
         message: message ?? "That didn't work on this page",
+        data: typeof answer === "object" ? answer?.data : undefined,
       },
       location.origin
     )

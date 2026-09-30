@@ -49,7 +49,7 @@ HISTORY
 • Every environment and company you open, newest first; pin the ones you use and give them your own names
 
 WHAT IT ACCESSES
-Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser.
+Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server (the What's new page only reads the public changelog from GitHub), there is no account and no tracking, and your history and settings stay in your browser.
 
 Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Microsoft product names and icons are trademarks of the Microsoft group of companies; the icons appear in the panel only to show which product a page or link belongs to.
 

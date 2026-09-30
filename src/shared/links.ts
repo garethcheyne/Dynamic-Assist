@@ -14,3 +14,22 @@ export const powerPlatform = {
       ? `https://admin.powerplatform.microsoft.com/environments/${env}/hub`
       : "https://admin.powerplatform.microsoft.com/environments",
 }
+
+/** The Dynamic Assist Companion app for Business Central: its latest release */
+export const COMPANION_LATEST =
+  "https://github.com/garethcheyne/Dynamic-Assist/releases/latest"
+
+/** Microsoft's Business Central Virtual Table app for Dataverse, and its setup docs */
+export const BC_VIRTUAL_TABLES = {
+  app: "https://appsource.microsoft.com/product/dynamics-365/microsoftdynsmb.businesscentral_virtualentity",
+  docs: "https://learn.microsoft.com/dynamics365/business-central/dev-itpro/powerplatform/powerplat-admin-reference",
+}
+
+const REPO = "https://github.com/garethcheyne/Dynamic-Assist"
+
+/** CHANGELOG.md on the main branch: raw for reading, and the repo's files for its relative links */
+export const CHANGELOG = {
+  raw: "https://raw.githubusercontent.com/garethcheyne/Dynamic-Assist/main/CHANGELOG.md",
+  page: `${REPO}/blob/main/CHANGELOG.md`,
+  files: `${REPO}/blob/main/`,
+}

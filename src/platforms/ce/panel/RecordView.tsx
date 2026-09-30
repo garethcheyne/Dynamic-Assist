@@ -66,7 +66,9 @@ export function RecordView({
         <CoupledBcSection
           key={form.id}
           clientUrl={state.environment.clientUrl}
+          tenantId={state.environment.tenantId}
           recordId={form.id}
+          run={run}
         />
       )}
       <CollapsibleSection

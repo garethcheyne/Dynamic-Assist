@@ -25,6 +25,7 @@ import {
 import { ActionTile, TileGrid } from "@/components/action-tile"
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { useCopy } from "@/lib/copy"
+import type { PanelIntent } from "@/lib/panel-intent"
 import type { Act } from "@/lib/use-action"
 
 import { openQueryBuilder } from "@/query-builder/open"
@@ -43,15 +44,23 @@ export function ToolsView({
   run,
   act,
   busy,
+  focusOptionSet,
 }: {
   state: CeState
   tab: chrome.tabs.Tab
   run: Run
   act: Act
   busy: string | null
+  /** The right-click menu's "Option set values": reveal that column */
+  focusOptionSet: PanelIntent | null
 }) {
   const copy = useCopy()
   const [revealOptionSets, setRevealOptionSets] = React.useState(0)
+  const [seenFocus, setSeenFocus] = React.useState(0)
+  if (focusOptionSet && focusOptionSet.seq !== seenFocus) {
+    setSeenFocus(focusOptionSet.seq)
+    setRevealOptionSets((n) => n + 1)
+  }
   const table = state.form?.entityName ?? state.page.entityName
   const hasForm = !!state.form
   const isList = state.page.pageType === "entitylist" && !!state.page.viewId
@@ -277,6 +286,7 @@ export function ToolsView({
           entityName={table}
           fields={state.form?.fields ?? null}
           reveal={revealOptionSets}
+          focus={focusOptionSet}
         />
       )}
 

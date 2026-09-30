@@ -1,18 +1,20 @@
 # Builds the Dynamic Assist Companion (the Business Central app in
-# bc-companion/) and, when asked, publishes it as a GitHub Release that people
-# can download and upload to Business Central.
+# bc-companion/) and publishes it as a GitHub Release that people can download
+# and upload to Business Central. No .app is built or kept locally.
 #
 # - Every push or pull request that touches bc-companion/ compiles it and keeps
 #   the .app as a workflow artifact, so a broken build shows up straight away.
-# - To release: bump "version" in bc-companion/app.json, then either push a tag
-#   companion-v<that version> (git tag companion-v2026.9.24.11 && git push
-#   --tags), or run this workflow by hand (Actions → BC companion → Run
-#   workflow) with "Publish a release" ticked. It refuses a version that has
-#   already been released.
+# - To release: bump "version" in bc-companion/app.json and push to main. When
+#   the build succeeds and that version has no release yet, it's published as
+#   companion-v<version> and marked the latest release (the extension links to
+#   /releases/latest). Pushes that don't change the version release nothing.
+# - A tag companion-v<version>, or a manual run (Actions → BC companion → Run
+#   workflow) with "Publish a release" ticked, also publishes; both refuse a
+#   version that's already released.
 #
 # No Business Central environment or secrets are needed: the compiler comes
-# from nuget.org and the only symbols the app needs (System) from Microsoft's
-# public symbols feed.
+# from nuget.org and the symbols the app needs (System, and Base Application
+# with its dependencies) from Microsoft's public symbols feed.
 name: BC companion
 
 on:
@@ -38,6 +40,9 @@ env:
   AL_TOOL_VERSION: 18.0.41.62505
   # System symbols for the app's minimum platform (app.json "platform": 25.0)
   PLATFORM_SYMBOLS_VERSION: 25.0.25071
+  # Base Application, System Application and Business Foundation for the
+  # app's minimum application version (app.json dependency: 25.0)
+  APP_SYMBOLS_VERSION: 25.0.23364.25118
   SYMBOLS_FEED: https://dynamicssmb2.pkgs.visualstudio.com/571e802d-b44b-45fc-bd41-4cfddec73b44/_packaging/b656b10c-3de0-440c-900c-bc2e4e86d84c/nuget/v3/flat2
 
 jobs:
@@ -77,12 +82,20 @@ jobs:
             --version "$AL_TOOL_VERSION" --tool-path "$RUNNER_TEMP/al"
           echo "$RUNNER_TEMP/al" >> "$GITHUB_PATH"
 
-      - name: Download System symbols
+      - name: Download symbols
         run: |
           mkdir -p "$RUNNER_TEMP/symbols"
           curl -fsSL -o "$RUNNER_TEMP/platform.nupkg" \
             "$SYMBOLS_FEED/microsoft.platform.symbols/$PLATFORM_SYMBOLS_VERSION/microsoft.platform.symbols.$PLATFORM_SYMBOLS_VERSION.nupkg"
           unzip -o -j "$RUNNER_TEMP/platform.nupkg" '*.app' -d "$RUNNER_TEMP/symbols"
+          for package in \
+            microsoft.baseapplication.symbols.437dbf0e-84ff-417a-965d-ed2bb9650972 \
+            microsoft.systemapplication.symbols.63ca2fa4-4f03-4f2b-a480-172fef340d3f \
+            microsoft.businessfoundation.symbols.f3552374-a1f2-4356-848e-196002525837; do
+            curl -fsSL -o "$RUNNER_TEMP/$package.nupkg" \
+              "$SYMBOLS_FEED/$package/$APP_SYMBOLS_VERSION/$package.$APP_SYMBOLS_VERSION.nupkg"
+            unzip -o -j "$RUNNER_TEMP/$package.nupkg" '*.app' -d "$RUNNER_TEMP/symbols"
+          done
           ls -l "$RUNNER_TEMP/symbols"
 
       - name: Compile
@@ -102,7 +115,11 @@ jobs:
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/companion-v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    # A push to main releases when app.json has a version not yet released
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      startsWith(github.ref, 'refs/tags/companion-v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -122,6 +139,11 @@ jobs:
         run: |
           tag="companion-v$VERSION"
           if gh release view "$tag" >/dev/null 2>&1; then
+            # On main: the version didn't change, so there's nothing to release
+            if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
+              echo "::notice::$tag is already released; bump version in $PROJECT/app.json to release again."
+              exit 0
+            fi
             echo "::error::$tag is already released. Bump version in $PROJECT/app.json first."
             exit 1
           fi
@@ -134,4 +156,5 @@ jobs:
           gh release create "$tag" "dist/$zip" \
             --target "$GITHUB_SHA" \
             --title "Dynamic Assist Companion $VERSION" \
-            --notes-file "$RUNNER_TEMP/notes.md"
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --latest

@@ -145,5 +145,119 @@ export const PANEL: HelpTab = {
         },
       ],
     },
+    {
+      title: "Settings and what's new",
+      intro: "Both are in the panel's More menu (the three dots).",
+      tools: [
+        {
+          id: "settings",
+          name: "Settings",
+          where: "More menu",
+          what: (
+            <>
+              Clears what the query builder keeps about each Business Central
+              environment (its table list and the fields of tables you've
+              opened), one environment or all at once, so it reads them again.
+              It also closes open companion query pages, to see the builder's
+              first-run steps again.
+            </>
+          ),
+        },
+        {
+          id: "whats-new",
+          name: "What's new",
+          where: "More menu",
+          what: (
+            <>
+              What changed in each release, in a browser tab. It&apos;s read
+              from GitHub when you open it, so it's current without an update.
+              Offline, it shows the copy that came with your version.
+            </>
+          ),
+        },
+      ],
+    },
+    {
+      title: "Right-click menu",
+      intro: (
+        <>
+          On Business Central and Dynamics 365 pages, right-click and choose{" "}
+          <b>Dynamic Assist</b> for the tools you use most, without opening the
+          panel. A short note at the bottom of the page says what happened.
+        </>
+      ),
+      tools: [
+        {
+          id: "context-menu-ce",
+          name: "In Dynamics 365",
+          where: "Right-click menu",
+          what: (
+            <ul>
+              <li>
+                <b>Copy logical name</b>: of the field, label or column header
+                you right-clicked. Logical names don't need to be on.
+              </li>
+              <li>
+                <b>Option set values</b>: opens the panel's Option sets on the
+                choice field or column you right-clicked.
+              </li>
+              <li>
+                <b>Logical names on/off</b>, <b>God mode</b> and{" "}
+                <b>Blur data on/off</b>, as on the Tools tab.
+              </li>
+              <li>
+                <b>Copy record ID</b>, <b>Copy record link</b>, and{" "}
+                <b>Open this view in the query builder</b> on a list.
+              </li>
+            </ul>
+          ),
+        },
+        {
+          id: "context-menu-bc",
+          name: "In Business Central",
+          where: "Right-click menu",
+          what: (
+            <ul>
+              <li>
+                <b>Copy field name</b> and <b>Copy field number</b>: of the
+                field (its caption or value) or list column you right-clicked.
+                Field names don't need to be on.
+              </li>
+              <li>
+                <b>Field names on/off</b>, <b>Blur data on/off</b> and{" "}
+                <b>Expand FastTabs</b>, as on the Tools tab.
+              </li>
+              <li>
+                <b>Copy record link</b>, <b>All fields of this record</b> and{" "}
+                <b>Query this table</b> (the last two need the companion app).
+              </li>
+              <li>
+                Select a number, such as 21, and right-click for{" "}
+                <b>Open page</b> or <b>Open table</b> in a new tab.
+              </li>
+            </ul>
+          ),
+          how: (
+            <>
+              If a grid or control shows its own menu instead of the
+              browser&apos;s, right-click its caption or column header instead.
+            </>
+          ),
+        },
+        {
+          id: "context-menu-links",
+          name: "Microsoft links",
+          where: "Right-click menu, and the toolbar icon's",
+          what: (
+            <>
+              The admin centres, build tools, service health and docs from the
+              Go anywhere menu, opened in a new tab. They're at the end of the
+              right-click menu on Business Central and Dynamics 365 pages, and
+              on any page when you right-click the Dynamic Assist toolbar icon.
+            </>
+          ),
+        },
+      ],
+    },
   ],
 }
