@@ -22,7 +22,7 @@ After installing, open one of the sites below and click the toolbar icon to open
 4. Tools tab: click "Field names"; each caption on the page gets its table field name and number. Hover one for its type and the app that added it. Click it again to remove them.
 5. Session tab: your user, company and environment, and an Admin center link.
 
-The query builder and "All fields" need the optional, open-source Dynamic Assist Companion app installed in the environment (source in the repository's bc-companion folder). Without it those tools say so and link to its instructions; everything else works.
+The query builder and "All fields" need the optional, open-source Dynamic Assist Companion app installed in the environment (source: https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon). Without it those tools say so and link to its instructions; everything else works.
 
 **Dynamics 365 app (e.g. Sales)**
 

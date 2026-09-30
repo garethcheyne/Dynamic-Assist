@@ -468,7 +468,7 @@ export function requestPlans(
   ]
 }
 
-/** The companion's query web service (bc-companion/src/DAQueryApi.Codeunit.al) */
+/** The companion's query web service (DAQueryApi.Codeunit.al in the companion repo) */
 const COMPANION_SERVICE = "DAQuery"
 
 /**

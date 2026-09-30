@@ -4,9 +4,10 @@ What changed in each release of the Dynamic Assist browser extension, newest
 first. Versions are dates (`year.month.day`); the store version is the day it
 was published.
 
-The Business Central companion app is released separately, on GitHub, with
-its own version; its changes are listed under "Companion app" in each
-release. The extension ships through the Chrome Web Store and Edge Add-ons
+The Business Central companion app lives in its own repository,
+[Dynamic-Assist_BusinessCentralAddon](https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon),
+and is released there with its own version; its changes are listed under
+"Companion app" in each release. The extension ships through the Chrome Web Store and Edge Add-ons
 only.
 
 Each item that came from feedback or a request links to its file in
@@ -89,13 +90,20 @@ Each item that came from feedback or a request links to its file in
 
 ### Companion app (2026.9.30.1)
 
+- **Moved to its own repository**,
+  [Dynamic-Assist_BusinessCentralAddon](https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon),
+  built with Microsoft's AL-Go for GitHub (CodeCop, UICop and
+  PerTenantExtensionCop on every build) and released from there. The
+  extension's download and help links point to it; earlier releases stay in
+  this repository.
+- Declares the Base Application through `application` (PTE0020).
 - **Couplings API** (`…/api/err403/dynamicassist/v1.0/…/couplings`): the
   Business Central records coupled to a Dataverse row, or the reverse, with
   each record's table, key, page and sync state. Read-only, as the caller.
   With the Business Central Virtual Table app installed it can be made
   visible as a Dataverse virtual table; `crmId` and `integrationId` are text
   so Dataverse can filter on them. See the
-  [companion README](bc-companion/README.md#couplings-dataverse-integration-records).
+  [companion README](https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon#couplings-dataverse-integration-records).
 - The couplings API reads CRM Integration Record (5331) directly instead of
   a temporary table, so the Business Central Virtual Table app can use it in
   Dataverse. The app now depends on the Base Application (25.0 or later), and

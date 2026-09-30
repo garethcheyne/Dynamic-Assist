@@ -1,12 +1,12 @@
 /**
  * Talks to the Dynamic Assist Companion app's bridge: a control add-in on the
- * "Dynamic Assist Query" page (bc-companion/). The add-in lives in a frame
+ * "Dynamic Assist Query" page (the Dynamic-Assist_BusinessCentralAddon repo). The add-in lives in a frame
  * inside the web client's frame; we find it by pinging every frame, then post
  * requests to it. AL answers as the signed-in user, read-only.
  */
 
 export const BRIDGE_TAG = "dynamic-assist"
-/** The companion's query page (bc-companion/src/DAQuery.Page.al) */
+/** The companion's query page (DAQuery.Page.al in the companion repo) */
 export const BRIDGE_PAGE_ID = 77500
 const BC_ORIGIN = "https://businesscentral.dynamics.com"
 const REQUEST_TIMEOUT_MS = 120_000

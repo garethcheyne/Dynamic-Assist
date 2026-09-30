@@ -37,7 +37,6 @@ src/
 public/
 ├── icons/                 toolbar and extensions-page icons (scripts/make-icons.mjs)
 └── scripts/               built main-world scripts (bc-main-world.js, ce-main-world.js), not edited by hand
-bc-companion/              the optional, read-only Business Central app (AL) the BC tools talk to; see its README
 tests/                     unit tests (Vitest) and live checks; see tests/README.md
 marketing/                 scripted store images and screenshots from demo data; see marketing/README.md
 store/                     store listing, privacy answers and IDs; see store/README.md

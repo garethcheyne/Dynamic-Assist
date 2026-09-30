@@ -55,4 +55,4 @@ Dynamic Assist is an independent project and is not affiliated with or endorsed 
 
 Full feature list and more: https://www.err403.com/apps/dynamic-assist
 Source code and support: https://github.com/garethcheyne/Dynamic-Assist
-Business Central companion app (for the query builder), latest release: https://github.com/garethcheyne/Dynamic-Assist/releases/latest
+Business Central companion app (for the query builder), latest release: https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon/releases/latest
