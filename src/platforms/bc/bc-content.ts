@@ -7,6 +7,7 @@ import {
   type BcBridgeReady,
   type BcEvent,
   type BcFrameState,
+  type BcPageAnswer,
   type BcRequest,
   type BcToolRequest,
   TOOL_REQUEST,
@@ -18,6 +19,7 @@ import {
   TOOL_RESULT_MESSAGE,
   type BcPageInfo,
 } from "./page-info"
+import { listenForPageNotes } from "@/shared/page-note"
 import { sendToExtension } from "@/shared/send"
 
 // Runs in every businesscentral.dynamics.com frame, in the extension's isolated
@@ -105,7 +107,7 @@ chrome.runtime.onMessage.addListener(
       )
         return
       window.removeEventListener("message", onResult)
-      respond({ message: event.data.message })
+      respond({ message: event.data.message, data: event.data.data })
     }
     window.addEventListener("message", onResult)
     window.postMessage(
@@ -122,12 +124,23 @@ chrome.runtime.onMessage.addListener(
   }
 )
 
-chrome.runtime.onMessage.addListener((message: BcRequest) => {
+chrome.runtime.onMessage.addListener((message: BcRequest, _sender, respond) => {
   if (message.type === "bc:ping") {
     report()
     window.postMessage({ type: REQUEST_MESSAGE }, location.origin)
   }
+  // The right-click menu: only the frame with a page answers
+  if (message.type === "bc:get-page" && page) {
+    const answer: BcPageAnswer = {
+      page,
+      dark: matchMedia("(prefers-color-scheme: dark)").matches,
+    }
+    respond(answer)
+  }
   return false
 })
+
+// The right-click menu's notes ("Copied Customer No.")
+listenForPageNotes()
 
 window.postMessage({ type: REQUEST_MESSAGE }, location.origin)

@@ -2,6 +2,7 @@ import * as React from "react"
 import { TooltipPortalContainer } from "@/components/ui/tooltip"
 import {
   ArrowDownIcon,
+  ArrowLeftIcon,
   ArrowUpIcon,
   DatabaseIcon,
   ExternalLinkIcon,
@@ -13,6 +14,7 @@ import {
   PackageOpenIcon,
   PlayIcon,
   PlusIcon,
+  RefreshCwIcon,
   SettingsIcon,
   TableIcon,
   XIcon,
@@ -41,7 +43,29 @@ import {
   type SelectItem,
 } from "@/query-builder/SearchSelect"
 
+import {
+  CHANNEL_STATUS,
+  SETUP_REQUEST,
+  type BcChannelStatus,
+  type BcSetupRequest,
+} from "../messages"
 import { buildBcUrl, parseBcUrl } from "../url"
+import {
+  emptyBoot,
+  enterStep,
+  finishBoot,
+  type Boot,
+  type BootStep,
+} from "./boot"
+import { BootSteps } from "./BootSteps"
+import {
+  cachedFields,
+  cachedTables,
+  clearMeta,
+  metaKey,
+  saveFields,
+  saveTables,
+} from "./meta-cache"
 import {
   alName,
   BRIDGE_PAGE_ID,
@@ -55,6 +79,7 @@ import {
   type BcQuery,
   type BcQueryResult,
   type BcTable,
+  type BcTableFields,
 } from "./bridge"
 import { toAl } from "./al"
 import {
@@ -87,6 +112,11 @@ export type BcOpenRequest = {
   run?: boolean
   /** Start from this whole query (a saved one) */
   query?: BcQuery
+  /**
+   * Opened over the query page that was just loaded in this tab for it (the
+   * first time in a company): the page it came from, and when that began
+   */
+  setup?: { returnUrl: string; startedAt: number }
 }
 
 const COMPANION_HELP_URL =
@@ -153,6 +183,58 @@ type Status = "connecting" | "missing" | "denied" | "ready"
 /** The companion's answer when the user lacks the DA QUERY permission set */
 const NO_ACCESS = /DA QUERY permission set/
 
+/** How long the query page just loaded in this tab gets for its companion to start */
+const SETUP_WAIT_MS = 150_000
+
+const STEP: Record<BootStep["id"], BootStep> = {
+  page: {
+    id: "page",
+    label: "Load the Dynamic Assist Query page in this tab",
+    hint: "The builder talks to the companion app through this page. It only has to load the first time in a company.",
+  },
+  companion: {
+    id: "companion",
+    label: "Start the companion app",
+    hint: "Business Central is starting its client and the companion's bridge. The first time, this is the slow part: often 20 to 60 seconds.",
+  },
+  tables: {
+    id: "tables",
+    label: "Read the list of tables",
+    hint: "Every table you can read in this environment. It's kept in this browser, so next time it's instant.",
+  },
+  fields: {
+    id: "fields",
+    label: "Load the table's fields",
+  },
+}
+
+/** Asks the worker whether the query page is open for this company; false if it can't say */
+async function channelOpen(): Promise<boolean> {
+  const message: BcChannelStatus = {
+    type: CHANNEL_STATUS,
+    url: window.location.href,
+  }
+  try {
+    const answer = (await chrome.runtime.sendMessage(message)) as
+      { open?: boolean } | undefined
+    return answer?.open === true
+  } catch {
+    return false
+  }
+}
+
+/** Asks the worker to load the query page in this tab and reopen the builder there. */
+async function startSetup(request: BcOpenRequest, dark: boolean) {
+  const message: BcSetupRequest = { type: SETUP_REQUEST, request, dark }
+  try {
+    const answer = (await chrome.runtime.sendMessage(message)) as
+      { ok?: boolean } | undefined
+    return answer?.ok === true
+  } catch {
+    return false
+  }
+}
+
 /** The Business Central query builder, as a large modal over the web client. */
 export function BcQueryApp({
   request,
@@ -175,6 +257,45 @@ export function BcQueryApp({
   React.useEffect(() => () => client.dispose(), [client])
 
   const [status, setStatus] = React.useState<Status>("connecting")
+  const onQueryPage = parseBcUrl(window.location.href).page === BRIDGE_PAGE_ID
+  const [boot, setBoot] = React.useState<Boot>(() =>
+    emptyBoot(
+      request.setup || !onQueryPage
+        ? [STEP.page, STEP.companion, STEP.tables, STEP.fields]
+        : [STEP.companion, STEP.tables, STEP.fields]
+    )
+  )
+  /** Still starting up: the steps show instead of the builder */
+  const booting = boot.current !== null
+  const step = React.useCallback(
+    (id: BootStep["id"], at?: number) => setBoot((b) => enterStep(b, id, at)),
+    []
+  )
+  // Tables and fields belong to the environment: cached per environment
+  const cacheKey = React.useMemo(() => {
+    const ctx = parseBcUrl(window.location.href)
+    return metaKey(ctx.tenant, ctx.environment)
+  }, [])
+  /**
+   * A table's fields: from this browser's cache when it has them (read again
+   * in the background for next time), else from the companion.
+   */
+  const fieldsOf = React.useCallback(
+    async (table: number): Promise<BcTableFields> => {
+      const cached = await cachedFields(cacheKey, table)
+      if (cached) {
+        void client
+          .fields(table)
+          .then((fresh) => saveFields(cacheKey, fresh))
+          .catch(() => {})
+        return cached
+      }
+      const loaded = await client.fields(table)
+      void saveFields(cacheKey, loaded)
+      return loaded
+    },
+    [client, cacheKey]
+  )
   const [info, setInfo] = React.useState<BcInfo | null>(null)
   const [tables, setTables] = React.useState<BcTable[]>([])
   const [fields, setFields] = React.useState<BcField[]>([])
@@ -185,7 +306,7 @@ export function BcQueryApp({
   const loadRelated = React.useCallback(
     async (tableId: number) => {
       if (related[tableId]) return related[tableId]
-      const loaded = await client.fields(tableId)
+      const loaded = await fieldsOf(tableId)
       const entry = {
         name: loaded.name,
         caption: loaded.caption,
@@ -194,7 +315,7 @@ export function BcQueryApp({
       setRelated((r) => ({ ...r, [tableId]: entry }))
       return entry
     },
-    [client, related]
+    [fieldsOf, related]
   )
   /** The REST endpoint picked on the API tab; null picks the best */
   const [planKey, setPlanKey] = React.useState<string | null>(null)
@@ -256,8 +377,7 @@ export function BcQueryApp({
       setError(null)
       setResults(null)
       setLastRun(null)
-      return client
-        .fields(table)
+      return fieldsOf(table)
         .then(async (loaded) => {
           setApis(await client.apis(table))
           setPlanKey(null)
@@ -285,7 +405,7 @@ export function BcQueryApp({
             if (!q.fields.length)
               q.fields = newQuery(table, loaded.fields).fields
             for (const j of saved.joins ?? []) {
-              const r = await client.fields(j.table).catch(() => null)
+              const r = await fieldsOf(j.table).catch(() => null)
               if (r)
                 setRelated((all) => ({
                   ...all,
@@ -312,32 +432,86 @@ export function BcQueryApp({
         .catch((e) => setError(e instanceof Error ? e.message : String(e)))
         .finally(() => setLoadingFields(false))
     },
-    [client, runQuery]
+    [client, fieldsOf, runQuery]
   )
 
+  // Start-up, a step at a time (BootSteps shows where it is): reach the
+  // companion, read the tables, open the first table
   React.useEffect(() => {
     let cancelled = false
-    void client.connect().then(async (ok) => {
+    void (async () => {
+      if (request.setup) {
+        // The query page was loaded in this tab for us: that step is done
+        step("page", request.setup.startedAt)
+      } else if (!onQueryPage && !(await channelOpen())) {
+        // First time in this company: load the query page here, where the
+        // companion answers directly; the builder opens again over it
+        if (cancelled) return
+        step("page")
+        if (await startSetup(request, dark)) return
+        // The worker couldn't: fall back to a query page in the background
+        setBoot((b) => ({
+          ...b,
+          notes: { ...b.notes, page: "Opened in a background tab instead" },
+        }))
+      }
+      if (cancelled) return
+      step("companion")
+      const ok = await client.connect(request.setup ? SETUP_WAIT_MS : undefined)
       if (cancelled) return
       if (!ok) {
         setStatus("missing")
         return
       }
       setStatus("ready")
+      step("tables")
       try {
-        const [i, t] = await Promise.all([client.info(), client.tables()])
+        const cached = await cachedTables(cacheKey)
+        const [i, t] = await Promise.all([
+          client.info(),
+          cached ?? client.tables(),
+        ])
         if (cancelled) return
+        if (cached)
+          setBoot((b) => ({
+            ...b,
+            notes: { ...b.notes, tables: "From this browser's cache" },
+          }))
+        else void saveTables(cacheKey, t)
         setInfo(i)
         setTables(t)
         const start =
           t.find((x) => x.id === request.tableId) ??
           t.find((x) => x.id === DEFAULT_TABLE) ??
           t[0]
-        if (start)
+        if (start) {
+          setBoot((b) => ({
+            ...enterStep(b, "fields"),
+            steps: b.steps.map((s) =>
+              s.id === "fields"
+                ? {
+                    ...s,
+                    label: `Load the fields of ${start.caption || start.name}`,
+                  }
+                : s
+            ),
+          }))
           await openTable(
             start.id,
             start.id === request.tableId ? request : undefined
           )
+        }
+        if (cancelled) return
+        setBoot(finishBoot)
+        // A cached list: read it again now, for new or removed tables
+        if (cached)
+          void client
+            .tables()
+            .then((fresh) => {
+              void saveTables(cacheKey, fresh)
+              if (!cancelled) setTables(fresh)
+            })
+            .catch(() => {})
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
         // No DA QUERY permission set: say so, instead of an empty builder
@@ -346,14 +520,44 @@ export function BcQueryApp({
           setStatus("denied")
           return
         }
+        setBoot((b) =>
+          finishBoot(
+            b.current ? { ...b, failed: { step: b.current, message } } : b
+          )
+        )
         setError(message)
         setLoadingFields(false)
       }
-    })
+    })()
     return () => {
       cancelled = true
     }
-  }, [client, openTable, request])
+    // Once per builder: dark only says how to open it again after the move
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, openTable, request, step, cacheKey, onQueryPage])
+
+  /** Forgets this environment's cached tables and fields and reads them again. */
+  const [refreshing, setRefreshing] = React.useState(false)
+  const refreshMeta = async () => {
+    setRefreshing(true)
+    setError(null)
+    try {
+      await clearMeta([cacheKey])
+      const fresh = await client.tables()
+      setTables(fresh)
+      void saveTables(cacheKey, fresh)
+      if (query) {
+        const loaded = await client.fields(query.table)
+        void saveFields(cacheKey, loaded)
+        setFields(loaded.fields)
+        setReadable(loaded.readable)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const table = tables.find((t) => t.id === query?.table)
   const sources = React.useMemo<QuerySource[]>(() => {
@@ -519,6 +723,31 @@ export function BcQueryApp({
                   Run
                 </Button>
               )}
+              {status === "ready" && !booting && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Read the tables and fields again (forgets what this browser has kept for this environment)"
+                  aria-label="Read tables and fields again"
+                  disabled={refreshing}
+                  onClick={() => void refreshMeta()}
+                >
+                  <RefreshCwIcon className={cn(refreshing && "animate-spin")} />
+                </Button>
+              )}
+              {request.setup && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Back to the page you opened the builder on"
+                  onClick={() => {
+                    window.location.href = request.setup!.returnUrl
+                  }}
+                >
+                  <ArrowLeftIcon data-icon="inline-start" />
+                  Back
+                </Button>
+              )}
               {onMinimize && (
                 <Button
                   variant="ghost"
@@ -547,20 +776,15 @@ export function BcQueryApp({
             />
           </div>
 
-          {status === "connecting" ? (
-            <div className="flex flex-col gap-1 p-6 text-xs text-muted-foreground">
-              <p className="flex items-center gap-2">
-                <Loader2Icon className="size-3.5 animate-spin" /> Looking for
-                the Dynamic Assist Companion app…
-              </p>
-              {parseBcUrl(window.location.href).page !== BRIDGE_PAGE_ID && (
-                <p className="pl-5.5">
-                  The first time in a company, its query page opens in a
-                  background tab to answer the builder. That can take a minute;
-                  after that it's quick.
-                </p>
-              )}
-            </div>
+          {status === "connecting" || (booting && status === "ready") ? (
+            <BootSteps
+              boot={boot}
+              intro={
+                boot.steps[0]?.id === "page"
+                  ? "First time in this company: getting the query builder ready. This takes a minute or so once; after that it opens in seconds."
+                  : undefined
+              }
+            />
           ) : status === "missing" ? (
             <CompanionMissing />
           ) : status === "denied" ? (

@@ -17,6 +17,7 @@ import {
   setConsoleCapture,
 } from "./error-log"
 import { controlNameFromLabelId } from "./form-labels"
+import { findMenuTarget } from "./menu-target"
 import {
   OPTION_SET_CASTS,
   optionSetPaths,
@@ -37,6 +38,10 @@ import {
   type CePermissions,
   type CeUserRoles,
   type CeAccessDetail,
+  type CeBcCoupling,
+  type CeBcCouplings,
+  type CeBcCouplingsMissing,
+  type CeBcSource,
   type CeRelatedAccess,
   type CeSecuredColumn,
   type CeRecordReasons,
@@ -45,6 +50,7 @@ import {
   type CeEnvironment,
   type CeField,
   type CeForm,
+  type CeMenuTarget,
   type CeModes,
   type CeOption,
   type CeOptionSetColumn,
@@ -485,6 +491,272 @@ function markFields(on: boolean) {
   markObserver.observe(document.body, { subtree: true, childList: true })
 }
 
+// The right-click menu acts on what you right-clicked: remember it (capture
+// phase, before the page's own handlers can stop it)
+let rightClicked: Element | null = null
+document.addEventListener(
+  "contextmenu",
+  (e) => {
+    rightClicked = e.target instanceof Element ? e.target : null
+  },
+  true
+)
+
+const CHOICE_TYPES = new Set(["optionset", "multiselectoptionset", "boolean"])
+
+/** The field, column, tab or section last right-clicked, named as Xrm knows it. */
+async function readMenuTarget(): Promise<CeMenuTarget | null> {
+  const found = findMenuTarget(rightClicked)
+  if (!found) return null
+  const { target } = found
+  const element = found.element as unknown as HTMLElement
+  const formTable = read(() => formContext()?.data.entity.getEntityName()) as
+    string | null
+  switch (target.kind) {
+    case "control": {
+      const control = read(() => Xrm.Page.getControl(target.control))
+      const attribute = read(() => control.getAttribute())
+      const type = read(() => attribute.getAttributeType()) as string | null
+      return {
+        kind: "field",
+        name:
+          (read(() => attribute.getName()) as string | null) ?? target.control,
+        label: read(() => control.getLabel()) as string | null,
+        table: formTable,
+        choice: attribute ? CHOICE_TYPES.has(type ?? "") : false,
+      }
+    }
+    case "column": {
+      const colId = target.alias
+        ? `${target.alias}.${target.name}`
+        : target.name
+      const header = element
+        .closest(".ag-root-wrapper")
+        ?.querySelector(
+          `.ag-header-cell[col-id="${CSS.escape(colId)}"] .ag-header-cell-text`
+        )
+      return {
+        kind: "column",
+        name: target.name,
+        label: header?.textContent?.trim() || null,
+        table: await gridTable(element, target.alias).catch(() => null),
+        choice: null,
+      }
+    }
+    case "tab":
+    case "section":
+      return {
+        kind: target.kind,
+        name: target.name,
+        label: null,
+        table: formTable,
+        choice: false,
+      }
+  }
+}
+
+const BC_SOURCE_TABLE = "msdyn_businesscentralvirtualentity"
+
+/**
+ * The Business Central environment and default company the org's virtual
+ * tables use. The columns aren't documented, only their display names
+ * ("environment", "Default Company"), so they're found in the table's
+ * metadata: the text column named for the environment, the lookup named for
+ * the company. Its display value is used, since the lookup's table
+ * (cdm_company) varies by version.
+ */
+async function readBcSource(): Promise<CeBcSource | null> {
+  const api = `${clientUrl()}/api/data/v9.2/`
+  const get = async (path: string) => {
+    const res = await fetch(api + path, {
+      headers: {
+        Accept: "application/json",
+        Prefer: 'odata.include-annotations="*"',
+      },
+    })
+    // 404: the Business Central Virtual Table app isn't installed
+    if (!res.ok) return null
+    return res.json()
+  }
+  const md = await get(
+    `EntityDefinitions(LogicalName='${BC_SOURCE_TABLE}')?$select=EntitySetName&$expand=Attributes($select=LogicalName,AttributeType)`
+  )
+  if (!md?.EntitySetName) return null
+  const attributes = md.Attributes as {
+    LogicalName: string
+    AttributeType: string
+  }[]
+  const env = attributes.find(
+    (a) => a.AttributeType === "String" && /environment/i.test(a.LogicalName)
+  )?.LogicalName
+  if (!env) return null
+  const company = attributes.find(
+    (a) => a.AttributeType === "Lookup" && /company/i.test(a.LogicalName)
+  )?.LogicalName
+  const select = [env, ...(company ? [`_${company}_value`] : [])].join(",")
+  const rows = await get(`${md.EntitySetName}?$select=${select}&$top=5`)
+  const row = (rows?.value as Record<string, unknown>[] | undefined)?.find(
+    (r) => typeof r[env] === "string" && (r[env] as string).trim()
+  )
+  if (!row) return null
+  const name = company
+    ? row[`_${company}_value@OData.Community.Display.V1.FormattedValue`]
+    : null
+  return {
+    environment: (row[env] as string).trim(),
+    company: typeof name === "string" && name ? name : null,
+  }
+}
+
+/**
+ * The companion app's couplings API (page 77503, "DA Coupling API") as the
+ * Business Central Virtual Table app names it once it's made visible.
+ */
+const BC_COUPLING_TABLE = "dyn365bc_coupling_err403_dynamicassist_v1_0"
+
+/**
+ * No couplings virtual table: find the Business Central Configuration app
+ * (the Virtual Table app's own), where it's made visible. Its unique name
+ * isn't documented, so it's found by its display name.
+ */
+async function missingCouplings(): Promise<CeBcCouplingsMissing> {
+  let configAppId: string | null = null
+  try {
+    const res = await fetch(
+      `${clientUrl()}/api/data/v9.2/appmodules?$select=appmoduleid,name&$filter=name eq 'Business Central Configuration'`,
+      { headers: { Accept: "application/json" } }
+    )
+    if (res.ok)
+      configAppId = trimId((await res.json()).value?.[0]?.appmoduleid ?? null)
+  } catch {
+    // No access to apps: the panel links the setup table instead
+  }
+  return { missing: true, configAppId }
+}
+
+/**
+ * A Dataverse row's Business Central couplings, read through the virtual
+ * table: no Business Central tab needed. Its columns are matched to the API's
+ * fields by their ExternalName (the API field name). When the virtual table
+ * isn't there, says so, with the app to make it visible in. An error from
+ * Business Central (not a BC user, no DA QUERY permission) is thrown with its
+ * message.
+ */
+async function readBcCouplings(
+  crmId: string
+): Promise<CeBcCouplings | CeBcCouplingsMissing> {
+  const api = `${clientUrl()}/api/data/v9.2/`
+  const headers = {
+    Accept: "application/json",
+    Prefer: 'odata.include-annotations="*"',
+  }
+  // Is it there? Only "not found" means it isn't: any other failure is an error
+  const table = `${api}EntityDefinitions(LogicalName='${BC_COUPLING_TABLE}')`
+  const mdRes = await fetch(`${table}?$select=LogicalName,EntitySetName`, {
+    headers,
+  })
+  if (mdRes.status === 404) return missingCouplings()
+  if (!mdRes.ok)
+    throw new Error(
+      `Couldn't read the couplings table's definition (Web API ${mdRes.status})`
+    )
+  const md = await mdRes.json()
+  // Its columns: with the API field names (ExternalName) where the org
+  // gives them, else by logical name alone
+  const readColumns = async (select: string) => {
+    const res = await fetch(`${table}/Attributes?$select=${select}`, {
+      headers,
+    })
+    return res.ok ? ((await res.json()).value as Attribute[]) : null
+  }
+  type Attribute = {
+    LogicalName: string
+    ExternalName?: string | null
+    AttributeType: string
+  }
+  const attributes =
+    (await readColumns("LogicalName,ExternalName,AttributeType")) ??
+    (await readColumns("LogicalName,AttributeType")) ??
+    []
+  // "crmId", "dyn365bc_crmid" and "crmid" are all the same column
+  const bare = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "")
+  const unprefixed = (name: string) => bare(name.slice(name.indexOf("_") + 1))
+  const col = (field: string) =>
+    attributes.find(
+      (a) => a.ExternalName && bare(a.ExternalName) === bare(field)
+    )?.LogicalName ??
+    attributes.find((a) => unprefixed(a.LogicalName) === bare(field))
+      ?.LogicalName
+  const crm = col("crmId")
+  if (!md.EntitySetName || !crm)
+    throw new Error(
+      `The couplings table is here, but its CRM ID column wasn't recognised. Its columns: ${
+        attributes
+          .map((a) =>
+            a.ExternalName
+              ? `${a.LogicalName} (${a.ExternalName})`
+              : a.LogicalName
+          )
+          .join(", ") || "none readable"
+      }`
+    )
+  const c = {
+    tableId: col("tableId"),
+    tableCaption: col("tableCaption"),
+    recordKey: col("recordKey"),
+    recordFilter: col("recordFilter"),
+    pageId: col("pageId"),
+    recordExists: col("recordExists"),
+    skipped: col("skipped"),
+  }
+  // Every Business Central virtual table has a Company lookup (cdm_company)
+  const company = attributes.find(
+    (a) => a.AttributeType === "Lookup" && /company/i.test(a.LogicalName)
+  )?.LogicalName
+  const select = [
+    crm,
+    ...Object.values(c).filter((n): n is string => !!n),
+    ...(company ? [`_${company}_value`] : []),
+  ].join(",")
+  // The companion sends the CRM ID as text (the Virtual Table app drops
+  // Guid columns other than the key): quote it unless the column is a GUID
+  const crmType = attributes.find((a) => a.LogicalName === crm)?.AttributeType
+  const crmValue =
+    crmType === "Uniqueidentifier" ? trimId(crmId) : `'${trimId(crmId)}'`
+  const res = await fetch(
+    `${api}${md.EntitySetName}?$select=${select}&$filter=${crm} eq ${crmValue}`,
+    { headers }
+  )
+  const body = await res.json().catch(() => null)
+  if (!res.ok)
+    throw new Error(
+      body?.error?.message ??
+        `Business Central couplings: Web API ${res.status}`
+    )
+  const rows = (body?.value ?? []) as Record<string, unknown>[]
+  const at = (row: Record<string, unknown>, name: string | undefined) =>
+    name ? row[name] : undefined
+  const records: CeBcCoupling[] = rows.map((row) => ({
+    tableId: Number(at(row, c.tableId) ?? 0),
+    tableCaption: String(
+      at(row, c.tableCaption) || `Table ${at(row, c.tableId) ?? "?"}`
+    ),
+    pageId: Number(at(row, c.pageId) ?? 0) || null,
+    filter: String(at(row, c.recordFilter) ?? ""),
+    key: String(at(row, c.recordKey) ?? ""),
+    // Missing columns: assume the ordinary case
+    exists: at(row, c.recordExists) !== false,
+    skipped: at(row, c.skipped) === true,
+  }))
+  const companyName = company
+    ? rows[0]?.[`_${company}_value@OData.Community.Display.V1.FormattedValue`]
+    : null
+  return {
+    records,
+    company: typeof companyName === "string" ? companyName : null,
+  }
+}
+
 const BLUR_STYLE_ID = "dynamic-assist-blur"
 
 // Table list for the panel's Open box, fetched once per page load.
@@ -512,6 +784,9 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
   errors: ({ since }) => readLog(since),
   clearErrors: () => clearLog(),
   errorsConsole: ({ on }) => setConsoleCapture(on),
+  menuTarget: () => readMenuTarget(),
+  bcSource: () => readBcSource(),
+  bcCouplings: ({ crmId }) => readBcCouplings(crmId),
   godMode() {
     const fc = requireForm()
     let controls = 0

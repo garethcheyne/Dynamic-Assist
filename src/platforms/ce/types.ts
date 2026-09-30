@@ -228,6 +228,66 @@ export type CeUserRoles = {
   viaTeams: { role: string; team: string }[]
 }
 
+/**
+ * The Business Central environment this org is set up with, from the
+ * Business Central Virtual Table app's data source configuration
+ * (msdyn_businesscentralvirtualentity: one row per org). null when the app
+ * isn't installed or the row has no environment.
+ */
+export type CeBcSource = {
+  environment: string
+  /** The Default Company, as the lookup shows it; null when not set */
+  company: string | null
+}
+
+/** A Business Central record coupled to a Dataverse row */
+export type CeBcCoupling = {
+  tableId: number
+  tableCaption: string
+  /** The page to open it on; null when none is known */
+  pageId: number | null
+  /** A web client URL filter on the record's primary key */
+  filter: string
+  /** The key values, for showing ("10000", "Order · 1001") */
+  key: string
+  /** False when the record is gone, or you can't read its table */
+  exists: boolean
+  /** The integration skips it when it syncs */
+  skipped: boolean
+}
+
+/**
+ * Couplings read through Dataverse, from the companion app's couplings API
+ * made visible as a Business Central virtual table. `company` is the one the
+ * virtual table read (your default company).
+ */
+export type CeBcCouplings = {
+  records: CeBcCoupling[]
+  company: string | null
+}
+
+/**
+ * The couplings virtual table isn't in the org: the companion app isn't
+ * installed in Business Central, or its table isn't made visible yet.
+ */
+export type CeBcCouplingsMissing = {
+  missing: true
+  /** The Business Central Configuration app, where tables are made visible */
+  configAppId: string | null
+}
+
+/** What the right-click menu was opened on (menu-target.ts) */
+export type CeMenuTarget = {
+  kind: "field" | "column" | "tab" | "section"
+  /** The column's logical name; a tab's or section's name */
+  name: string
+  label: string | null
+  /** The table the column is on, when known */
+  table: string | null
+  /** Has option set values (choice, Yes/No, status); null when not known */
+  choice: boolean | null
+}
+
 export type CeUserSummary = {
   id: string
   name: string
@@ -275,6 +335,15 @@ export type CeCommands = {
   errors: { args: { since: number }; result: CeLogSlice }
   clearErrors: { args: void; result: void }
   errorsConsole: { args: { on: boolean }; result: void }
+  /** The org's Business Central environment (virtual tables setup) */
+  bcSource: { args: void; result: CeBcSource | null }
+  /** A row's Business Central couplings, via the virtual table */
+  bcCouplings: {
+    args: { crmId: string }
+    result: CeBcCouplings | CeBcCouplingsMissing
+  }
+  /** The right-click menu: what was right-clicked last */
+  menuTarget: { args: void; result: CeMenuTarget | null }
 }
 
 export type CeCommand = keyof CeCommands
@@ -298,6 +367,10 @@ export type CeResultMessage = {
 export type CeRequest =
   | { type: "ce:ping" }
   | { type: "ce:command"; command: CeCommand; args: unknown }
+  /** The worker (right-click menu): answered with a CeStateAnswer */
+  | { type: "ce:get-state" }
+
+export type CeStateAnswer = { state: CeState | null; dark: boolean }
 
 export type CeEvent = { type: "ce:state"; state: CeState | null }
 

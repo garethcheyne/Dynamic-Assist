@@ -7,6 +7,10 @@ Every `## heading` must match a permission in the manifest; the publish script c
 
 The whole extension is a side panel. Clicking the toolbar icon opens it beside Business Central, a Dynamics 365 app, the Power Apps maker portal or Power Automate, where it shows the current page's details and tools and follows you as you switch tabs.
 
+## contextMenus
+
+Adds a "Dynamic Assist" group to the right-click menu on Business Central and Dynamics 365 pages only. It has the page tools you use most (field or logical names on and off, blur, god mode, expand FastTabs), copies the name or number of the field you right-clicked, copies the record's ID or link, opens the query builder, in Business Central opens a page or table by the number you selected, and opens Microsoft's admin centres and docs in a new tab. The same links are on the toolbar icon's right-click menu. The menu reads only the page you right-clicked, and only when you choose one of its items.
+
 ## storage
 
 Keeps, on your computer only: your History (the Business Central environments, Dynamics 365 orgs and Power Platform environments you have opened, with any pins and names you give them); which Business Central company goes with which Dynamics 365 org, so the panel can link them; a one-day cache of the names of the apps installed in a Business Central environment, to label which extension a field comes from; the queries you save in the query builder; and your light or dark theme, so the query builder window matches the panel. Session storage holds short-lived state (an impersonation in progress, a query waiting to open) and is cleared when the browser closes. Nothing in storage is sent anywhere, and History can be cleared from the History page.

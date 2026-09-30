@@ -37,6 +37,11 @@ async function findChannel(ctx: BcContext) {
   })
 }
 
+/** Whether a tab is on the query page for this environment and company. */
+export async function hasChannel(ctx: BcContext) {
+  return !!(await findChannel(ctx))
+}
+
 async function openChannel(ctx: BcContext) {
   const tab = await chrome.tabs.create({
     url: buildBcUrl(ctx, { page: BRIDGE_PAGE_ID }),

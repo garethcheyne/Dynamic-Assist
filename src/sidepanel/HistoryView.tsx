@@ -22,19 +22,10 @@ import {
   setPinned,
   type HistoryEntry,
 } from "@/lib/history"
+import { ago } from "@/lib/time"
 import { useStorage } from "@/lib/use-storage"
 import { PRODUCTS } from "@/shared/products"
 import { Hint } from "@/components/hint"
-
-const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" })
-function ago(time: number) {
-  const minutes = Math.round((time - Date.now()) / 60000)
-  if (minutes > -1) return "just now"
-  if (minutes > -60) return rtf.format(minutes, "minute")
-  const hours = Math.round(minutes / 60)
-  if (hours > -24) return rtf.format(hours, "hour")
-  return rtf.format(Math.round(hours / 24), "day")
-}
 
 /** Pinned instances first, then everything you've visited by product. */
 /**

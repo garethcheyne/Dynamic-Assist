@@ -23,6 +23,7 @@ import exchangeLogo from "@/assets/brand/ms/exchange.svg"
 import microsoft365Logo from "@/assets/brand/ms/microsoft-365.svg"
 import teamsLogo from "@/assets/brand/ms/teams.svg"
 import type { HistoryEntry } from "@/lib/history"
+import { PORTAL_LINKS } from "@/shared/portal-links"
 
 export type Link = {
   label: string
@@ -32,120 +33,33 @@ export type Link = {
   icon: LucideIcon | string
 }
 
+/** Each portal's logo or icon, by its URL */
+const PORTAL_ICONS: Record<string, LucideIcon | string> = {
+  "https://admin.microsoft.com/": microsoft365Logo,
+  "https://admin.powerplatform.microsoft.com/environments": powerPlatformLogo,
+  "https://businesscentral.dynamics.com/admin": bcLogo,
+  "https://entra.microsoft.com/": entraLogo,
+  "https://portal.azure.com/": azurePortalLogo,
+  "https://admin.exchange.microsoft.com/": exchangeLogo,
+  "https://admin.teams.microsoft.com/": teamsLogo,
+  "https://app.powerbi.com/admin-portal": powerBiLogo,
+  "https://make.powerapps.com/": paLogo,
+  "https://make.powerautomate.com/": flowLogo,
+  "https://copilotstudio.microsoft.com/": copilotStudioLogo,
+  "https://dev.azure.com/": azureDevOpsLogo,
+  "https://admin.microsoft.com/#/servicehealth": HeartPulseIcon,
+  "https://admin.microsoft.com/#/MessageCenter": MegaphoneIcon,
+  "https://learn.microsoft.com/dynamics365/business-central/": BookOpenIcon,
+  "https://learn.microsoft.com/power-platform/": BookOpenIcon,
+}
+
 /** Admin centres and portals: the same from any page */
-export const PORTALS: { title: string; links: Link[] }[] = [
-  {
-    title: "Admin Centres",
-    links: [
-      {
-        label: "Microsoft 365 Admin",
-        detail: "Users, licences, billing",
-        url: "https://admin.microsoft.com/",
-        icon: microsoft365Logo,
-      },
-      {
-        label: "Power Platform Admin",
-        detail: "Environments, capacity, policies",
-        url: "https://admin.powerplatform.microsoft.com/environments",
-        icon: powerPlatformLogo,
-      },
-      {
-        label: "Business Central Admin",
-        detail: "Environments, apps, sessions",
-        url: "https://businesscentral.dynamics.com/admin",
-        icon: bcLogo,
-      },
-      {
-        label: "Entra Admin",
-        detail: "Users, groups, app registrations",
-        url: "https://entra.microsoft.com/",
-        icon: entraLogo,
-      },
-      {
-        label: "Azure Portal",
-        detail: "Subscriptions and resources",
-        url: "https://portal.azure.com/",
-        icon: azurePortalLogo,
-      },
-      {
-        label: "Exchange Admin",
-        detail: "Mailboxes, mail flow",
-        url: "https://admin.exchange.microsoft.com/",
-        icon: exchangeLogo,
-      },
-      {
-        label: "Teams Admin",
-        detail: "Teams, policies, meetings",
-        url: "https://admin.teams.microsoft.com/",
-        icon: teamsLogo,
-      },
-      {
-        label: "Power BI Admin",
-        detail: "Tenant settings, workspaces",
-        url: "https://app.powerbi.com/admin-portal",
-        icon: powerBiLogo,
-      },
-    ],
-  },
-  {
-    title: "Build",
-    links: [
-      {
-        label: "Power Apps",
-        detail: "Apps, tables, solutions",
-        url: "https://make.powerapps.com/",
-        icon: paLogo,
-      },
-      {
-        label: "Power Automate",
-        detail: "Cloud and desktop flows",
-        url: "https://make.powerautomate.com/",
-        icon: flowLogo,
-      },
-      {
-        label: "Copilot Studio",
-        detail: "Agents and copilots",
-        url: "https://copilotstudio.microsoft.com/",
-        icon: copilotStudioLogo,
-      },
-      {
-        label: "Azure DevOps",
-        detail: "Repos, pipelines, boards",
-        url: "https://dev.azure.com/",
-        icon: azureDevOpsLogo,
-      },
-    ],
-  },
-  {
-    title: "Status & Docs",
-    links: [
-      {
-        label: "Service Health",
-        detail: "Incidents and advisories",
-        url: "https://admin.microsoft.com/#/servicehealth",
-        icon: HeartPulseIcon,
-      },
-      {
-        label: "Message Center",
-        detail: "Upcoming changes",
-        url: "https://admin.microsoft.com/#/MessageCenter",
-        icon: MegaphoneIcon,
-      },
-      {
-        label: "Business Central Docs",
-        detail: "Microsoft Learn",
-        url: "https://learn.microsoft.com/dynamics365/business-central/",
-        icon: BookOpenIcon,
-      },
-      {
-        label: "Power Platform Docs",
-        detail: "Microsoft Learn",
-        url: "https://learn.microsoft.com/power-platform/",
-        icon: BookOpenIcon,
-      },
-    ],
-  },
-]
+export const PORTALS: { title: string; links: Link[] }[] = PORTAL_LINKS.map(
+  (group) => ({
+    ...group,
+    links: group.links.map((l) => ({ ...l, icon: PORTAL_ICONS[l.url] })),
+  })
+)
 
 export const PRODUCT_ICON: Record<HistoryEntry["platform"], string> = {
   bc: bcLogo,

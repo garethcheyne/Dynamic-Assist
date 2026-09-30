@@ -17,11 +17,18 @@ import type { CompanionCall } from "@/platforms/bc/coupling"
 import { parseBcUrl } from "@/platforms/bc/url"
 import { openQueryBuilder } from "@/query-builder/open"
 import { ERROR_WATCH_KEY, ERROR_WATCH_SCRIPT } from "@/platforms/ce/error-log"
+import { listenForBcSetup, openSetupBuilder } from "./bc-setup"
+import { createContextMenu, onContextMenuClick } from "./context-menu"
 
 // Open the side panel when the toolbar icon is clicked.
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
   .catch((error) => console.error(error))
+
+// The right-click menu on BC and Dynamics 365 pages (context-menu.ts). Its
+// items persist, so they're made on install and update only.
+chrome.runtime.onInstalled.addListener(() => createContextMenu())
+chrome.contextMenus.onClicked.addListener(onContextMenuClick)
 
 // Page-world scripts (built by vite.config.ts into public/scripts/). They're
 // registered here rather than in manifest.json because @crxjs's content script
@@ -129,6 +136,9 @@ chrome.runtime.onMessage.addListener((message: BcBridgeReady, sender) => {
         const channels =
           (stored[CHANNEL_TABS_KEY] as number[] | undefined) ?? []
         if (channels.includes(tabId)) return
+        // Loaded for a builder's first run (bc-setup.ts): that builder, with
+        // its own request, is already open over it
+        if (await openSetupBuilder(tabId, true)) return
         await openQueryBuilder(tabId, { app: "bc" }, message.dark)
       })
       .catch((error) => console.warn("Couldn't open the query builder", error))
@@ -166,6 +176,10 @@ chrome.runtime.onMessage.addListener(
     return true
   }
 )
+
+// The query builder's first run in a company loads the query page in its own
+// tab, and opens again over it (bc-setup.ts)
+listenForBcSetup()
 
 // Impersonation rules are per tab (platforms/ce/impersonation.ts); drop a
 // closed tab's rule so its ID can't carry over to a tab that reuses it.

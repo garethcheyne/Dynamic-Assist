@@ -8,7 +8,9 @@ import {
   type CeRequest,
   type CeResultMessage,
   type CeState,
+  type CeStateAnswer,
 } from "./types"
+import { listenForPageNotes } from "@/shared/page-note"
 import { sendToExtension } from "@/shared/send"
 
 // Runs in the top frame of Dynamics 365 pages, in the extension's isolated
@@ -49,6 +51,14 @@ chrome.runtime.onMessage.addListener(
       window.postMessage({ type: CE_STATE_REQUEST }, location.origin)
       return false
     }
+    if (message.type === "ce:get-state") {
+      const answer: CeStateAnswer = {
+        state,
+        dark: matchMedia("(prefers-color-scheme: dark)").matches,
+      }
+      sendResponse(answer)
+      return false
+    }
     if (message.type === "ce:command") {
       const id = nextId++
       const timer = window.setTimeout(() => {
@@ -71,5 +81,8 @@ chrome.runtime.onMessage.addListener(
     return false
   }
 )
+
+// The right-click menu's notes ("Copied accountnumber")
+listenForPageNotes()
 
 window.postMessage({ type: CE_STATE_REQUEST }, location.origin)

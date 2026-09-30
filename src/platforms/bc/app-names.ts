@@ -48,6 +48,16 @@ const bare = (id: unknown) =>
     .replace(/[{}]/g, "")
     .toLowerCase()
 
+/** Installed apps by ID from the cache only; null when it has none fresh. */
+export async function cachedAppNames(
+  ctx: BcContext
+): Promise<BcAppNames | null> {
+  const key = cacheKey(ctx)
+  const stored = (await chrome.storage.local.get(key))[key] as
+    { at: number; apps: BcAppNames } | undefined
+  return stored && Date.now() - stored.at < CACHE_MS ? stored.apps : null
+}
+
 /**
  * Installed apps by ID: from the cache, else the companion (which may open
  * its query page in the background; `onOpening` says so).
@@ -56,10 +66,9 @@ export async function loadAppNames(
   ctx: BcContext,
   onOpening?: () => void
 ): Promise<BcAppNames> {
+  const cached = await cachedAppNames(ctx)
+  if (cached) return cached
   const key = cacheKey(ctx)
-  const stored = (await chrome.storage.local.get(key))[key] as
-    { at: number; apps: BcAppNames } | undefined
-  if (stored && Date.now() - stored.at < CACHE_MS) return stored.apps
 
   const call = await companionFor(ctx, onOpening)
   const result = await call<BcQueryResult>("query", {

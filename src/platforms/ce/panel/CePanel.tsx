@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { recordVisit, visitFromUrl } from "@/lib/history"
+import { usePanelIntent } from "@/lib/use-panel-intent"
 import { useAction } from "@/lib/use-action"
 import { stopImpersonation, useImpersonation } from "../impersonation"
 import { ceAppUrl } from "../urls"
@@ -38,6 +39,13 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
   const host = tab.url ? new URL(tab.url).host : ""
   const impersonation = useImpersonation(tab.id, host)
   const [current, setCurrent] = React.useState<Tab>("record")
+  // The right-click menu's "Option set values": go to Tools
+  const intent = usePanelIntent(tab.id)
+  const [seenIntent, setSeenIntent] = React.useState(0)
+  if (intent && intent.seq !== seenIntent) {
+    setSeenIntent(intent.seq)
+    setCurrent("tools")
+  }
   const errors = useCeErrors(run, tab.id)
   const errorCount = errors.entries.filter((e) => e.level === "error").length
 
@@ -165,6 +173,7 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
               run={run}
               act={act}
               busy={busy}
+              focusOptionSet={intent}
             />
           </TabsContent>
           <TabsContent value="navigate" className="min-h-0 overflow-y-auto p-3">

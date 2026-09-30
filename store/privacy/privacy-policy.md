@@ -36,7 +36,7 @@ Nothing else is stored. The extension never reads or stores passwords or sign-in
 
 ## What it shares
 
-Nothing. Dynamic Assist has no server of its own and sends no data to the developer or to any third party. It has no analytics, advertising or tracking. The only network requests it makes go to the Microsoft service you're already signed in to: the Dynamics 365 or Dataverse organisation, or Business Central through its own page.
+Nothing. Dynamic Assist has no server of its own and sends no data to the developer or to any third party. It has no analytics, advertising or tracking. Its network requests go to the Microsoft service you're already signed in to: the Dynamics 365 or Dataverse organisation, or Business Central through its own page. The one exception is the What's new page: when you open it, it reads the public changelog from GitHub (raw.githubusercontent.com), a plain download that sends nothing about you or your data.
 
 ## How long data is kept, and how to delete it
 

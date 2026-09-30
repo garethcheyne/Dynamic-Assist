@@ -7,6 +7,7 @@ import { build as rolldown } from "rolldown"
 import { defineConfig, type Plugin } from "vite"
 
 import manifest from "./manifest.json"
+import pkg from "./package.json"
 
 // The project folder as it's spelled on disk. Started from "c:…" rather than
 // "C:…" (VS Code can do that), Vite would see some files under both
@@ -114,13 +115,14 @@ function noScriptWebResources(): CrxPlugin {
 
 // manifest.json is the source; @crxjs bundles every entry it names (side panel,
 // service worker, content scripts) and writes the final manifest to dist/.
+// The version comes from package.json only, so the two can't drift apart.
 export default defineConfig({
   root: ROOT,
   plugins: [
     mainWorldScripts(),
     react(),
     tailwindcss(),
-    crx({ manifest }),
+    crx({ manifest: { ...manifest, version: pkg.version } }),
     singleReact(),
     noScriptWebResources(),
   ],

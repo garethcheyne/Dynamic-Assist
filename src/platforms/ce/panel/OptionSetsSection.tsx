@@ -7,6 +7,7 @@ import { FieldGroup, FieldRow } from "@/components/field-row"
 import { SearchBox } from "@/components/search-box"
 import { Button } from "@/components/ui/button"
 import { groupBy } from "@/lib/group-by"
+import type { PanelIntent } from "@/lib/panel-intent"
 
 import type { CeField, CeOptionSetColumn } from "../types"
 import type { useCeTab } from "../use-ce-tab"
@@ -33,6 +34,7 @@ export function OptionSetsSection({
   entityName,
   fields,
   reveal = 0,
+  focus = null,
 }: {
   run: Run
   entityName: string
@@ -40,11 +42,18 @@ export function OptionSetsSection({
   fields: CeField[] | null
   /** Bumped by the Option sets tile: open, load and scroll here */
   reveal?: number
+  /** The right-click menu's column: search for it */
+  focus?: PanelIntent | null
 }) {
   const [columns, setColumns] = React.useState<CeOptionSetColumn[] | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [query, setQuery] = React.useState("")
+  const [seenFocus, setSeenFocus] = React.useState(0)
+  if (focus && focus.seq !== seenFocus) {
+    setSeenFocus(focus.seq)
+    setQuery(focus.optionSet)
+  }
 
   // Setting loading starts a request (below): the buttons, or a reveal from
   // Tools → Option sets when nothing has loaded yet
