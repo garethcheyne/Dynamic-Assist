@@ -116,7 +116,8 @@ export const PANEL: HelpTab = {
               Shown when the tab isn't one of the four products, or when you
               click the house icon. One tile per product opens the environment
               you used last in it (Ctrl-click for a background tab). Below it
-              are your History and the Microsoft admin centres.
+              are your History and the Microsoft admin centres. The welcome
+              card at the top has a × to hide it; Settings brings it back.
             </>
           ),
         },
@@ -159,7 +160,8 @@ export const PANEL: HelpTab = {
               environment (its table list and the fields of tables you've
               opened), one environment or all at once, so it reads them again.
               It also closes open companion query pages, to see the builder's
-              first-run steps again.
+              first-run steps again, and shows the home page's welcome card
+              again if you hid it.
             </>
           ),
         },

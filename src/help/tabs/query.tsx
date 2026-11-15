@@ -233,10 +233,10 @@ export const QUERY: HelpTab = {
           name: "Dynamic Assist Companion",
           what: (
             <>
-              A free, open-source Business Central app (publisher ERR403, IDs
-              77500–77509). It adds the <b>Dynamic Assist Query</b> page, which
-              the builder opens over and talks to, and a <b>Query log</b> of who
-              queried what.
+              A free, open-source Business Central app (publisher err403.com, or
+              ERR403 in older releases; IDs 77500–77509). It adds the{" "}
+              <b>Dynamic Assist Query</b> page, which the builder opens over and
+              talks to, and a <b>Query log</b> of who queried what.
               <ul>
                 <li>
                   <b>Read-only.</b> It lists tables and fields and reads

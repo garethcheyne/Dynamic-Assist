@@ -1,5 +1,5 @@
 import * as React from "react"
-import { DatabaseIcon, PanelTopIcon, Trash2Icon } from "lucide-react"
+import { DatabaseIcon, HouseIcon, PanelTopIcon, Trash2Icon } from "lucide-react"
 
 import bcLogo from "@/assets/brand/ms/business-central.svg"
 import { CollapsibleSection, Count } from "@/components/collapsible-section"
@@ -15,6 +15,8 @@ import {
   type BcMetaSummary,
 } from "@/platforms/bc/query/meta-cache"
 import { parseBcUrl } from "@/platforms/bc/url"
+
+import { introHidden, setIntroHidden } from "./home-intro"
 
 /** The installed apps' names cached per environment (app-names.ts) */
 const APP_NAMES_PREFIX = "bc:apps:"
@@ -34,6 +36,7 @@ export function SettingsView() {
   const [meta, setMeta] = React.useState<BcMetaSummary[] | null>(null)
   const [appCaches, setAppCaches] = React.useState<string[]>([])
   const [pages, setPages] = React.useState<chrome.tabs.Tab[]>([])
+  const [hideIntro, setHideIntro] = React.useState(introHidden)
 
   // Bumped to read everything again: after a change here, or in storage
   const [version, setVersion] = React.useState(0)
@@ -190,6 +193,31 @@ export function SettingsView() {
           {pages.length
             ? `Close ${pages.length} query page${pages.length === 1 ? "" : "s"}`
             : "Close query pages"}
+        </Button>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        id="settings.home"
+        title="Home page"
+        icon={<HouseIcon />}
+      >
+        <p className="text-xs text-muted-foreground">
+          {hideIntro
+            ? "The welcome card at the top of the home page is hidden."
+            : "The welcome card at the top of the home page is showing. Its × hides it."}
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="self-start"
+          disabled={!hideIntro}
+          onClick={() => {
+            setIntroHidden(false)
+            setHideIntro(false)
+            notify("The welcome card is back on the home page")
+          }}
+        >
+          Show the welcome card
         </Button>
       </CollapsibleSection>
     </div>

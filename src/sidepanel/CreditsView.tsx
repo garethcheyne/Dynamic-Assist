@@ -109,9 +109,21 @@ export function CreditsView() {
           </span>
         </div>
         <p className="text-xs">
-          By Gareth Cheyne · <Link href={SITE_LINKS.home}>Website</Link> ·{" "}
-          <Link href={REPO}>Source on GitHub</Link>
+          By Gareth Cheyne · <Link href={REPO}>Source on GitHub</Link>
         </p>
+        <div className="flex w-full flex-col items-center gap-1.5 border-t pt-3">
+          <Link href={SITE_LINKS.home}>dynamicassist.err403.com</Link>
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            The website has the full docs, every release's changes, the
+            companion app download and the feedback page.
+          </p>
+          <p className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs">
+            <Link href={SITE_LINKS.docs}>Docs</Link>
+            <Link href={SITE_LINKS.changelog}>Changelog</Link>
+            <Link href={feedbackUrl()}>Feedback</Link>
+            <Link href={SITE_LINKS.privacy}>Privacy</Link>
+          </p>
+        </div>
       </section>
 
       <CollapsibleSection

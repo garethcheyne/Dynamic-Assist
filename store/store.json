@@ -19,6 +19,7 @@
     "privacyPolicyUrl": "https://www.err403.com/privacy-policy/chrome-extensions",
     "homepageUrl": "https://dynamicassist.err403.com",
     "supportUrl": "https://dynamicassist.err403.com/feedback/",
+    "officialUrl": "err403.com",
     "category": "Developer Tools"
   },
   "stores": {
@@ -28,7 +29,7 @@
       "publisherId": "fa4c7629-9460-470f-8491-e4666f0fc6aa",
       "publishType": "DEFAULT_PUBLISH",
       "listingUrl": "https://chromewebstore.google.com/detail/dynamic-assist/kdjmihadioacnbabibfljbpbkclcjhbf",
-      "dashboardUrl": "https://chrome.google.com/webstore/devconsole/fa4c7629-9460-470f-8491-e4666f0fc6aa/kdjmihadioacnbabibfljbpbkclcjhbf/edit"      
+      "dashboardUrl": "https://chrome.google.com/webstore/devconsole/fa4c7629-9460-470f-8491-e4666f0fc6aa/kdjmihadioacnbabibfljbpbkclcjhbf/edit"
     },
     "edge": {
       "enabled": true,

@@ -13,6 +13,23 @@ only.
 Each item that came from feedback or a request links to its file in
 [enhancements/](enhancements/README.md), which has the cause and the details.
 
+## [Unreleased]
+
+### Added
+
+- **Hide the welcome card**: the card at the top of the home page has a ×
+  to hide it, and Settings → Home page shows it again.
+
+### Changed
+
+- **About shows the website**: About & credits links dynamicassist.err403.com
+  by name, with its docs, changelog, feedback page and privacy policy, instead
+  of a small "Website" link next to the author's name.
+- **Two privacy policies on the website**: what the extension and the
+  companion app do stays on the privacy page; what the website itself keeps
+  (visit counts and feedback) is now on its own page, and the help's privacy
+  tab links both.
+
 ## [2026.11.15] — 2026-11-15
 
 ### Added

@@ -1,9 +1,11 @@
+import * as React from "react"
 import {
   ArrowUpRightIcon,
   HeartIcon,
   HistoryIcon,
   LifeBuoyIcon,
   ServerCogIcon,
+  XIcon,
 } from "lucide-react"
 
 import { MS_ICONS } from "@/assets/brand/ms"
@@ -13,6 +15,7 @@ import { HISTORY_KEY, type HistoryEntry } from "@/lib/history"
 import { feedbackUrl } from "@/shared/links"
 import { useStorage } from "@/lib/use-storage"
 
+import { introHidden, setIntroHidden } from "./home-intro"
 import { HistoryView } from "./HistoryView"
 import { PORTALS, type Link } from "./portals"
 
@@ -74,6 +77,7 @@ const open = (url: string, background = false) =>
  */
 export function HomeView({ onHelp }: { onHelp: () => void }) {
   const [history] = useStorage<HistoryEntry[]>(HISTORY_KEY, [])
+  const [hideIntro, setHideIntro] = React.useState(introHidden)
   const lastUsed = (p: Product["platform"]) =>
     [...history]
       .filter((e) => e.platform === p)
@@ -81,32 +85,46 @@ export function HomeView({ onHelp }: { onHelp: () => void }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 [&>*]:shrink-0">
-      {/* Brand */}
-      <section
-        className="relative overflow-hidden rounded-2xl p-4 text-white shadow-sm"
-        style={{
-          background:
-            "radial-gradient(120% 140% at 0% 0%, #1fb5b0 0%, transparent 55%), radial-gradient(120% 140% at 100% 100%, #c44fa8 0%, transparent 55%), linear-gradient(135deg, #0f6f86, #4d4fc0 55%, #8a3fa6)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <img
-            src={icon}
-            alt=""
-            className="size-12 rounded-xl shadow-lg ring-1 ring-white/30"
-          />
-          <div className="min-w-0">
-            <h1 className="text-lg leading-tight font-semibold tracking-tight">
-              Dynamic Assist
-            </h1>
-            <p className="text-xs text-white/80">Version {version}</p>
+      {/* Brand: the welcome card, which can be hidden (Settings brings it back) */}
+      {!hideIntro && (
+        <section
+          className="relative overflow-hidden rounded-2xl p-4 text-white shadow-sm"
+          style={{
+            background:
+              "radial-gradient(120% 140% at 0% 0%, #1fb5b0 0%, transparent 55%), radial-gradient(120% 140% at 100% 100%, #c44fa8 0%, transparent 55%), linear-gradient(135deg, #0f6f86, #4d4fc0 55%, #8a3fa6)",
+          }}
+        >
+          <button
+            type="button"
+            title="Hide this card"
+            aria-label="Hide this card"
+            className="absolute top-2 right-2 grid size-7 place-items-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none"
+            onClick={() => {
+              setIntroHidden(true)
+              setHideIntro(true)
+            }}
+          >
+            <XIcon className="size-4" />
+          </button>
+          <div className="flex items-center gap-3 pr-6">
+            <img
+              src={icon}
+              alt=""
+              className="size-12 rounded-xl shadow-lg ring-1 ring-white/30"
+            />
+            <div className="min-w-0">
+              <h1 className="text-lg leading-tight font-semibold tracking-tight">
+                Dynamic Assist
+              </h1>
+              <p className="text-xs text-white/80">Version {version}</p>
+            </div>
           </div>
-        </div>
-        <p className="mt-3 text-sm leading-snug text-white/90">
-          Admin and developer tools for Microsoft&apos;s business apps, in one
-          side panel. Open one of them and the panel shows its tools.
-        </p>
-      </section>
+          <p className="mt-3 text-sm leading-snug text-white/90">
+            Admin and developer tools for Microsoft&apos;s business apps, in one
+            side panel. Open one of them and the panel shows its tools.
+          </p>
+        </section>
+      )}
 
       {/* Products */}
       <div className="grid grid-cols-2 gap-2">

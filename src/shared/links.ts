@@ -35,7 +35,11 @@ export const SITE = "https://dynamicassist.err403.com"
 export const SITE_LINKS = {
   home: `${SITE}/`,
   docs: `${SITE}/docs/`,
+  /** What the extension and the companion read, keep and change */
   privacy: `${SITE}/privacy/`,
+  /** What the website itself keeps: visit counts and feedback */
+  websitePrivacy: `${SITE}/privacy/website/`,
+  changelog: `${SITE}/changelog/`,
   feedback: `${SITE}/feedback/`,
   /** The companion app's page: what it is, installing it, a missing companion */
   companionDocs: `${SITE}/docs/companion-app/`,

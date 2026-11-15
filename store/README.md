@@ -45,6 +45,9 @@ store/
 | privacy/data-usage.md | Privacy → Data usage | Privacy → Data usage certification |
 | privacy/remote-code.md | Privacy → Are you using remote code? | Privacy → Remote code |
 | store.json listing.privacyPolicyUrl | Privacy → Privacy policy URL | Privacy → Privacy policy |
+| store.json listing.homepageUrl | Store listing → Homepage URL | Store listings → Website URL |
+| store.json listing.supportUrl | Store listing → Support URL | Store listings → Support contact details |
+| store.json listing.officialUrl | Store listing → Official URL (a site verified in Google Search Console, picked from the list) | - |
 | review/reviewer-notes.md | Package → Test instructions | Availability → Notes for certification |
 
 Anything still reading **TODO** counts as missing, so a half-written listing can't be published.

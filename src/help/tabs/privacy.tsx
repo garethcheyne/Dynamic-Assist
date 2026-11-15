@@ -106,7 +106,17 @@ export const PRIVACY: HelpTab = {
                 privacy page
               </a>{" "}
               says exactly what Dynamic Assist reads, keeps and changes, tool
-              by tool.
+              by tool. The website itself counts visits and keeps the feedback
+              you send; that's in its{" "}
+              <a
+                href={SITE_LINKS.websitePrivacy}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                own policy
+              </a>
+              .
             </>
           ),
         },

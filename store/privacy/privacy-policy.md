@@ -4,8 +4,8 @@ Both stores want a **URL**, not text. store.json → listing.privacyPolicyUrl
 points at https://www.err403.com/privacy-policy/chrome-extensions, the policy
 for every err403 extension. The text below is the Dynamic Assist detail; the
 website's privacy page (https://dynamicassist.err403.com/privacy/) carries the
-same, plus what the website itself keeps (visit counts and feedback). Keep the
-three in step.
+same. What the website itself keeps (visit counts and feedback) is on its own
+page, https://dynamicassist.err403.com/privacy/website/. Keep the three in step.
 
 ---
 
@@ -49,7 +49,7 @@ History stays until you remove entries or choose Clear on the History page (pinn
 
 ## The website
 
-The extension never sends anything to its website by itself. Its links to https://dynamicassist.err403.com (the docs, the feedback page and the companion app download) open in a new tab only when you click them. Feedback and Report a problem put the extension's version, and after a crash the error message, in the link, to fill in the feedback form; the form shows them, and nothing is sent unless you send the form. The website counts visits and keeps the feedback you choose to send; its privacy page says what and for how long.
+The extension never sends anything to its website by itself. Its links to https://dynamicassist.err403.com (the docs, the feedback page and the companion app download) open in a new tab only when you click them. Feedback and Report a problem put the extension's version, and after a crash the error message, in the link, to fill in the feedback form; the form shows them, and nothing is sent unless you send the form. The website counts visits and keeps the feedback you choose to send; its own privacy policy (https://dynamicassist.err403.com/privacy/website/) says what and for how long.
 
 ## Contact
 
