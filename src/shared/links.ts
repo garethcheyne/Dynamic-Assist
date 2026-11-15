@@ -19,6 +19,8 @@ export const powerPlatform = {
 export const COMPANION_REPO =
   "https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon"
 export const COMPANION_LATEST = `${COMPANION_REPO}/releases/latest`
+/** The companion's latest .app, ready to install: GitHub won't host .app files, so the website unzips the release */
+export const COMPANION_APP = "https://dynamicassist.err403.com/download/DynamicAssistCompanion.app"
 
 /** Microsoft's Business Central Virtual Table app for Dataverse, and its setup docs */
 export const BC_VIRTUAL_TABLES = {

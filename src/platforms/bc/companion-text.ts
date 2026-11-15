@@ -1,5 +1,5 @@
 /** The words for a missing companion, shared by the side panel and the query builder. */
-import { COMPANION_LATEST, SITE_LINKS } from "@/shared/links"
+import { COMPANION_APP, SITE_LINKS } from "@/shared/links"
 
 import type { CompanionProblemKind } from "./page-error"
 
@@ -30,7 +30,7 @@ export function companionStepsText(
   return [
     `Please install the Dynamic Assist Companion app in the Business Central environment ${env}:`,
     "",
-    `1. Download the Apps zip from the latest release and unzip it: ${COMPANION_LATEST}`,
+    `1. Download the app, the latest release: ${COMPANION_APP}`,
     "2. Upload the .app file in the Business Central admin center (the environment > Apps > Install Extension), or in Extension Management > Manage > Upload Extension, which needs the EXTEN. MGT. - ADMIN permission set.",
     "3. Give the people who use Dynamic Assist the DA QUERY permission set.",
     "",

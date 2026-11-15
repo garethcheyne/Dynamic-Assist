@@ -72,7 +72,7 @@ describe("companionStepsText", () => {
   it("names the environment and the release to install", () => {
     const text = companionStepsText("missing", "Production")
     expect(text).toContain("environment Production")
-    expect(text).toContain("/releases/latest")
+    expect(text).toContain("/download/DynamicAssistCompanion.app")
     expect(text).toContain("DA QUERY")
   })
 

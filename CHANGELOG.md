@@ -42,6 +42,9 @@ Each item that came from feedback or a request links to its file in
   lookup up to three, before saying it couldn't reach the companion, and left
   its tab behind. It's checked again after a day, or as soon as the companion's
   page opens.
+- **Download the companion as an .app**: the install steps' Download button and
+  links get DynamicAssistCompanion.app, ready to upload, from the website,
+  instead of a zip to unzip first.
 - **Links to the website**: the store listing, the README and the help page
   link to the website's docs and its feedback page. The companion install steps
   in the panel and the query builder link to the website's companion page.

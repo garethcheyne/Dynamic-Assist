@@ -16,7 +16,7 @@ import { useStorage } from "@/lib/use-storage"
 import { companionFor } from "@/platforms/bc/companion-channel"
 import { findBcRecords } from "@/platforms/bc/coupling"
 import { buildBcUrl, parseBcUrl, type BcContext } from "@/platforms/bc/url"
-import { BC_VIRTUAL_TABLES, COMPANION_LATEST } from "@/shared/links"
+import { BC_VIRTUAL_TABLES, COMPANION_APP } from "@/shared/links"
 
 import { bcCompanies } from "../bc-companies"
 import type { CeBcCoupling, CeBcCouplings, CeBcSource } from "../types"
@@ -299,7 +299,7 @@ function CouplingsSetup({
         <li>
           Install the latest{" "}
           <a
-            href={COMPANION_LATEST}
+            href={COMPANION_APP}
             target="_blank"
             rel="noreferrer"
             className={link}

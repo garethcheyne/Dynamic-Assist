@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { COMPANION_LATEST } from "@/shared/links"
+import { COMPANION_APP } from "@/shared/links"
 
 import type { CompanionStatus } from "./companion-status"
 import { companionHeadline, companionStepsText } from "./companion-text"
@@ -56,16 +56,11 @@ export function CompanionSteps({
   return (
     <ol className="ml-4 flex list-decimal flex-col gap-1">
       <li>
-        Download the <b>Apps</b> zip from the{" "}
-        <a
-          href={COMPANION_LATEST}
-          target="_blank"
-          rel="noreferrer"
-          className={link}
-        >
-          latest release
-        </a>{" "}
-        and unzip it. It holds the <b>.app</b> file.
+        Download{" "}
+        <a href={COMPANION_APP} target="_blank" rel="noreferrer" className={link}>
+          DynamicAssistCompanion.app
+        </a>
+        , the latest release.
       </li>
       <li>
         Upload the .app file in the{" "}
@@ -184,7 +179,7 @@ export function CompanionSetup({
           <Button
             size="sm"
             variant={compact ? "outline" : "default"}
-            onClick={() => window.open(COMPANION_LATEST, "_blank")}
+            onClick={() => window.open(COMPANION_APP, "_blank")}
           >
             <DownloadIcon data-icon="inline-start" />
             Download
