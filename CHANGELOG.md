@@ -244,7 +244,14 @@ Each item that came from feedback or a request links to its file in
 - Saving tables and fields to the cache at the same moment could lose one of them.
 - Settings didn't notice query pages being opened or closed while it was open.
 
-### Companion app (2026.11.6.4)
+### Companion app (2026.11.15)
+
+- **Links to the website**: the Dynamic Assist Query page's Full documentation
+  link, and the Help, Website and Privacy links Business Central shows for the
+  app, go to the website's companion page, home and privacy page, and the page
+  links to the feedback page.
+
+### Companion app (2026.11.6)
 
 - **Dynamic Assist Query is a full page again**, not a dialog: no OK or Cancel
   to close it by accident, and Business Central stays usable around it. It now
@@ -252,10 +259,6 @@ Each item that came from feedback or a request links to its file in
 - The **Dynamic Assist Query** page's Chrome Web Store and Microsoft Edge
   Add-ons buttons now link to the extension's listings instead of showing
   "Coming soon".
-- **Links to the website** (from 2026.11.15): the Dynamic Assist Query page's
-  Full documentation link, and the Help, Website and Privacy links Business
-  Central shows for the app, go to the website's companion page, home and
-  privacy page, and the page links to the feedback page.
 - Its README covers installing from the Business Central admin center, which
   Microsoft now recommends, and its security policy, support page and code
   owners are its own instead of the AL-Go template's Microsoft ones.
