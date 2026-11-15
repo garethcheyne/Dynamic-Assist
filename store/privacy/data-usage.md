@@ -33,7 +33,9 @@ Nothing leaves the browser except requests to the Microsoft service you're alrea
 
 The results are shown in the side panel or the query builder and not kept, unless you choose Export, which saves a file to your own computer.
 
-Stored locally, in chrome.storage and localStorage: History, the queries you save in the query builder, the Business Central company linked to each Dynamics 365 org, a one-day cache of installed Business Central app names, a cache of each Business Central environment's table list and table fields for the query builder (cleared from Settings), and preferences (theme, collapsed sections). There is no server of our own, no analytics, no error reporting and no third party. Opening the What's new page reads the public changelog from GitHub; nothing is sent with it.
+Its links to the Dynamic Assist website (docs, the feedback page, the companion app download) open in a new tab only when you click them. Feedback and Report a problem fill in the extension's version, and after a crash the error message, in the link; the feedback form shows them, and nothing is sent unless you send the form.
+
+Stored locally, in chrome.storage and localStorage: History, the queries you save in the query builder, the Business Central company linked to each Dynamics 365 org, a one-day cache of installed Business Central app names, a cache of each Business Central environment's table list and table fields for the query builder (cleared from Settings), whether an environment doesn't have the companion app (for a day, or until Check again), and preferences (theme, collapsed sections). There is no server of our own, no analytics, no error reporting and no third party. Opening the What's new page reads the public changelog from GitHub; nothing is sent with it.
 
 ## Certifications (all three must be true to publish)
 

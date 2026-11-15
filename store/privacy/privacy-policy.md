@@ -11,7 +11,7 @@ three in step.
 
 # Dynamic Assist privacy policy
 
-_Last updated 25 September 2026_
+_Last updated 15 November 2026_
 
 Dynamic Assist is a browser extension that shows administrator and developer tools for Microsoft Dynamics 365 Business Central, Dynamics 365 apps, the Power Apps maker portal and Power Automate in a side panel.
 
@@ -32,6 +32,8 @@ Query results are shown on the page. They are saved as a file only when you choo
 - **History**: the addresses and names of the Business Central environments, Dynamics 365 organisations and Power Apps environments you open, when you last opened them, and any pins or names you add. Stored in your browser's extension storage.
 - **Linked environments**: which Business Central company goes with which Dynamics 365 organisation, so the panel can link them. Stored in your browser's extension storage.
 - **App names**: the names, publishers and versions of the apps installed in a Business Central environment, kept for a day so field details can say which extension added a field. Stored in your browser's extension storage.
+- **Table lists**: each Business Central environment's list of tables, and the fields of the tables you open in the query builder, so it opens quickly. Stored in your browser's extension storage; Settings clears them.
+- **Missing companion**: when Business Central says an environment doesn't have the Dynamic Assist Companion app, a note of that, so the tools that need it are off there. Forgotten after a day, or when you choose Check again.
 - **Saved queries**: the queries you save in the query builder, with their names, table and where you saved them. Stored in your browser's extension storage; Export writes them to a file only when you ask.
 - **Preferences**: light or dark mode, which panel sections are collapsed, how the query builder shows filters and whether it lists example queries. Stored in your browser.
 
@@ -47,7 +49,7 @@ History stays until you remove entries or choose Clear on the History page (pinn
 
 ## The website
 
-The extension never talks to its website. If you visit https://dynamicassist.err403.com yourself, that site counts visits and keeps the feedback you choose to send; its privacy page says what and for how long.
+The extension never sends anything to its website by itself. Its links to https://dynamicassist.err403.com (the docs, the feedback page and the companion app download) open in a new tab only when you click them. Feedback and Report a problem put the extension's version, and after a crash the error message, in the link, to fill in the feedback form; the form shows them, and nothing is sent unless you send the form. The website counts visits and keeps the feedback you choose to send; its privacy page says what and for how long.
 
 ## Contact
 

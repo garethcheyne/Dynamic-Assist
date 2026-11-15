@@ -21,8 +21,9 @@ After installing, open one of the sites below and click the toolbar icon to open
 3. Parts tab: the FactBoxes are listed with their own page and table IDs.
 4. Tools tab: click "Field names"; each caption on the page gets its table field name and number. Hover one for its type and the app that added it. Click it again to remove them.
 5. Session tab: your user, company and environment, and an Admin center link.
+6. Right-click a field on the card, then Dynamic Assist → Copy field name: its table field name is copied, and a note on the page says so.
 
-The query builder and "All fields" need the optional, open-source Dynamic Assist Companion app installed in the environment (source: https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon). Without it those tools say so and link to its instructions; everything else works.
+The query builder, "All fields" and the Dynamics 365 record lookup need the optional, open-source Dynamic Assist Companion app installed in the environment (https://dynamicassist.err403.com/docs/companion-app/). Without it, the panel shows within a few seconds that it isn't installed, turns those tools off and lists what to install; everything else works.
 
 **Dynamics 365 app (e.g. Sales)**
 
@@ -32,6 +33,7 @@ The query builder and "All fields" need the optional, open-source Dynamic Assist
 4. Tools tab: click "Logical names"; each field on the form gets its logical name beside its label, click one to copy it. Click the tile again to remove them.
 5. Tools tab: click "Query builder"; a query window opens over the page. Pick a few columns and click Run.
 6. Go to tab: type "cont" in the table search and pick Contact, then click List.
+7. Right-click a field on the form, then Dynamic Assist → Copy logical name: the field's logical name is copied.
 
 **Power Apps maker portal**
 
@@ -49,5 +51,6 @@ The query builder and "All fields" need the optional, open-source Dynamic Assist
 
 - The grid icon in the header lists this environment's other products, the Microsoft admin centres and recent environments.
 - The house icon opens the home page (pinned and recent environments, history); click it again to go back to the page's tools.
-- The ⋮ menu → Help opens the help page in a new tab.
+- The ⋮ menu → Help opens the help page in a new tab, and What's new shows what changed in each version.
+- Feedback on the home page opens the Dynamic Assist website's feedback page (https://dynamicassist.err403.com/feedback/) in a new tab. The extension itself sends nothing anywhere.
 - History (clock icon, also on the home page): the environments you opened. Pin one and rename it.

@@ -80,8 +80,9 @@ export function CoupledBcSection({
       (s) => live && setSource(s),
       () => live && setSource(null)
     )
+    // Anything but a list (an older page script) is no companies known, not a crash
     run("bcOrgCompanies").then(
-      (names) => live && setOrgCompanies(names),
+      (names) => live && setOrgCompanies(Array.isArray(names) ? names : []),
       () => undefined
     )
     run("bcCouplings", { crmId: recordId }).then(

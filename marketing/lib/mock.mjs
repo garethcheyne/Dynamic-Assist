@@ -140,6 +140,7 @@ export function mockScript(scenario) {
           if (msg.command === "userRoles") { const megan = msg.args?.userId === "u2"; return { ok: true, result: { user: megan ? { id: "u2", name: "Megan Bowen", businessUnit: "Contoso Sales" } : { id: "u1", name: "Alex Wilber", businessUnit: "Contoso" }, direct: megan ? ["Basic User", "Salesperson"] : ["Basic User", "Salesperson", "System Customizer"], viaTeams: megan ? [{ role: "Sales Manager", team: "Sales Leads" }] : [{ role: "Marketing Professional", team: "Marketing" }] } } }
           // The org is set up with Business Central, and this account is coupled to a customer
           if (msg.command === "bcSource") return { ok: true, result: { environment: "Production", company: "CRONUS NZ" } }
+          if (msg.command === "bcOrgCompanies") return { ok: true, result: ["CRONUS NZ"] }
           if (msg.command === "bcCouplings") return { ok: true, result: { company: "CRONUS NZ", records: [{ tableId: 18, tableCaption: "Customer", pageId: 21, filter: "'No.' IS '10000'", key: "10000", exists: true, skipped: false }] } }
           // Form tools that change the page: kept in the state, and announced as
           // a "da:ce" event for a stage to show (videos.mjs)

@@ -11,7 +11,7 @@ BUSINESS CENTRAL
 • Page tools: blur data for screenshots, expand every section, copy a link to the record
 • Go to any page, table, report or query by number, plus shortcuts to common admin and developer pages
 • Reads from the web client itself, so it doesn't start a second session the way the page inspector does
-• Query builder: query any table you're allowed to read, over the page you're on, with filters and sorting, and export the results. Needs the free, open-source Dynamic Assist Companion app installed in the environment; it's read-only and uses your own permissions.
+• Query builder: query any table you're allowed to read, over the page you're on, with filters, related tables, sorting or SQL, and export the results to Excel, CSV or JSON, or turn the query into AL code or an API request. Needs the free, open-source Dynamic Assist Companion app installed in the environment; it's read-only and uses your own permissions. If it isn't installed, the panel says so within seconds and lists what to install.
 
 DYNAMICS 365 APPS (model-driven apps)
 • Record details: table, record ID, form, and every form field with its value, required level and changes
@@ -26,7 +26,7 @@ DYNAMICS 365 APPS (model-driven apps)
 • Compare: two users side by side, with the differences in their privileges and security roles
 • Find the Business Central records coupled to this one and open them
 • Impersonate: run the app as another user to see what they see (needs the matching privilege)
-• Query builder: build and run a query in a large window over the page, or edit it directly, and export the results
+• Query builder: build and run a query in a large window over the page, or write it as FetchXML or SQL, and export the results
 • Save your queries and run them again in any environment, and export and import them as a file
 
 POWER APPS MAKER PORTAL
@@ -42,14 +42,16 @@ POWER AUTOMATE
 EVERYWHERE
 • Go anywhere from the header: this environment's related admin, maker and product pages, and your recent environments
 • A home page with your pinned and recent environments, one click away from any page's tools
+• Right-click menu on Business Central and Dynamics 365 pages: copy the field's name or the record's link, turn the page tools on and off, and open the query builder without opening the panel
+• What's new: what changed in each version
 • Light and dark themes
-• Full help in a browser tab: every tool, what it does and what it needs
+• Full help in a browser tab: every tool, what it does and what it needs, with the full docs on the website
 
 HISTORY
 • Every environment and company you open, newest first; pin the ones you use and give them your own names
 
 WHAT IT ACCESSES
-Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server (the What's new page only reads the public changelog from GitHub), there is no account and no tracking, and your history and settings stay in your browser.
+Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server (the What's new page only reads the public changelog from GitHub), there is no account and no tracking, and your history and settings stay in your browser. Links to the Dynamic Assist website open in a new tab only when you click them.
 
 Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Microsoft product names and icons are trademarks of the Microsoft group of companies; the icons appear in the panel only to show which product a page or link belongs to.
 
@@ -57,4 +59,4 @@ Full feature list and more: https://www.err403.com/apps/dynamic-assist
 Website and docs: https://dynamicassist.err403.com
 Ideas, problems and feedback: https://dynamicassist.err403.com/feedback/
 Source code: https://github.com/garethcheyne/Dynamic-Assist
-Business Central companion app (for the query builder), latest release: https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon/releases/latest
+Business Central companion app (for the query builder): https://dynamicassist.err403.com/docs/companion-app/
