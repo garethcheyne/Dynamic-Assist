@@ -12,12 +12,13 @@ import { useTheme } from "@/components/theme-provider"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { feedbackUrl, SITE_LINKS } from "@/shared/links"
+
 import { HELP_TABS } from "./tabs"
 import type { HelpTab, HelpTool } from "./types"
 
 const { version } = chrome.runtime.getManifest()
 const icon = chrome.runtime.getURL("icons/icon128.png")
-const REPO = "https://github.com/garethcheyne/Dynamic-Assist"
 
 /** #bc or #bc/field-names → the tab and, if given, the tool to scroll to */
 function readHash(): { tab: string; tool: string | null } {
@@ -90,12 +91,20 @@ export function HelpPage() {
           </div>
           <div className="ml-auto flex items-center gap-1">
             <a
-              href={`${REPO}/issues`}
+              href={SITE_LINKS.docs}
               target="_blank"
               rel="noreferrer"
               className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
-              Report an issue
+              Full docs
+            </a>
+            <a
+              href={feedbackUrl({ kind: "issue" })}
+              target="_blank"
+              rel="noreferrer"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              Report a problem
             </a>
             <Button
               variant="ghost"

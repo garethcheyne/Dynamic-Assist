@@ -1,5 +1,5 @@
 /**
- * The results side of both query builders: the grid, paging, the query as
+ * The results side of both query builders: the grid, the query as
  * text (FetchXML, OData, AL…) and export to Excel, CSV or JSON.
  */
 import * as React from "react"
@@ -70,7 +70,8 @@ export function ResultsPane({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3 text-xs">
+      {/* Wraps when the pane is narrow, so Export and the row count stay in view */}
+      <div className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 text-xs">
         <div className="flex rounded-md bg-muted p-0.5">
           {(["results", ...sources.map((_, i) => i)] as const).map((v) => (
             <button

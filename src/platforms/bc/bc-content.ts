@@ -1,7 +1,9 @@
 import { BRIDGE_TAG, BridgeClient } from "./query/bridge"
 import {
+  BRIDGE_CHECK,
   BRIDGE_READY,
   COMPANION_REQUEST,
+  type BcBridgeCheck,
   type BcCompanionRequest,
   type CompanionAnswer,
   type BcBridgeReady,
@@ -19,12 +21,16 @@ import {
   TOOL_RESULT_MESSAGE,
   type BcPageInfo,
 } from "./page-info"
+import { answerPageErrorAsks } from "./page-error"
 import { listenForPageNotes } from "@/shared/page-note"
 import { sendToExtension } from "@/shared/send"
 
 // Runs in every businesscentral.dynamics.com frame, in the extension's isolated
 // world. main-world.ts (same frame, page world) reads BC's form model and posts
 // it here; this forwards it to the side panel, which picks the frame with a page.
+
+/** How long a bridge that's there gets to answer a check: it answers at once */
+const BRIDGE_CHECK_MS = 1500
 
 let page: BcPageInfo | null = null
 let unsupported = false
@@ -72,12 +78,25 @@ if (window === window.top) {
 if (window === window.top) {
   let bridge: BridgeClient | null = null
   chrome.runtime.onMessage.addListener(
-    (message: BcCompanionRequest, _sender, respond) => {
+    (message: BcCompanionRequest | BcBridgeCheck, _sender, respond) => {
+      if (message?.type === BRIDGE_CHECK) {
+        bridge ??= new BridgeClient()
+        void bridge
+          .connectHere(BRIDGE_CHECK_MS)
+          .then((here) => respond({ here }), () => respond({ here: false }))
+        return true
+      }
       if (message?.type !== COMPANION_REQUEST) return false
       const answer = (a: CompanionAnswer) => respond(a)
       void (async () => {
+        // In this tab only: the service worker is who's asking, and asking it
+        // back could open a tab
         bridge ??= new BridgeClient()
-        if (!(await bridge.connect(3000))) return answer({ ready: false })
+        if (!(await bridge.connectHere(3000)))
+          return answer({
+            ready: false,
+            problem: bridge.pageProblem ?? undefined,
+          })
         try {
           const result = await bridge.request(message.method, message.params)
           answer({ ready: true, ok: true, result })
@@ -142,5 +161,9 @@ chrome.runtime.onMessage.addListener((message: BcRequest, _sender, respond) => {
 
 // The right-click menu's notes ("Copied Customer No.")
 listenForPageNotes()
+
+// Business Central's error page in this frame, for the top frame asking
+// whether the companion's page opened (page-error.ts)
+answerPageErrorAsks()
 
 window.postMessage({ type: REQUEST_MESSAGE }, location.origin)

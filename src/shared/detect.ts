@@ -4,11 +4,7 @@ export type Platform = "bc" | "ce" | "maker" | "flow" | "none"
 
 const BC_HOST = "businesscentral.dynamics.com"
 const MAKER_HOSTS = ["make.powerapps.com", "make.preview.powerapps.com"]
-const FLOW_HOSTS = [
-  "make.powerautomate.com",
-  "make.preview.powerautomate.com",
-  "flow.microsoft.com",
-]
+const FLOW_HOSTS = ["make.powerautomate.com", "make.preview.powerautomate.com"]
 
 /** Which product a tab URL belongs to. */
 export function detectPlatform(url: string | undefined): Platform {

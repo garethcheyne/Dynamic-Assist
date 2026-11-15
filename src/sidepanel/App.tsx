@@ -74,9 +74,7 @@ export function App() {
   const tab = useActiveTab()
   const platform = detectPlatform(tab?.url)
   const [chosen, setChosen] = React.useState<View>("tools")
-  // Off the products there are no page tools: the home page instead
-  const home: View = "tools"
-  const view = chosen === "tools" ? home : chosen
+  const view = chosen
   // One panel per tab and instance: moving to another environment, company or
   // org in the same tab starts fresh instead of mixing the two
   const panelKey = `${tab?.id}:${instanceKey(tab?.url)}`
@@ -94,7 +92,7 @@ export function App() {
         url={tab?.url}
         view={view}
         onBack={
-          view !== home && view !== "home"
+          view !== "tools" && view !== "home"
             ? () => setChosen("tools")
             : undefined
         }

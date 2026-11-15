@@ -5,17 +5,16 @@ import {
   ArrowLeftIcon,
   ArrowUpIcon,
   DatabaseIcon,
-  ExternalLinkIcon,
   FilterIcon,
   ListOrderedIcon,
   Loader2Icon,
   LinkIcon,
   LockIcon,
-  PackageOpenIcon,
   PlayIcon,
   PlusIcon,
   RefreshCwIcon,
   SettingsIcon,
+  SlidersHorizontalIcon,
   TableIcon,
   XIcon,
   MinusIcon,
@@ -44,12 +43,20 @@ import {
 } from "@/query-builder/SearchSelect"
 
 import {
+  CHANNEL_GONE,
   CHANNEL_STATUS,
   SETUP_REQUEST,
+  type BcChannelGone,
   type BcChannelStatus,
   type BcSetupRequest,
 } from "../messages"
-import { COMPANION_REPO } from "@/shared/links"
+import {
+  clearCompanionProblem,
+  companionStatus,
+  markCompanionProblem,
+  type CompanionStatus,
+} from "../companion-status"
+import { CompanionSetup } from "../CompanionSetup"
 import { buildBcUrl, parseBcUrl } from "../url"
 import {
   emptyBoot,
@@ -99,7 +106,34 @@ import {
   type RequestPlan,
 } from "./api"
 import { Hint } from "@/components/hint"
+import { CodeEditor } from "@/query-builder/CodeEditor"
 import { SavedQueries } from "@/query-builder/SavedQueries"
+import { MAX_ROWS as MAX_AGGREGATE_ROWS, runAggregate } from "./sql/aggregate"
+import { bcSqlTablesIn } from "./sql/complete"
+import { bcSqlExtensions, useBcSqlMeta } from "./sql/editor"
+import { fromSql } from "./sql/from-sql"
+import { toBcSql } from "./sql/to-sql"
+
+type Mode = "builder" | "sql"
+const MODES: {
+  mode: Mode
+  label: string
+  icon: React.ReactNode
+  tip: string
+}[] = [
+  {
+    mode: "builder",
+    label: "Builder",
+    icon: <SlidersHorizontalIcon className="size-3.5" />,
+    tip: "Pick a table, columns and filters",
+  },
+  {
+    mode: "sql",
+    label: "SQL",
+    icon: <DatabaseIcon className="size-3.5" />,
+    tip: "Write SQL, with suggestions. It's translated into a Business Central query",
+  },
+]
 
 export type BcOpenRequest = {
   app: "bc"
@@ -113,14 +147,14 @@ export type BcOpenRequest = {
   run?: boolean
   /** Start from this whole query (a saved one) */
   query?: BcQuery
+  /** A query written as SQL: opens in SQL mode */
+  sql?: string
   /**
    * Opened over the query page that was just loaded in this tab for it (the
    * first time in a company): the page it came from, and when that began
    */
   setup?: { returnUrl: string; startedAt: number }
 }
-
-const COMPANION_HELP_URL = COMPANION_REPO
 
 /** Columns picked for a new query: the key, then a few everyday fields. */
 const DEFAULT_COLUMNS = 8
@@ -130,6 +164,12 @@ const FILTER_MODE_KEY = "dynamic-assist.bc-filter-mode"
 
 const isPlain = (f: BcField) =>
   f.class === "Normal" &&
+  f.enabled &&
+  !["BLOB", "Media", "MediaSet"].includes(f.type)
+
+/** A record's every field: FlowFields too, which are cheap for a single record */
+const isRecordField = (f: BcField) =>
+  (f.class === "Normal" || f.class === "FlowField") &&
   f.enabled &&
   !["BLOB", "Media", "MediaSet"].includes(f.type)
 
@@ -343,6 +383,10 @@ export function BcQueryApp({
     }
   }
   const [denied, setDenied] = React.useState<string | null>(null)
+  /** Why the companion can't be reached here, when Business Central said */
+  const [problem, setProblem] = React.useState<CompanionStatus | null>(null)
+  /** Check again: each one starts the builder over */
+  const [attempt, setAttempt] = React.useState(0)
 
   // Each run's number: only the latest run's rows show
   const runId = React.useRef(0)
@@ -370,6 +414,19 @@ export function BcQueryApp({
     },
     [client]
   )
+
+  // --- SQL: another way to write the query ----------------------------------
+  const [mode, setMode] = React.useState<Mode>(request.sql ? "sql" : "builder")
+  const [sqlText, setSqlText] = React.useState(request.sql ?? "")
+  /** Something to say above the results: how a total was worked out */
+  const [sqlNote, setSqlNote] = React.useState<string | null>(null)
+  const sqlMeta = useBcSqlMeta(tables, fieldsOf)
+  const sqlEditorExtensions = React.useMemo(
+    () => bcSqlExtensions(sqlMeta),
+    [sqlMeta]
+  )
+  /** The query the SQL text last compiled to, to tell if the builder has moved on */
+  const compiledQuery = React.useRef<string | null>(null)
 
   const openTable = React.useCallback(
     (table: number, start?: BcOpenRequest) => {
@@ -423,7 +480,7 @@ export function BcQueryApp({
           }
           // Opened with a query in mind (a record's fields, a table's list…)
           else if (start?.fields === "all")
-            q.fields = loaded.fields.filter(isPlain).map((f) => f.no)
+            q.fields = loaded.fields.filter(isRecordField).map((f) => f.no)
           else if (start?.fields?.length) q.fields = start.fields
           if (start?.filters?.length) q.filters = start.filters
           setQuery(q)
@@ -439,7 +496,17 @@ export function BcQueryApp({
   // companion, read the tables, open the first table
   React.useEffect(() => {
     let cancelled = false
+    const here = parseBcUrl(window.location.href)
     void (async () => {
+      // Business Central has already said the companion's page can't open
+      // here: say so at once, rather than wait for it
+      const known = await companionStatus(here)
+      if (cancelled) return
+      if (known) {
+        setProblem(known)
+        setStatus("missing")
+        return
+      }
       if (request.setup) {
         // The query page was loaded in this tab for us: that step is done
         step("page", request.setup.startedAt)
@@ -457,12 +524,33 @@ export function BcQueryApp({
       }
       if (cancelled) return
       step("companion")
-      const ok = await client.connect(request.setup ? SETUP_WAIT_MS : undefined)
+      // The query page loaded in this tab for us: it's here or it's nowhere
+      const ok = request.setup
+        ? await client.connectHere(SETUP_WAIT_MS)
+        : await client.connect()
       if (cancelled) return
       if (!ok) {
+        // It's there, but you can't use it: not the same as not being installed
+        if (client.connectError && NO_ACCESS.test(client.connectError)) {
+          setDenied(client.connectError)
+          setStatus("denied")
+          return
+        }
+        // Business Central's error page in this tab says why; through the
+        // worker, it has written down what the background tab showed
+        if (client.pageProblem) {
+          await markCompanionProblem(here, client.pageProblem)
+          // This tab's query page can't open: it's nobody's channel
+          const gone: BcChannelGone = { type: CHANNEL_GONE }
+          await chrome.runtime.sendMessage(gone).catch(() => undefined)
+        }
+        const found = await companionStatus(here)
+        if (cancelled) return
+        setProblem(found)
         setStatus("missing")
         return
       }
+      void clearCompanionProblem(here)
       setStatus("ready")
       step("tables")
       try {
@@ -498,8 +586,21 @@ export function BcQueryApp({
           }))
           await openTable(
             start.id,
-            start.id === request.tableId ? request : undefined
+            start.id === request.tableId
+              ? // A query written as SQL runs as SQL: it may add rows up
+                { ...request, run: request.run && !request.sql }
+              : undefined
           )
+          // Asked for a table this environment doesn't have (a saved query from
+          // elsewhere, or one you can't read): say so, and run nothing
+          if (
+            !cancelled &&
+            request.tableId != null &&
+            start.id !== request.tableId
+          )
+            setError(
+              `Table ${request.tableId} isn't in this environment, or you can't read it. Showing ${start.caption || start.name} instead; nothing was run.`
+            )
         }
         if (cancelled) return
         setBoot(finishBoot)
@@ -534,7 +635,25 @@ export function BcQueryApp({
     }
     // Once per builder: dark only says how to open it again after the move
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, openTable, request, step, cacheKey, onQueryPage])
+  }, [client, openTable, request, step, cacheKey, onQueryPage, attempt])
+
+  /**
+   * Check again: forget what Business Central said and start over. On the
+   * query page itself, the page has to load again to show a newly installed app.
+   */
+  const recheck = () => {
+    const here = parseBcUrl(window.location.href)
+    void clearCompanionProblem(here).then(() => {
+      if (onQueryPage) {
+        window.location.reload()
+        return
+      }
+      setProblem(null)
+      setBoot(emptyBoot([STEP.page, STEP.companion, STEP.tables, STEP.fields]))
+      setStatus("connecting")
+      setAttempt((a) => a + 1)
+    })
+  }
 
   /** Forgets this environment's cached tables and fields and reads them again. */
   const [refreshing, setRefreshing] = React.useState(false)
@@ -581,6 +700,10 @@ export function BcQueryApp({
     const custom = plans[plans.length - 1]
     return [
       {
+        label: "SQL",
+        text: toBcSql(query, table, fields, related),
+      },
+      {
         label: "AL",
         // Record code, then the custom API query object
         text: `${toAl(query, table, fields, related)}\n\n${toApiQuery(query, table, fields, apiCtx, related).al}`,
@@ -601,9 +724,123 @@ export function BcQueryApp({
     ]
   }, [query, table, fields, info, apis, planKey, related])
 
+  /** The SQL as the builder's query, with its tables loaded. */
+  const compileSql = React.useCallback(
+    async (text: string) => {
+      await sqlMeta.ensure(bcSqlTablesIn(text))
+      const compiled = fromSql(text, sqlMeta.get())
+      const known = sqlMeta.get()
+      for (const j of compiled.query?.joins ?? []) {
+        const fieldsOfJoin = known.fields(j.table)
+        const t = known.tables.find((x) => x.id === j.table)
+        if (fieldsOfJoin && t)
+          setRelated((all) => ({
+            ...all,
+            [j.table]: {
+              name: t.name,
+              caption: t.caption,
+              fields: fieldsOfJoin,
+            },
+          }))
+      }
+      return compiled
+    },
+    [sqlMeta]
+  )
+
+  /** Shows a compiled query in the builder, on its table. */
+  const showCompiled = React.useCallback(
+    async (q: BcQuery) => {
+      compiledQuery.current = JSON.stringify(q)
+      if (q.table === query?.table) setQuery(q)
+      else await openTable(q.table, { app: "bc", query: q })
+    },
+    [query?.table, openTable]
+  )
+
+  const runSql = React.useCallback(async () => {
+    if (!sqlText.trim()) return
+    setSqlNote(null)
+    const compiled = await compileSql(sqlText)
+    const errors = compiled.problems.filter((p) => p.severity === "error")
+    if (errors.length || !compiled.query) {
+      runId.current++
+      setRunning(false)
+      setResults(null)
+      setLastRun(null)
+      setError(
+        errors.map((p) => p.message).join(" ") ||
+          "Say which table: SELECT … FROM table"
+      )
+      return
+    }
+    const q = compiled.query
+    await showCompiled(q)
+    if (!compiled.aggregate) return runQuery(q)
+    // Adding up: every matching row, a page at a time
+    const id = ++runId.current
+    setRunning(true)
+    setError(null)
+    try {
+      const out = await runAggregate(q, compiled.aggregate, (page) =>
+        client.query(page)
+      )
+      if (runId.current !== id) return
+      setLastRun(out.result)
+      setResults(toResults(out.result))
+      setSqlNote(
+        out.capped
+          ? `These totals only cover the first ${MAX_AGGREGATE_ROWS.toLocaleString()} rows: there are more. Add a filter to cover them all.`
+          : `Worked out in your browser from ${out.rows.toLocaleString()} rows: Business Central reads records, and doesn't add up.`
+      )
+    } catch (e) {
+      if (runId.current !== id) return
+      setResults(null)
+      setLastRun(null)
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      if (runId.current === id) setRunning(false)
+    }
+  }, [sqlText, compileSql, showCompiled, runQuery, client])
+
   const run = React.useCallback(async () => {
-    if (query) await runQuery(query)
-  }, [query, runQuery])
+    if (mode === "sql") await runSql()
+    else if (query) await runQuery(query)
+  }, [mode, query, runQuery, runSql])
+
+  const switchMode = async (next: Mode) => {
+    if (next === mode) return
+    setSqlNote(null)
+    if (next === "sql") {
+      // Starts from the builder's query, unless this SQL is what made it
+      const unchanged =
+        !!sqlText.trim() && compiledQuery.current === JSON.stringify(query)
+      if (query && !unchanged)
+        setSqlText(toBcSql(query, table, fields, related))
+      setMode("sql")
+      return
+    }
+    setMode("builder")
+    if (!sqlText.trim()) return
+    const compiled = await compileSql(sqlText)
+    if (compiled.query && !compiled.aggregate)
+      await showCompiled(compiled.query)
+    else
+      setSqlNote(
+        compiled.aggregate
+          ? "The builder keeps its own query: it doesn't add rows up, so this SQL stays in SQL mode."
+          : "The builder keeps its own query: this SQL has problems to fix first."
+      )
+  }
+
+  // Opened with SQL to run (a saved query): once its table is there
+  const sqlToRun = React.useRef(!!(request.sql && request.run))
+  React.useEffect(() => {
+    if (!sqlToRun.current || status !== "ready" || loadingFields || !query)
+      return
+    sqlToRun.current = false
+    void runSql()
+  }, [status, loadingFields, query, runSql])
 
   const tableItems = React.useMemo<SelectItem[]>(
     () =>
@@ -635,8 +872,14 @@ export function BcQueryApp({
         data-platform="bc"
         onKeyDown={(e) => {
           // Esc minimises: a query isn't lost to a stray key
-          if (e.key === "Escape") (onMinimize ?? onClose)()
-          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          // (unless an editor used it: closing its suggestions, running)
+          if (e.key === "Escape" && !e.defaultPrevented)
+            (onMinimize ?? onClose)()
+          if (
+            e.key === "Enter" &&
+            (e.ctrlKey || e.metaKey) &&
+            !e.defaultPrevented
+          ) {
             e.preventDefault()
             void run()
           }
@@ -647,7 +890,8 @@ export function BcQueryApp({
           role="dialog"
           aria-modal="true"
           aria-label="Query builder"
-          className="fixed inset-x-[3vw] inset-y-[4vh] z-[2147483001] flex flex-col overflow-hidden rounded-xl border bg-background text-foreground shadow-2xl"
+          tabIndex={-1}
+          className="fixed inset-x-[3vw] inset-y-[4vh] z-[2147483001] flex flex-col overflow-hidden rounded-xl border bg-background text-foreground shadow-2xl outline-none"
         >
           {/* Header */}
           <div className="relative flex h-12 shrink-0 items-center gap-3 border-b bg-linear-to-b from-background to-card px-4">
@@ -673,31 +917,76 @@ export function BcQueryApp({
                 </span>
               </Hint>
             )}
+            {status === "ready" && (
+              <div className="flex rounded-md bg-muted p-0.5">
+                {MODES.map((m) => (
+                  <Hint key={m.mode} label={m.tip}>
+                    <button
+                      type="button"
+                      onClick={() => void switchMode(m.mode)}
+                      className={cn(
+                        "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium",
+                        mode === m.mode
+                          ? "bg-background shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {m.icon}
+                      {m.label}
+                    </button>
+                  </Hint>
+                ))}
+              </div>
+            )}
             <div className="ml-auto flex items-center gap-1">
               {status === "ready" && (
                 <SavedQueries
                   platform="bc"
-                  current={() =>
-                    query && table
+                  current={() => {
+                    const where = [
+                      parseBcUrl(window.location.href).environment,
+                      info?.company,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                    if (mode === "sql") {
+                      // Kept as written, with what it compiles to
+                      const compiled = sqlText.trim()
+                        ? fromSql(sqlText, sqlMeta.get()).query
+                        : null
+                      const t =
+                        compiled && tables.find((x) => x.id === compiled.table)
+                      return compiled && t
+                        ? {
+                            platform: "bc",
+                            query: compiled,
+                            sql: sqlText,
+                            table: `${t.caption} (${t.id})`,
+                            where,
+                          }
+                        : null
+                    }
+                    return query && table
                       ? {
                           platform: "bc",
                           query: { ...query, after: undefined },
                           table: `${table.caption} (${table.id})`,
-                          where: [
-                            parseBcUrl(window.location.href).environment,
-                            info?.company,
-                          ]
-                            .filter(Boolean)
-                            .join(" · "),
+                          where,
                         }
                       : null
-                  }
+                  }}
                   onLoad={(saved) => {
                     if (saved.platform !== "bc") return
                     if (!tables.some((t) => t.id === saved.query.table))
                       return setError(
                         `Table ${saved.query.table} isn't in this environment, or you can't read it.`
                       )
+                    setSqlNote(null)
+                    if (saved.sql) {
+                      setSqlText(saved.sql)
+                      setMode("sql")
+                      compiledQuery.current = JSON.stringify(saved.query)
+                    } else setMode("builder")
                     void openTable(saved.query.table, {
                       app: "bc",
                       query: saved.query,
@@ -786,7 +1075,7 @@ export function BcQueryApp({
               }
             />
           ) : status === "missing" ? (
-            <CompanionMissing />
+            <CompanionMissing problem={problem} onRecheck={recheck} />
           ) : status === "denied" ? (
             <NoAccess message={denied} />
           ) : (
@@ -797,62 +1086,91 @@ export function BcQueryApp({
                   fail.
                 </div>
               )}
+              {sqlNote && (
+                <div className="border-b bg-muted px-4 py-1.5 text-xs text-muted-foreground">
+                  {sqlNote}
+                </div>
+              )}
               <SplitPanes
                 id="bc-query"
                 left={
-                  <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-                    {loadingFields || !query ? (
-                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Loader2Icon className="size-3.5 animate-spin" />{" "}
-                        Loading fields…
+                  mode === "sql" ? (
+                    <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-2">
+                      <CodeEditor
+                        key="sql"
+                        label="SQL"
+                        value={sqlText}
+                        onChange={setSqlText}
+                        extensions={sqlEditorExtensions}
+                        onRun={() => void run()}
+                        placeholder="SELECT [No.], Name FROM Customer WHERE …"
+                        className="min-h-0 flex-1"
+                      />
+                      <p className="px-1 text-[11px] text-muted-foreground">
+                        Business Central has no SQL of its own: this is
+                        translated into a query it can run, read-only, with your
+                        permissions.
                       </p>
-                    ) : (
-                      <>
-                        <Section icon={<TableIcon />} title="Columns">
-                          <ColumnsEditor
-                            fields={fields}
-                            columns={query.fields}
-                            onChange={(f) => setQuery({ ...query, fields: f })}
-                          />
-                        </Section>
-                        <Section icon={<FilterIcon />} title="Filters">
-                          <FilterModeSwitch
-                            mode={filterMode}
-                            onChange={changeFilterMode}
-                          />
-                          <FiltersEditor
-                            fields={fields}
-                            filters={query.filters}
-                            mode={filterMode}
-                            onChange={(filters) =>
-                              setQuery({ ...query, filters })
-                            }
-                          />
-                        </Section>
-                        <Section icon={<LinkIcon />} title="Related tables">
-                          <JoinsEditor
-                            fields={fields}
-                            tables={tables}
-                            related={related}
-                            joins={query.joins ?? []}
-                            filterMode={filterMode}
-                            onLoad={loadRelated}
-                            onChange={(joins) => setQuery({ ...query, joins })}
-                          />
-                        </Section>
-                        <Section icon={<ListOrderedIcon />} title="Sort">
-                          <SortEditor
-                            fields={fields}
-                            query={query}
-                            onChange={setQuery}
-                          />
-                        </Section>
-                        <Section icon={<SettingsIcon />} title="Options">
-                          <OptionsEditor query={query} onChange={setQuery} />
-                        </Section>
-                      </>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+                      {loadingFields || !query ? (
+                        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Loader2Icon className="size-3.5 animate-spin" />{" "}
+                          Loading fields…
+                        </p>
+                      ) : (
+                        <>
+                          <Section icon={<TableIcon />} title="Columns">
+                            <ColumnsEditor
+                              fields={fields}
+                              columns={query.fields}
+                              onChange={(f) =>
+                                setQuery({ ...query, fields: f })
+                              }
+                            />
+                          </Section>
+                          <Section icon={<FilterIcon />} title="Filters">
+                            <FilterModeSwitch
+                              mode={filterMode}
+                              onChange={changeFilterMode}
+                            />
+                            <FiltersEditor
+                              fields={fields}
+                              filters={query.filters}
+                              mode={filterMode}
+                              onChange={(filters) =>
+                                setQuery({ ...query, filters })
+                              }
+                            />
+                          </Section>
+                          <Section icon={<LinkIcon />} title="Related tables">
+                            <JoinsEditor
+                              fields={fields}
+                              tables={tables}
+                              related={related}
+                              joins={query.joins ?? []}
+                              filterMode={filterMode}
+                              onLoad={loadRelated}
+                              onChange={(joins) =>
+                                setQuery({ ...query, joins })
+                              }
+                            />
+                          </Section>
+                          <Section icon={<ListOrderedIcon />} title="Sort">
+                            <SortEditor
+                              fields={fields}
+                              query={query}
+                              onChange={setQuery}
+                            />
+                          </Section>
+                          <Section icon={<SettingsIcon />} title="Options">
+                            <OptionsEditor query={query} onChange={setQuery} />
+                          </Section>
+                        </>
+                      )}
+                    </div>
+                  )
                 }
                 right={
                   <>
@@ -1122,43 +1440,37 @@ function NoAccess({ message }: { message: string | null }) {
   )
 }
 
-function CompanionMissing() {
-  const openPage = () => {
-    const ctx = parseBcUrl(window.location.href)
-    window.location.href = buildBcUrl(ctx, { page: BRIDGE_PAGE_ID })
-  }
+/**
+ * The companion can't be reached: what Business Central said, if it said
+ * anything, and what to install (CompanionSetup, as in the side panel).
+ */
+function CompanionMissing({
+  problem,
+  onRecheck,
+}: {
+  problem: CompanionStatus | null
+  onRecheck: () => void
+}) {
+  const ctx = parseBcUrl(window.location.href)
   return (
-    <div className="flex flex-1 items-center justify-center p-6">
-      <div className="flex max-w-md flex-col items-center gap-3 rounded-xl border bg-card p-6 text-center shadow-xs">
-        <PackageOpenIcon className="size-7 text-primary" />
-        <h2 className="text-sm font-semibold">
-          Querying Business Central needs the companion app
-        </h2>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Business Central has no API for reading any table, so the query
-          builder talks to a small extension, <b>Dynamic Assist Companion</b>,
-          through its <b>Dynamic Assist Query</b> page. It's read-only and runs
-          as you: you only see what your permissions allow.
-        </p>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          If it's installed, open its page to check it loads (you need the DA
-          QUERY permission set). If Business Central says the page doesn't
-          exist, install the app first.
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button size="sm" onClick={openPage}>
-            <DatabaseIcon data-icon="inline-start" />
-            Open the query page
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => window.open(COMPANION_HELP_URL, "_blank")}
-          >
-            <ExternalLinkIcon data-icon="inline-start" />
-            How to install
-          </Button>
-        </div>
+    <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
+      <div className="flex max-w-lg flex-col gap-3 rounded-xl border bg-card p-6 shadow-xs">
+        <CompanionSetup status={problem} ctx={ctx} onRecheck={onRecheck} />
+        {!problem && (
+          <p className="text-center text-xs text-muted-foreground">
+            Installed already?{" "}
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => {
+                window.location.href = buildBcUrl(ctx, { page: BRIDGE_PAGE_ID })
+              }}
+            >
+              Open its query page
+            </button>{" "}
+            to check it loads. You need the DA QUERY permission set.
+          </p>
+        )}
       </div>
     </div>
   )
@@ -1195,9 +1507,8 @@ function ColumnsEditor({
         {columns.map((no) => {
           const f = byNo.get(no)
           return (
-            <Hint label={`${f?.name ?? no} (${no})`}>
+            <Hint key={no} label={`${f?.name ?? no} (${no})`}>
               <span
-                key={no}
                 className={cn(
                   "flex items-center gap-1 rounded-md border bg-accent py-0.5 pr-0.5 pl-1.5 text-[11px] text-accent-foreground",
                   f?.class === "FlowField" && "border-dashed"
@@ -1219,10 +1530,11 @@ function ColumnsEditor({
       </div>
       <SearchSelect
         ariaLabel="Add column"
-        placeholder="Add a field"
+        placeholder="Add fields"
+        several
         items={fieldItems(fields, columns)}
         value={null}
-        onChange={(no) => onChange([...columns, Number(no)])}
+        onAdd={(added) => onChange([...columns, ...added.map(Number)])}
       />
       <div className="flex flex-wrap gap-1 text-[11px]">
         <button

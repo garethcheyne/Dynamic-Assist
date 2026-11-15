@@ -1,8 +1,11 @@
 # Privacy policy
 
-Both stores want a **URL**, not text: publish this page somewhere public and put
-its address in store.json → listing.privacyPolicyUrl. Required whenever the
-extension handles any user data (data-usage.md has a box ticked).
+Both stores want a **URL**, not text. store.json → listing.privacyPolicyUrl
+points at https://www.err403.com/privacy-policy/chrome-extensions, the policy
+for every err403 extension. The text below is the Dynamic Assist detail; the
+website's privacy page (https://dynamicassist.err403.com/privacy/) carries the
+same, plus what the website itself keeps (visit counts and feedback). Keep the
+three in step.
 
 ---
 
@@ -42,8 +45,12 @@ Nothing. Dynamic Assist has no server of its own and sends no data to the develo
 
 History stays until you remove entries or choose Clear on the History page (pinned entries are kept until you unpin them). Uninstalling the extension deletes everything it stored.
 
+## The website
+
+The extension never talks to its website. If you visit https://dynamicassist.err403.com yourself, that site counts visits and keeps the feedback you choose to send; its privacy page says what and for how long.
+
 ## Contact
 
-Questions about this policy: open an issue at https://github.com/garethcheyne/Dynamic-Assist/issues.
+Questions about this policy: the feedback page at https://dynamicassist.err403.com/feedback/, or an issue at https://github.com/garethcheyne/Dynamic-Assist/issues.
 
 Dynamic Assist is an independent project, not affiliated with or endorsed by Microsoft.

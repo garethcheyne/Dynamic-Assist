@@ -110,6 +110,34 @@ export function sqlTokens(text: string): SqlToken[] {
   return tokens
 }
 
+/**
+ * Why this can't run in the query builder, or null. Dataverse's SQL is read-only
+ * anyway; this says so before sending anything, whatever the text is.
+ */
+export function notReadOnly(text: string): string | null {
+  const code = sqlTokens(text).filter((t) => t.kind !== "comment")
+  if (!code.length) return null
+  if (code[0].value !== "SELECT" && code[0].value !== "WITH")
+    return "Only SELECT queries run here: the query builder doesn't change data."
+  const end = code.findIndex((t) => t.text === ";")
+  if (end >= 0 && end < code.length - 1)
+    return "One query at a time: there's more after the semicolon."
+  return null
+}
+
+/** The n of SELECT [DISTINCT] TOP n, or TOP (n). Null when there's no TOP. */
+export function sqlTop(text: string): number | null {
+  const code = sqlTokens(text).filter((t) => t.kind !== "comment")
+  let i = code.findIndex((t) => t.value === "SELECT") + 1
+  if (!i) return null
+  if (code[i]?.value === "DISTINCT") i++
+  if (code[i]?.value !== "TOP") return null
+  i++
+  if (code[i]?.value === "(") i++
+  const n = code[i]?.kind === "number" ? Number(code[i].text) : NaN
+  return Number.isInteger(n) && n > 0 ? n : null
+}
+
 /** Words that are SQL, not names. */
 export const KEYWORDS = new Set(
   (
@@ -164,6 +192,13 @@ export const AGGREGATE_FUNCTIONS = new Set([
   "MIN",
   "MAX",
 ])
+
+/** Words that can follow a half-typed "alias." and never name a column. */
+const NEXT_CLAUSE = new Set(
+  "FROM WHERE GROUP ORDER HAVING UNION JOIN INNER LEFT RIGHT FULL CROSS ON AND OR".split(
+    " "
+  )
+)
 
 const nameOf = (t: SqlToken | undefined) =>
   t && (t.kind === "ident" || (t.kind === "word" && !KEYWORDS.has(t.value)))
@@ -277,7 +312,12 @@ export function readSql(text: string): SqlQuery {
       continue
     const inFunction = [...calls].reverse().find((c) => c !== null) ?? null
     if (next?.kind === "punct" && next.value === ".") {
-      const colTok = code[i + 2]
+      const after = code[i + 2]
+      // SELECT a.| FROM …: half-typed, and FROM isn't the column
+      const colTok =
+        after?.kind === "word" && NEXT_CLAUSE.has(after.value)
+          ? undefined
+          : after
       const column =
         colTok && (colTok.kind === "ident" || colTok.kind === "word")
           ? colTok.kind === "ident"

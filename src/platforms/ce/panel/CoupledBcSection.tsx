@@ -11,7 +11,7 @@ import { CollapsibleSection } from "@/components/collapsible-section"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { HISTORY_KEY, type HistoryEntry } from "@/lib/history"
-import { rememberBcOrg } from "@/lib/product-links"
+import { BC_ORG_KEY, rememberBcOrg, type BcOrgLinks } from "@/lib/product-links"
 import { useStorage } from "@/lib/use-storage"
 import { companionFor } from "@/platforms/bc/companion-channel"
 import { findBcRecords } from "@/platforms/bc/coupling"
@@ -71,11 +71,18 @@ export function CoupledBcSection({
   // undefined while it's being read
   const [source, setSource] = React.useState<CeBcSource | null | undefined>()
   const [via, setVia] = React.useState<ViaDataverse>()
+  /** Companies Business Central has connected to this org, by name */
+  const [orgCompanies, setOrgCompanies] = React.useState<string[]>([])
+  const [links] = useStorage<BcOrgLinks>(BC_ORG_KEY, {})
   React.useEffect(() => {
     let live = true
     run("bcSource").then(
       (s) => live && setSource(s),
       () => live && setSource(null)
+    )
+    run("bcOrgCompanies").then(
+      (names) => live && setOrgCompanies(names),
+      () => undefined
     )
     run("bcCouplings", { crmId: recordId }).then(
       (result) =>
@@ -97,7 +104,11 @@ export function CoupledBcSection({
     }
   }, [run, recordId])
 
-  const companies = bcCompanies(history, source ?? null, tenantId)
+  const companies = bcCompanies(history, source ?? null, tenantId, {
+    origin: new URL(clientUrl).origin,
+    companies: orgCompanies,
+    links: links ?? {},
+  })
   const entry =
     companies.find((e) => e.key === chosen) ??
     companies.find(
@@ -343,19 +354,33 @@ function CompanionFind({
   return (
     <div className="flex flex-col gap-2 text-xs">
       <div className="flex items-center gap-1.5">
-        <select
-          aria-label="Business Central company"
-          value={entry.key}
-          onChange={(e) => onChoose(e.target.value)}
-          className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-1.5 text-xs"
-        >
-          {companies.map((c) => (
-            <option key={c.key} value={c.key}>
-              {c.label ?? c.title}
-              {c.subtitle ? ` · ${c.subtitle}` : ""}
-            </option>
-          ))}
-        </select>
+        {companies.length > 1 ? (
+          <select
+            aria-label="Business Central company"
+            value={entry.key}
+            onChange={(e) => onChoose(e.target.value)}
+            className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-1.5 text-xs"
+          >
+            {companies.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label ?? c.title}
+                {c.subtitle ? ` · ${c.subtitle}` : ""}
+              </option>
+            ))}
+          </select>
+        ) : (
+          // The one company that syncs with this org: nothing to pick
+          <p className="min-w-0 flex-1 truncate text-muted-foreground">
+            In{" "}
+            <b className="text-foreground">
+              {parseBcUrl(entry.url).company ??
+                entry.subtitle ??
+                "the default company"}
+            </b>
+            {parseBcUrl(entry.url).environment &&
+              `, ${parseBcUrl(entry.url).environment}`}
+          </p>
+        )}
         <Button size="sm" disabled={found.state === "busy"} onClick={onFind}>
           {found.state === "busy" && <Loader2Icon className="animate-spin" />}
           Find coupled
@@ -378,7 +403,9 @@ function CompanionFind({
             {found.connectedTo
               ? `connected to ${found.connectedTo}, not this org`
               : "not connected to Dataverse"}
-            . Pick the one that syncs with {orgHost}.
+            {companies.length > 1
+              ? `. Pick the one that syncs with ${orgHost}.`
+              : `. Open the company that syncs with ${orgHost} once, and it's offered here.`}
           </p>
         ) : found.records.length === 0 ? (
           <p className="text-muted-foreground">

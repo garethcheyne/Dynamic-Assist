@@ -3,7 +3,7 @@
  * Renders the store promo tiles from marketing/templates/promo.html, using the
  * panel screenshots from capture.mjs (captured first unless --no-capture).
  *
- *   npm run marketing                 capture, then render
+ *   pnpm marketing                 capture, then render
  *   node marketing/build.mjs --no-capture
  *
  * Writes store/images/promo-marquee-1400x560.png and promo-small-440x280.png.

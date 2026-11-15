@@ -74,6 +74,15 @@ export function lintSql(text: string, meta: EditorMeta | null): Problem[] {
     const next = code[i + 1]
     if (t.kind === "word" && UNSUPPORTED[t.value])
       add(t, "error", UNSUPPORTED[t.value])
+    // Microsoft's page says both that it works and that it doesn't. On a real org
+    // it's accepted, and FETCH's limit is ignored
+    if (t.kind === "word" && t.value === "FETCH" && next?.value === "NEXT")
+      add(
+        t,
+        "warning",
+        "Dataverse accepts this but ignores the limit, and returns up to the row limit: use TOP",
+        `${SQL_DOCS}#page-results`
+      )
     // SELECT * and alias.*
     if (t.kind === "op" && t.value === "*") {
       const inCount = prev?.value === "(" && code[i - 2]?.value === "COUNT"
@@ -149,9 +158,91 @@ export function lintSql(text: string, meta: EditorMeta | null): Problem[] {
       )
   })
 
-  // JOIN … ON must match the two tables' columns with =
+  // No fixed values or sums: WHERE 1=1, revenue > 500 + 125, SELECT 'abc'
+  const isConstant = (t?: SqlToken) =>
+    t?.kind === "number" || t?.kind === "string"
+  const isOperand = (t?: SqlToken) =>
+    isConstant(t) ||
+    t?.kind === "ident" ||
+    (t?.kind === "word" && !KEYWORDS.has(t.value))
   code.forEach((t, i) => {
-    if (t.value !== "ON") return
+    const clause = q.clauses[i]
+    const prev = code[i - 1]
+    const next = code[i + 1]
+    if (
+      clause === "select" &&
+      isConstant(t) &&
+      (prev?.value === "SELECT" ||
+        prev?.value === "DISTINCT" ||
+        (prev?.kind === "punct" && prev.value === ","))
+    )
+      add(
+        t,
+        "error",
+        "Name a column here: selecting a fixed value isn't supported",
+        `${SQL_DOCS}#select-columns`
+      )
+    if (t.kind !== "op") return
+    if (/^[+\-*/%]$/.test(t.value)) {
+      const left = isOperand(prev) || prev?.value === ")"
+      const right = isOperand(next) || next?.value === "("
+      if (left && right && ["select", "where", "on"].includes(clause))
+        add(
+          t,
+          "error",
+          "Sums aren't supported: work the value out and use the result",
+          FILTERS
+        )
+    } else if (
+      (clause === "where" || clause === "on") &&
+      isConstant(prev) &&
+      isConstant(next)
+    )
+      add(
+        { from: prev.from, to: next.to },
+        "error",
+        "Compare a column with a value: comparing two values isn't supported",
+        FILTERS
+      )
+  })
+
+  // JOIN … ON must match the two tables' columns with =
+  const joined = q.tables.filter((t) => t.join !== "from")
+  let joinNo = 0
+  code.forEach((t, i) => {
+    if (t.kind !== "word" || t.value !== "ON") return
+    const table = joined[joinNo++]
+    let end = i + 1
+    let depth = 0
+    for (; end < code.length && q.clauses[end] === "on"; end++) {
+      const x = code[end]
+      if (x.kind === "punct" && x.value === "(") depth++
+      if (x.kind === "punct" && x.value === ")") depth--
+      if (x.kind === "word" && x.value === "OR" && depth === 0)
+        add(
+          x,
+          "error",
+          "Other join conditions go after AND: OR only works inside their brackets",
+          JOINS
+        )
+    }
+    // After the two columns being matched, conditions are on the joined table
+    if (table)
+      q.columns
+        .filter(
+          (c) =>
+            c.clause === "on" && c.index > i && c.index < end && c.qualifier
+        )
+        .slice(2)
+        .filter((c) => tableFor(q, c.qualifier!) !== table)
+        .forEach((c) =>
+          add(
+            c,
+            "error",
+            `Other join conditions go on the joined table, ${table.alias ?? table.table}: put this one in WHERE`,
+            JOINS
+          )
+        )
     const firstOp = code
       .slice(i + 1)
       .find((x) => x.kind === "op" || x.value === "LIKE" || x.value === "IN")

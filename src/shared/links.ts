@@ -28,6 +28,40 @@ export const BC_VIRTUAL_TABLES = {
 
 const REPO = "https://github.com/garethcheyne/Dynamic-Assist"
 
+/** The website: docs, the changelog, feedback and the privacy pages */
+export const SITE = "https://dynamicassist.err403.com"
+export const SITE_LINKS = {
+  home: `${SITE}/`,
+  docs: `${SITE}/docs/`,
+  privacy: `${SITE}/privacy/`,
+  feedback: `${SITE}/feedback/`,
+  /** The companion app's page: what it is, installing it, a missing companion */
+  companionDocs: `${SITE}/docs/companion-app/`,
+  /** The privacy policy for every err403 browser extension, the one the stores link to */
+  policy: "https://www.err403.com/privacy-policy/chrome-extensions",
+}
+
+/**
+ * The website's feedback page with what we already know filled in: the kind,
+ * the product, this version and, after a crash, the message. The extension
+ * sends nothing home, so this is how problems and ideas reach us.
+ */
+export function feedbackUrl(
+  opts: { kind?: "feature" | "issue"; product?: string; details?: string } = {}
+) {
+  const params = new URLSearchParams()
+  if (opts.kind) params.set("kind", opts.kind)
+  if (opts.product) params.set("product", opts.product)
+  // Not in a page's main world, where chrome.runtime doesn't exist
+  const version =
+    typeof chrome !== "undefined"
+      ? chrome.runtime?.getManifest?.().version
+      : undefined
+  if (version) params.set("version", version)
+  if (opts.details) params.set("details", opts.details.slice(0, 500))
+  return `${SITE_LINKS.feedback}?${params}`
+}
+
 /** CHANGELOG.md on the main branch: raw for reading, and the repo's files for its relative links */
 export const CHANGELOG = {
   raw: "https://raw.githubusercontent.com/garethcheyne/Dynamic-Assist/main/CHANGELOG.md",

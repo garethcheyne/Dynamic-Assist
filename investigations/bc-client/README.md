@@ -10,8 +10,11 @@ and reading its bundle. None of this is a public API; re-check after BC updates.
 - **Global**: the bundle assigns its exports to `var DN`. Its chunk loader is
   `globalThis.webpackChunkDN`.
 - **Frames**: the top page is a shell. The client runs in an iframe with `?runinframe=1`, and
-  `DN` there is the one that holds the open forms. The top frame also has a `DN`; it boots its
-  own client only for designer panes (see the page inspector below).
+  `DN` there is the one that holds the open forms (there can be two `runinframe` iframes; use the
+  one where `DN` exists). The top frame has **no** `DN` until a designer pane opens: Ctrl+Alt+F1
+  loads `client.js` into it (see the page inspector below). Re-checked 29 Sep 2026.
+- **Bundles**: `client.js` is 7.4 MB unpacked / 1.8 MB gzip; `logicalclient.js` (0.7 MB) loads next
+  to it. `DN` has 29 exports (plus `__esModule`).
 
 ## `DN` exports
 
@@ -74,10 +77,14 @@ Nested `LogicalForm`s are the page's parts (FactBoxes, subpages), and each has i
 
 - Handler: `handleOpenPageInspectorShortcut` checks `altKey && ctrlKey && !shift && !meta && which === 112`.
   A real key event works (tested through DevTools `Input.dispatchKeyEvent`).
+- The real check (minified): `e.altKey&&e.ctrlKey&&!e.metaKey&&!e.shiftKey&&e.which===nq.DD.F1&&null!=t&&wY.instance.supportsInspector`.
+  It bails out when the client is busy or in a pop-out window, and calls `trySaveValue()` first.
 - It starts the designer at `DesignerLevels.Inspector`, which adds `theme-designer-inspector` to `<body>`.
 - **The top frame loads `client.js` again, gets a new CSRF token and opens a second session**, then
-  shows page **9631** ("Page Inspection") in `.designer-design-pane`, filtered on
-  `Current Form ID = <serverFormHandle>` plus the bookmark. Page **9632** is its Table Fields part.
+  shows page **9631** ("Page Inspection", Base Application) in `.designer-design-pane`, with
+  `filter='Page Info And Fields'.'Current Form Bookmark' IS '<bookmark>' AND 'Page Info And Fields'.'Current Form ID' IS '<serverFormHandle>'`.
+  Parts: **9632** Page Inspection Fields, **9633** Extensions, **9634** Filters. (Verified live 29 Sep 2026:
+  network log shows `client.js`, `POST …/csrf`, session ping.)
   The server reads the live form, so it can show things the client doesn't have: the table name,
   field data types, every table field (not only those on the page) and table extensions.
 - Pane text format: `Item List (31, List)`, `Item (27)`, then per field
@@ -96,7 +103,8 @@ static getRootForm()   // SinglePageNavigation.instance.topMostEntryWithAdapter.
 static findControl(path) // rootForm.findByPath(path)
 ```
 
-Also listed in the settings menu as `clientDevToolId`. It's off in production (`canShow === false`).
+Also has a menu ID `clientDevToolId` next to MySettings/FeatureManagement. `canShow` is `false` on a
+sandbox too: its `Telemetry.deploymentType` is `Prod`, and only DEVELOPMENT/TEST/PPE pass.
 Untested lead: set `deploymentType` in memory and call `toggle()`.
 
 ## Other shortcuts found in the keyboard handler

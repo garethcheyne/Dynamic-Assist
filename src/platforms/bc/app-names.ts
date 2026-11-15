@@ -4,8 +4,10 @@
  * the names come from "NAV App Installed App" (2000000153) through the
  * companion app, cached per environment for a day.
  */
-import { companionFor } from "./companion-channel"
+import { companionFor, hasChannel } from "./companion-channel"
+import { companionStatus } from "./companion-status"
 import type { BcQueryResult } from "./query/bridge"
+import { metaKey } from "./query/meta-cache"
 import type { BcContext } from "./url"
 
 type BcAppName = { name: string; publisher: string; version: string }
@@ -59,15 +61,28 @@ export async function cachedAppNames(
 }
 
 /**
- * Installed apps by ID: from the cache, else the companion (which may open
- * its query page in the background; `onOpening` says so).
+ * Whether the companion is known to be in this environment: its query page is
+ * open, or the query builder has read its tables here before. Nothing else can
+ * tell without opening a tab, which is too much to do on a guess.
+ */
+async function companionKnown(ctx: BcContext) {
+  if (await companionStatus(ctx)) return false
+  const key = metaKey(ctx.tenant, ctx.environment)
+  return !!(await chrome.storage.local.get(key))[key] || hasChannel(ctx)
+}
+
+/**
+ * Installed apps by ID: from the cache, else the companion when it's known to
+ * be here (it may open its query page in the background; `onOpening` says so).
+ * Null when it isn't: fields then show app IDs, and Microsoft's apps by name.
  */
 export async function loadAppNames(
   ctx: BcContext,
   onOpening?: () => void
-): Promise<BcAppNames> {
+): Promise<BcAppNames | null> {
   const cached = await cachedAppNames(ctx)
   if (cached) return cached
+  if (!(await companionKnown(ctx))) return null
   const key = cacheKey(ctx)
 
   const call = await companionFor(ctx, onOpening)

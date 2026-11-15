@@ -10,6 +10,7 @@
  */
 import type { CeDepth, CePermissions, CeRelatedAccess } from "../types"
 
+// "Unknown" isn't reported as a problem: it may not be one
 const has = (d: CeDepth | undefined) => !!d && d !== "None"
 
 export type AccessIssue = { text: string; severity: "blocked" | "limited" }
@@ -65,4 +66,5 @@ export const SHORT_DEPTH: Record<CeDepth, string> = {
   Local: "BU",
   Deep: "BU + child",
   Global: "Org",
+  Unknown: "?",
 }

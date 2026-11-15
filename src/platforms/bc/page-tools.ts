@@ -210,6 +210,9 @@ function applyFieldNames() {
     if (c.typeName === "RepeaterControl") {
       const cells: Control[] = read(() => c.currentRow.children.items) ?? []
       const columns: Control[] = read(() => c.columns.items) ?? []
+      // Two lists on a page can share a caption: this list's headers only
+      const own = document.getElementById(String(read(() => c._id)))
+      const scope = own?.querySelector("th[abbr]") ? own : document
       for (const [i, col] of columns.entries()) {
         const no = read(() => col.tableFieldNo)
         const caption = read(() => col.caption)
@@ -218,7 +221,7 @@ function applyFieldNames() {
           read(() => col.designName),
           caption
         )
-        for (const th of document.querySelectorAll("th[abbr]")) {
+        for (const th of scope.querySelectorAll("th[abbr]")) {
           if (
             th.getAttribute("abbr") !== caption ||
             th.querySelector(`.${BADGE}`)
@@ -284,9 +287,16 @@ function menuTarget(): BcMenuTarget | null {
   const byId = new Map<string, Control>()
   const columns: Control[] = []
   eachControl(form, (c) => {
-    if (c.typeName === "RepeaterControl")
-      columns.push(...((read(() => c.columns.items) as Control[] | null) ?? []))
     const id = read(() => c._id)
+    if (c.typeName === "RepeaterControl") {
+      // Two lists on a page can share a caption: the one you clicked in first
+      const items = (read(() => c.columns.items) as Control[] | null) ?? []
+      const here =
+        typeof id === "string" &&
+        !!id &&
+        !!document.getElementById(id)?.contains(rightClicked)
+      columns[here ? "unshift" : "push"](...items)
+    }
     if (typeof id === "string" && id) byId.set(id, c)
   })
   const field = (c: Control): BcMenuTarget | null => {

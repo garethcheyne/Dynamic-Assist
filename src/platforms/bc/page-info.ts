@@ -114,6 +114,10 @@ const PAGE_TYPES = [
   "UserControlHost",
 ]
 
+/** A page showing one record, not a list of them: a list's row isn't "this record". */
+export const showsOneRecord = (pageType: string) =>
+  !["List", "ListPart", "Worksheet"].includes(pageType)
+
 export function pageTypeName(value: number): string {
   return PAGE_TYPES[value] ?? `Type ${value}`
 }

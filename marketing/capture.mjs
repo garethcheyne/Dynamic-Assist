@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Screenshots of the real side panel (built into dist/) with demo data, for
- * store images, promo tiles and the brochure. Run `npm run build` first.
+ * store images, promo tiles and the brochure. Run `pnpm build` first.
  *
  *   node marketing/capture.mjs            all scenes, light and dark
  *   node marketing/capture.mjs flow-bulk  one scene

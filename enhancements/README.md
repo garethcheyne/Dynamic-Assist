@@ -13,7 +13,9 @@ under the release it ships in.
 | 002 | [Logical-name badges on form fields](2026.10.x/002-ce-form-logical-name-badges.md) | CE | Fixed |
 | 003 | [FetchXML syntax colours](2026.10.x/003-fetchxml-syntax-colours.md) | CE | Fixed |
 | 004 | [Resizable query / results split](2026.10.x/004-query-builder-resizable-split.md) | CE, BC | Fixed |
-| 005 | [FetchXML validation and autocomplete](2026.10.x/005-fetchxml-validation-autocomplete.md) | CE | Built, to test |
-| 006 | [SQL queries in the query builder](2026.10.x/006-dataverse-sql-queries.md) | CE | Built, to test |
-| 007 | [SQL queries in the BC query builder](2026.10.x/007-bc-sql-queries.md) | BC | Planned |
+| 005 | [FetchXML validation and autocomplete](2026.10.x/005-fetchxml-validation-autocomplete.md) | CE | Built, tested |
+| 006 | [SQL queries in the query builder](2026.10.x/006-dataverse-sql-queries.md) | CE | Built, tested |
+| 007 | [SQL queries in the BC query builder](2026.10.x/007-bc-sql-queries.md) | BC | Built, phase 1 |
 | 008 | [Right-click menu](2026.10.x/008-right-click-menu.md) | CE, BC | Built, to test |
+| 009 | [Pick several fields at once](2026.10.x/009-bc-pick-several-fields.md) | CE, BC | Built, tested |
+| 010 | [The same layout in both panels](2026.10.x/010-panel-layout-consistency.md) | CE, BC | Built, tested |

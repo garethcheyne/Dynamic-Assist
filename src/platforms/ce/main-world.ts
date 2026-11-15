@@ -74,12 +74,78 @@ const hasXrm = () =>
 
 const global = () => Xrm.Utility.getGlobalContext()
 const clientUrl = () => global().getClientUrl() as string
+
+/** How long a form gets to show its tabs or fields before it's read anyway */
+const FORM_RENDER_MS = 15_000
+let formWaitingSince = 0
+
+/**
+ * Whether Xrm.Page can be read yet. Reading it while a form is still loading
+ * pins an empty form: its attributes stay at 0 until the page is reloaded, and
+ * the panel lists no fields. So not until this is a record page and its form
+ * has rendered; a form that shows neither tabs nor labels gets read in the end.
+ */
+function formHasRendered() {
+  const input = read(() => Xrm.Utility.getPageContext().input)
+  if (input?.pageType !== "entityrecord") {
+    formWaitingSince = 0
+    return false
+  }
+  if (
+    document.querySelector(
+      '[role=tablist] [role=tab][data-id^="tablist-"], label[id$="-field-label"]'
+    )
+  )
+    return true
+  formWaitingSince ||= Date.now()
+  return Date.now() - formWaitingSince > FORM_RENDER_MS
+}
+
 const formContext = (): any =>
-  read(() => (Xrm.Page?.data?.entity ? Xrm.Page : null))
+  formHasRendered()
+    ? read(() => (Xrm.Page?.data?.entity ? Xrm.Page : null))
+    : null
 const trimId = (id: string | null) =>
   id ? id.replace(/[{}]/g, "").toLowerCase() : null
 
 const modes: CeModes = { godMode: false, logicalNames: false, blurred: false }
+
+/**
+ * Columns a clone can't carry: those Dataverse sets itself (createdby, a rollup,
+ * the IDs of a record's address rows, which make the save fail as duplicates) and
+ * alternate keys, which must be unique. From the table's own definition, as no
+ * list of names would cover custom columns. If it can't be read, the usual ones.
+ */
+async function notForANewRecord(table: string): Promise<string[]> {
+  const usual = [
+    "createdon",
+    "createdby",
+    "modifiedon",
+    "modifiedby",
+    "address1_addressid",
+    "address2_addressid",
+  ]
+  const definition = `${clientUrl()}/api/data/v9.2/EntityDefinitions(LogicalName='${table}')`
+  const read = async (path: string) => {
+    const res = await fetch(`${definition}/${path}`, {
+      headers: { Accept: "application/json" },
+      // A slow org shouldn't hold up the clone: the usual ones will do
+      signal: AbortSignal.timeout(10_000),
+    })
+    return res.ok ? ((await res.json()).value as any[]) : null
+  }
+  const [attributes, keys] = await Promise.all([
+    read("Attributes?$select=LogicalName,IsValidForCreate").catch(() => null),
+    read("Keys?$select=KeyAttributes").catch(() => null),
+  ])
+  return [
+    ...usual,
+    ...(attributes ?? [])
+      .filter((a) => a.IsValidForCreate === false)
+      .map((a) => a.LogicalName as string),
+    ...(keys ?? []).flatMap((k) => k.KeyAttributes as string[]),
+  ]
+}
 
 // --- Things that need a request, fetched once --------------------------------
 
@@ -249,8 +315,12 @@ function readForm(): CeForm | null {
   }
 }
 
+/** God mode lasts as long as the form it unlocked: not onto the next record */
+let godModeUrl = ""
+
 function readState(): CeState | null {
   if (!hasXrm() || !environment) return null
+  if (modes.godMode && location.href !== godModeUrl) modes.godMode = false
   const g = global()
   return {
     environment,
@@ -345,6 +415,7 @@ function makeBadge(
 }
 
 let markObserver: MutationObserver | null = null
+let markTimer: number | undefined
 
 // Grids (list views and subgrids) are Power Apps' grid control: each column
 // header has col-id = the column's logical name, or alias.column for a
@@ -469,6 +540,8 @@ function markFields(on: boolean) {
   document.getElementById(MARK_STYLE_ID)?.remove()
   markObserver?.disconnect()
   markObserver = null
+  // Or a re-render just before this puts them back, with nothing to remove them
+  window.clearTimeout(markTimer)
   document.querySelectorAll(`.${GRID_BADGE}`).forEach((b) => b.remove())
   if (!on) return
 
@@ -480,10 +553,9 @@ function markFields(on: boolean) {
   addFormBadges()
   addGridBadges()
 
-  let timer: number | undefined
   markObserver = new MutationObserver(() => {
-    window.clearTimeout(timer)
-    timer = window.setTimeout(() => {
+    window.clearTimeout(markTimer)
+    markTimer = window.setTimeout(() => {
       addFormBadges()
       addGridBadges()
     }, 150)
@@ -504,9 +576,15 @@ document.addEventListener(
 
 const CHOICE_TYPES = new Set(["optionset", "multiselectoptionset", "boolean"])
 
+/** The System Administrator role's template: the same in every org and language */
+const SYSTEM_ADMINISTRATOR_TEMPLATE = "627090ff-40a3-4053-8790-584edc5be201"
+
 /** The field, column, tab or section last right-clicked, named as Xrm knows it. */
 async function readMenuTarget(): Promise<CeMenuTarget | null> {
-  const found = findMenuTarget(rightClicked)
+  // Used once: the next menu click is for the next right-click
+  const clicked = rightClicked
+  rightClicked = null
+  const found = findMenuTarget(clicked)
   if (!found) return null
   const { target } = found
   const element = found.element as unknown as HTMLElement
@@ -606,6 +684,38 @@ async function readBcSource(): Promise<CeBcSource | null> {
     environment: (row[env] as string).trim(),
     company: typeof name === "string" && name ? name : null,
   }
+}
+
+/**
+ * The Business Central companies connected to this org, by name. Connecting
+ * a company, Business Central creates a business unit for it named
+ * "<company> (<company ID>)"; the Virtual Table app lists its companies in
+ * cdm_company. Either says which companies sync here, so the panel needn't
+ * ask you to pick one.
+ */
+async function readBcOrgCompanies(): Promise<string[]> {
+  const api = `${clientUrl()}/api/data/v9.2/`
+  const get = async (path: string) => {
+    const res = await fetch(api + path, {
+      headers: { Accept: "application/json" },
+    })
+    // 404: no such table (the Virtual Table app isn't installed)
+    return res.ok ? ((await res.json()).value as Record<string, unknown>[]) : []
+  }
+  const names = new Set<string>()
+  const units = await get("businessunits?$select=name").catch(() => [])
+  for (const unit of units) {
+    const match =
+      /^(.+) \(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)$/i.exec(
+        String(unit.name ?? "")
+      )
+    if (match) names.add(match[1].trim())
+  }
+  const companies = await get("cdm_companies?$select=cdm_name").catch(() => [])
+  for (const company of companies)
+    if (typeof company.cdm_name === "string" && company.cdm_name.trim())
+      names.add(company.cdm_name.trim())
+  return [...names]
 }
 
 /**
@@ -786,6 +896,7 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
   errorsConsole: ({ on }) => setConsoleCapture(on),
   menuTarget: () => readMenuTarget(),
   bcSource: () => readBcSource(),
+  bcOrgCompanies: () => readBcOrgCompanies(),
   bcCouplings: ({ crmId }) => readBcCouplings(crmId),
   godMode() {
     const fc = requireForm()
@@ -807,6 +918,7 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
       })
     )
     modes.godMode = true
+    godModeUrl = location.href
     return { controls }
   },
 
@@ -884,7 +996,7 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
     return { filled, skipped }
   },
 
-  clone() {
+  async clone() {
     const fc = requireForm()
     const entity = fc.data.entity
     const skip = new Set([
@@ -892,6 +1004,7 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
       "statuscode",
       "ownerid",
       entity.getEntityName() + "id",
+      ...(await notForANewRecord(entity.getEntityName())),
     ])
     const params: Record<string, unknown> = {}
     let fields = 0
@@ -928,15 +1041,36 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
       }
       fields++
     })
-    void Xrm.Navigation.openForm(
-      { entityName: entity.getEntityName(), openInNewWindow: false },
-      params
-    )
+    // It settles when the form opens, or never if Dynamics 365 first asks about
+    // unsaved changes: long enough to hear a refusal, no longer
+    const refused = await Promise.race([
+      Promise.resolve(
+        Xrm.Navigation.openForm(
+          { entityName: entity.getEntityName(), openInNewWindow: false },
+          params
+        )
+      ).then(
+        () => null,
+        (error: unknown) => error
+      ),
+      new Promise<null>((done) => window.setTimeout(() => done(null), 3000)),
+    ])
+    if (refused)
+      throw refused instanceof Error
+        ? refused
+        : new Error(read(() => (refused as any).message) ?? String(refused))
     return { fields }
   },
 
   async refresh() {
-    await requireForm().data.refresh(false)
+    const form = requireForm()
+    // With unsaved edits Dynamics 365 asks what to do, and this doesn't settle
+    // until you answer: the panel says so instead of waiting on it
+    const asked = form.data.entity.getIsDirty()
+    const done = form.data.refresh(false)
+    if (asked) void Promise.resolve(done).catch(() => undefined)
+    else await done
+    return { asked }
   },
 
   async save() {
@@ -1060,7 +1194,14 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
         async (p) => {
           const r = await get(
             `systemusers(${uid})/Microsoft.Dynamics.CRM.RetrieveUserPrivilegeByPrivilegeName(PrivilegeName='${p.Name}')`
-          ).catch(() => ({ RolePrivileges: [] }))
+          ).catch(() => null)
+          // A failed lookup isn't "None": that would say they can't
+          if (!r)
+            return {
+              type: p.PrivilegeType,
+              name: p.Name,
+              depth: "Unknown" as CeDepth,
+            }
           // Several roles can grant it; the widest level wins
           const depth = (
             r.RolePrivileges as { Depth: CeDepth }[]
@@ -1128,16 +1269,28 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
 
     // The user, their business unit, teams and roles (for System Administrator)
     const user = await get(
-      `systemusers(${uid})?$select=fullname,_businessunitid_value&$expand=teammembership_association($select=name,teamid),systemuserroles_association($select=name,roleid)`
+      `systemusers(${uid})?$select=fullname,_businessunitid_value&$expand=teammembership_association($select=name,teamid),systemuserroles_association($select=name,roleid,_roletemplateid_value)`
     )
     const teamIds = new Set(
       (user.teammembership_association as { teamid: string }[]).map((t) =>
         t.teamid.toLowerCase()
       )
     )
-    const systemAdministrator = (
-      user.systemuserroles_association as { name: string }[]
-    ).some((r) => r.name === "System Administrator")
+    // By the role's template: its name is translated, and it can come via a team
+    type Role = { _roletemplateid_value?: string | null }
+    const isAdminRole = (r: Role) =>
+      r._roletemplateid_value?.toLowerCase() === SYSTEM_ADMINISTRATOR_TEMPLATE
+    const systemAdministrator =
+      (user.systemuserroles_association as Role[]).some(isAdminRole) ||
+      (
+        await Promise.all(
+          [...teamIds].map((team) =>
+            get(
+              `teams(${team})/teamroles_association?$select=_roletemplateid_value`
+            ).catch(() => ({ value: [] }))
+          )
+        )
+      ).some((r) => (r.value as Role[]).some(isAdminRole))
 
     // Levels on one table, as the widest any of the user's roles grants
     const tableLevels = async (table: string) => {
@@ -1153,7 +1306,11 @@ const handlers: { [C in CeCommand]: Handler<C> } = {
           .map(async (p) => {
             const r = await get(
               `systemusers(${uid})/Microsoft.Dynamics.CRM.RetrieveUserPrivilegeByPrivilegeName(PrivilegeName='${p.Name}')`
-            ).catch(() => ({ RolePrivileges: [] }))
+            ).catch(() => null)
+            if (!r) {
+              levels[p.PrivilegeType] = "Unknown"
+              return
+            }
             levels[p.PrivilegeType] = (
               r.RolePrivileges as { Depth: CeDepth }[]
             ).reduce<CeDepth>(

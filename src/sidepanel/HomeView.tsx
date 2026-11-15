@@ -10,6 +10,7 @@ import { MS_ICONS } from "@/assets/brand/ms"
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Hint, HintBody } from "@/components/hint"
 import { HISTORY_KEY, type HistoryEntry } from "@/lib/history"
+import { feedbackUrl } from "@/shared/links"
 import { useStorage } from "@/lib/use-storage"
 
 import { HistoryView } from "./HistoryView"
@@ -187,7 +188,7 @@ export function HomeView({ onHelp }: { onHelp: () => void }) {
           Help
         </button>
         <a
-          href="https://github.com/garethcheyne/Dynamic-Assist/issues"
+          href={feedbackUrl()}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center gap-1 font-medium text-primary hover:underline"

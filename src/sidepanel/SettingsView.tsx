@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useNotify } from "@/lib/copy"
 import { ago } from "@/lib/time"
 import { CHANNEL_TABS_KEY } from "@/platforms/bc/messages"
+import { channelTabs } from "@/platforms/bc/companion-channel"
 import { BRIDGE_PAGE_ID } from "@/platforms/bc/query/bridge"
 import {
   clearMeta,
@@ -21,14 +22,6 @@ const APP_NAMES_PREFIX = "bc:apps:"
 async function listAppNameCaches(): Promise<string[]> {
   const all = await chrome.storage.local.get(null)
   return Object.keys(all).filter((k) => k.startsWith(APP_NAMES_PREFIX))
-}
-
-/** Tabs showing the companion's query page (page 77500), in any company */
-async function queryPageTabs() {
-  const tabs = await chrome.tabs.query({
-    url: "https://businesscentral.dynamics.com/*",
-  })
-  return tabs.filter((t) => t.url && parseBcUrl(t.url).page === BRIDGE_PAGE_ID)
 }
 
 /**
@@ -47,7 +40,7 @@ export function SettingsView() {
   const reload = React.useCallback(() => setVersion((v) => v + 1), [])
   React.useEffect(() => {
     let live = true
-    void Promise.all([listMeta(), listAppNameCaches(), queryPageTabs()]).then(
+    void Promise.all([listMeta(), listAppNameCaches(), channelTabs()]).then(
       ([m, a, p]) => {
         if (!live) return
         setMeta(m)
@@ -60,12 +53,25 @@ export function SettingsView() {
     }
   }, [version])
   React.useEffect(() => {
-    // Other views (the builder) change the cache while this is open
+    // Other views (the builder) change the cache while this is open, and
+    // query pages open and close in other tabs
     const onChange = (_: unknown, area: string) => {
-      if (area === "local") reload()
+      if (area === "local" || area === "session") reload()
+    }
+    const onUpdated = (
+      _: number,
+      change: { url?: string; status?: string }
+    ) => {
+      if (change.url || change.status === "complete") reload()
     }
     chrome.storage.onChanged.addListener(onChange)
-    return () => chrome.storage.onChanged.removeListener(onChange)
+    chrome.tabs.onRemoved.addListener(reload)
+    chrome.tabs.onUpdated.addListener(onUpdated)
+    return () => {
+      chrome.storage.onChanged.removeListener(onChange)
+      chrome.tabs.onRemoved.removeListener(reload)
+      chrome.tabs.onUpdated.removeListener(onUpdated)
+    }
   }, [reload])
 
   const clear = async (keys: string[], what: string) => {
@@ -181,7 +187,9 @@ export function SettingsView() {
           disabled={pages.length === 0}
           onClick={() => void closePages()}
         >
-          Close {pages.length || ""} query page{pages.length === 1 ? "" : "s"}
+          {pages.length
+            ? `Close ${pages.length} query page${pages.length === 1 ? "" : "s"}`
+            : "Close query pages"}
         </Button>
       </CollapsibleSection>
     </div>

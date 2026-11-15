@@ -114,8 +114,9 @@ export function mockScript(scenario) {
   const emitState = () => setTimeout(() => {
     if (SCENARIO === "bc")
       listeners.forEach((f) => f({ type: "bc:state", state: { url: URL_, isTop: false, page: BC.page } }, { tab: { id: 1 }, frameId: 5 }))
+    // A copy each time, so a change (Logical names, Blur data) reads as new state
     if (SCENARIO === "ce")
-      listeners.forEach((f) => f({ type: "ce:state", state: CE.state }, { tab: { id: 1 }, frameId: 0 }))
+      listeners.forEach((f) => f({ type: "ce:state", state: { ...CE.state, modes: { ...CE.state.modes } } }, { tab: { id: 1 }, frameId: 0 }))
   }, 30)
 
   window.chrome = {
@@ -137,6 +138,17 @@ export function mockScript(scenario) {
           if (msg.command === "permissions") return { ok: true, result: { user: msg.args?.userId === "u2" ? { id: "u2", name: "Megan Bowen" } : { id: "u1", name: "Alex Wilber" }, entityName: "account", privileges: [["Create","Global"],["Read","Global"],["Write","Deep"],["Delete","Local"],["Append","Global"],["AppendTo","Global"],["Assign","Basic"],["Share","None"]].map(([type, depth]) => ({ type, depth, name: "prv" + type + "Account" })), recordAccess: ["ReadAccess","WriteAccess","AppendAccess","AppendToAccess","CreateAccess","DeleteAccess"] } }
           if (msg.command === "accessDetail") return { ok: true, result: {"user":{"id":"u1","name":"Alex Wilber"},"related":[{"kind":"lookup","control":"primarycontactid","label":"Primary Contact","table":"contact","tableLabel":"Contact","read":"Global","create":"Global","append":"Global","appendTo":"Global"},{"kind":"lookup","control":"parentaccountid","label":"Parent Account","table":"account","tableLabel":"Account","read":"Global","create":"Global","append":"Global","appendTo":"Global"},{"kind":"lookup","control":"transactioncurrencyid","label":"Currency","table":"transactioncurrency","tableLabel":"Currency","read":"Global","create":"None","append":"None","appendTo":"None"},{"kind":"subgrid","control":"Contacts","label":"Contacts","table":"contact","tableLabel":"Contact","read":"Global","create":"Global","append":"Global","appendTo":"Global"},{"kind":"subgrid","control":"Opportunities","label":"Opportunities","table":"opportunity","tableLabel":"Opportunity","read":"Local","create":"None","append":"Basic","appendTo":"Basic"}],"secured":[{"column":"creditlimit","label":"Credit Limit","read":true,"update":false,"create":false},{"column":"creditonhold","label":"Credit Hold","read":true,"update":true,"create":true}],"systemAdministrator":false,"record":{"owner":{"name":"Megan Bowen","kind":"user","isUser":false,"isUsersTeam":false},"shares":[{"principal":"Sales Leads","kind":"team","rights":["ReadAccess","WriteAccess"]}],"userBusinessUnit":"Contoso","recordBusinessUnit":"Contoso Sales","sameBusinessUnit":false}} }
           if (msg.command === "userRoles") { const megan = msg.args?.userId === "u2"; return { ok: true, result: { user: megan ? { id: "u2", name: "Megan Bowen", businessUnit: "Contoso Sales" } : { id: "u1", name: "Alex Wilber", businessUnit: "Contoso" }, direct: megan ? ["Basic User", "Salesperson"] : ["Basic User", "Salesperson", "System Customizer"], viaTeams: megan ? [{ role: "Sales Manager", team: "Sales Leads" }] : [{ role: "Marketing Professional", team: "Marketing" }] } } }
+          // The org is set up with Business Central, and this account is coupled to a customer
+          if (msg.command === "bcSource") return { ok: true, result: { environment: "Production", company: "CRONUS NZ" } }
+          if (msg.command === "bcCouplings") return { ok: true, result: { company: "CRONUS NZ", records: [{ tableId: 18, tableCaption: "Customer", pageId: 21, filter: "'No.' IS '10000'", key: "10000", exists: true, skipped: false }] } }
+          // Form tools that change the page: kept in the state, and announced as
+          // a "da:ce" event for a stage to show (videos.mjs)
+          if (msg.command === "logicalNames" || msg.command === "blur") {
+            CE.state.modes[msg.command === "blur" ? "blurred" : "logicalNames"] = !!msg.args?.on
+            dispatchEvent(new CustomEvent("da:ce", { detail: { command: msg.command, on: !!msg.args?.on } }))
+            emitState()
+            return { ok: true, result: null }
+          }
           if (msg.command === "searchUsers") return { ok: true, result: [{ id: "u2", name: "Megan Bowen", domainName: "megan@contoso.com" }, { id: "u3", name: "Nestor Wilke", domainName: "nestor@contoso.com" }].filter((u) => (u.name + u.domainName).toLowerCase().includes(String(msg.args?.query ?? "").toLowerCase())) }
           return { ok: true, result: null }
         }
@@ -166,7 +178,25 @@ export function mockScript(scenario) {
     const at = href.indexOf("/api/data/v9.2/")
     if (at < 0) return realFetch(input, init)
     const path = decodeURIComponent(href.slice(at + 15))
-    if ((init?.method ?? "GET") !== "GET") return new Response(null, { status: 204 })
+    const method = init?.method ?? "GET"
+    // Turning a flow on or off: it stays that way, takes a moment as the real
+    // service does, and a flow whose connection reference has no connection
+    // won't turn on. Each change is announced as a "da:flow" event (videos.mjs)
+    if (method === "PATCH" && path.startsWith("workflows(")) {
+      const wf = DV.workflows.find((w) => path.startsWith("workflows(" + w.workflowid + ")"))
+      const body = JSON.parse(init.body || "{}")
+      await new Promise((r) => setTimeout(r, 350 + Math.random() * 500))
+      if (!wf) return new Response(null, { status: 204 })
+      if (body.statecode === 1 && /SharePoint/.test(wf.name))
+        return new Response(JSON.stringify({ error: { code: "0x80060467", message: "ConnectionAuthorizationFailed: The connection reference 'SharePoint Online' has no connection. Add a connection to it, then turn the flow on." } }), { status: 400, headers: { "content-type": "application/json" } })
+      wf.statecode = body.statecode
+      wf.statuscode = body.statuscode
+      wf["statuscode@OData.Community.Display.V1.FormattedValue"] = body.statecode === 1 ? "Activated" : "Draft"
+      wf.modifiedon = new Date().toISOString()
+      dispatchEvent(new CustomEvent("da:flow", { detail: { name: wf.name, on: body.statecode === 1 } }))
+      return new Response(null, { status: 204 })
+    }
+    if (method !== "GET") return new Response(null, { status: 204 })
     if (path.startsWith("RetrieveCurrentOrganization")) return json({ Detail: { EnvironmentId: FLOW.environmentId } })
     if (path.startsWith("solutioncomponents")) return json({ value: DV.components.map((objectid) => ({ objectid })) })
     if (path.startsWith("workflows")) {

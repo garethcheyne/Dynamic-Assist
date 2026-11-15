@@ -33,8 +33,14 @@ public/scripts/
 tests/results/*
 !tests/results/README.md
 
-# Rendered marketing screenshots (regenerate with npm run marketing)
+# Rendered marketing screenshots (regenerate with pnpm marketing)
 marketing/out/
 
 # Copilot usage logs (VS Code writes them into any .vscode folder)
 **/.vscode/copilot-usage-*.json
+
+# Your tenant, environment and org: the browser tests read them from here, and
+# the repositories are public. .env.example shows what goes in it.
+.env
+.env.*
+!.env.example

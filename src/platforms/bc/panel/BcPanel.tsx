@@ -27,7 +27,9 @@ import { PageView } from "./PageView"
 import { PartsView } from "./PartsView"
 import { SessionView } from "./SessionView"
 import { ToolsView } from "./ToolsView"
+import { COMPANION_OFF, useCompanionStatus } from "./use-companion-status"
 import { Hint } from "@/components/hint"
+import { feedbackUrl } from "@/shared/links"
 
 type Tab = "page" | "parts" | "tools" | "goto" | "session"
 
@@ -37,13 +39,21 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
   const [current, setCurrent] = React.useState<Tab>("page")
   const notify = useNotify()
   const { busy, act } = useAction()
-  const openQuery = (tableId?: number) =>
-    openBcQuery(tab, { app: "bc", tableId }).catch(() =>
+  // Business Central said the companion's page can't open here: its tools
+  // are off, and the Tools tab says what to install
+  const [companion, recheckCompanion] = useCompanionStatus(ctx)
+  const openQuery = (tableId?: number) => {
+    if (companion) {
+      setCurrent("tools")
+      return
+    }
+    void openBcQuery(tab, { app: "bc", tableId }).catch(() =>
       notify(
         "Couldn't open the query builder. Reload the tab and try again.",
         "error"
       )
     )
+  }
 
   // Name this environment in History once the client has told us about it
   const envName = page?.environment.name
@@ -86,7 +96,8 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
         ctx={ctx}
         page={page}
         onRefresh={refresh}
-        onQuery={() => void openQuery(page?.form.tableId ?? undefined)}
+        onQuery={() => openQuery(page?.form.tableId ?? undefined)}
+        queryOff={!!companion}
       />
       <Tabs
         value={current}
@@ -128,7 +139,9 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
             <PageView
               ctx={ctx}
               form={page.form}
-              onQuery={(id) => void openQuery(id)}
+              session={page.session}
+              onQuery={(id) => openQuery(id)}
+              queryOff={!!companion}
             />
           ) : (
             <Waiting connected={connected} unsupported={unsupported} />
@@ -149,6 +162,8 @@ export function BcPanel({ tab }: { tab: chrome.tabs.Tab }) {
             act={act}
             busy={busy}
             onRefresh={refresh}
+            companion={companion}
+            onRecheckCompanion={recheckCompanion}
           />
         </TabsContent>
         <TabsContent value="goto" className="min-h-0 overflow-y-auto p-3">
@@ -168,11 +183,14 @@ function EnvironmentBar({
   page,
   onRefresh,
   onQuery,
+  queryOff,
 }: {
   ctx: BcContext
   page: BcPageInfo | null
   onRefresh: () => void
   onQuery: () => void
+  /** The companion isn't available here: the button only explains */
+  queryOff: boolean
 }) {
   const type = page?.environment.type
   const company = page?.session?.company?.name ?? ctx.company
@@ -203,9 +221,14 @@ function EnvironmentBar({
       <Button
         variant="ghost"
         size="icon-xs"
-        className="ml-auto"
-        title="Query builder (needs the companion app)"
+        className={cn("ml-auto", queryOff && "opacity-50")}
+        title={
+          queryOff
+            ? `Query builder: ${COMPANION_OFF}`
+            : "Query builder (needs the companion app)"
+        }
         aria-label="Query builder"
+        aria-disabled={queryOff || undefined}
         onClick={onQuery}
       >
         <DatabaseIcon />
@@ -255,14 +278,18 @@ function Waiting({
           builder, Go to and Session still work.
         </p>
         <p className="text-muted-foreground">
-          Check for an extension update, or let us know on{" "}
+          Check for an extension update, or{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="https://github.com/garethcheyne/Dynamic-Assist/issues"
+            href={feedbackUrl({
+              kind: "issue",
+              product: "bc",
+              details: "Business Central changed how its pages work: the page and parts details are paused.",
+            })}
             target="_blank"
             rel="noreferrer"
           >
-            GitHub
+            let us know
           </a>
           .
         </p>

@@ -29,7 +29,7 @@ The query builder and "All fields" need the optional, open-source Dynamic Assist
 1. Open an account record.
 2. Record tab: the table, record ID, form and fields appear. Expand "All columns" and click "Load columns".
 3. Record tab, Access: your privileges on the account table and your rights on this record. Pick another user to see theirs, or Compare two users.
-4. Tools tab: click "Logical names"; the form's labels change to logical names with a copy button beside each. Click it again to restore them.
+4. Tools tab: click "Logical names"; each field on the form gets its logical name beside its label, click one to copy it. Click the tile again to remove them.
 5. Tools tab: click "Query builder"; a query window opens over the page. Pick a few columns and click Run.
 6. Go to tab: type "cont" in the table search and pick Contact, then click List.
 

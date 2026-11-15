@@ -54,5 +54,7 @@ Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Powe
 Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Microsoft product names and icons are trademarks of the Microsoft group of companies; the icons appear in the panel only to show which product a page or link belongs to.
 
 Full feature list and more: https://www.err403.com/apps/dynamic-assist
-Source code and support: https://github.com/garethcheyne/Dynamic-Assist
+Website and docs: https://dynamicassist.err403.com
+Ideas, problems and feedback: https://dynamicassist.err403.com/feedback/
+Source code: https://github.com/garethcheyne/Dynamic-Assist
 Business Central companion app (for the query builder), latest release: https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon/releases/latest

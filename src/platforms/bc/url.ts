@@ -1,3 +1,4 @@
+import { showsOneRecord } from "./page-info"
 import { GUID } from "@/shared/links"
 
 /**
@@ -56,6 +57,23 @@ export function buildBcUrl(
     .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
     .join("&")
   return `${ctx.origin}/${path}${path ? "/" : ""}${query ? `?${query}` : ""}`
+}
+
+/**
+ * A link to this record, for someone else to open: it names the company even
+ * when this tab's URL doesn't, or they'd land in their own default company.
+ */
+export function bcRecordLink(
+  ctx: BcContext,
+  form: { pageId: number; pageType?: string; bookmark?: string | null },
+  session?: { company?: { name?: string | null } | null } | null
+) {
+  if (!form.bookmark || (form.pageType && !showsOneRecord(form.pageType)))
+    return null
+  return buildBcUrl(
+    { ...ctx, company: ctx.company ?? session?.company?.name ?? null },
+    { page: form.pageId, bookmark: form.bookmark }
+  )
 }
 
 /**

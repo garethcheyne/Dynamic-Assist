@@ -35,6 +35,14 @@ describe("completeSql", () => {
     expect(labels("SELECT a.na| FROM account a")).toContain("name")
   })
 
+  it("suggests columns after a dot with the FROM still to come after it", () => {
+    expect(labels("SELECT a.| FROM account a")).toContain("name")
+    expect(labels("SELECT a.|\nFROM account a")).toContain("name")
+    expect(
+      labels("SELECT name FROM account a WHERE a.| AND a.name = 'x'")
+    ).toContain("name")
+  })
+
   it("suggests columns of the query's tables, qualified when there are several", () => {
     expect(labels("SELECT | FROM account")).toContain("name")
     expect(labels("SELECT | FROM account")).toContain("COUNT")

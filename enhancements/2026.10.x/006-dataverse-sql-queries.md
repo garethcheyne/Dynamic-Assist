@@ -3,7 +3,7 @@
 **Reported:** 2026-09-29, against 2026.9.25
 **Target release:** 2026.10.x or later (shares its editor with 005)
 **Platform:** Dynamics 365 / Dataverse (CE), query builder
-**Status:** Built on `release/2026.10.x` (steps 1–4), to test
+**Status:** Built on `release/2026.10.x` (steps 1–4) and tested on a real org. Step 5 (SQL → Builder) isn't built
 
 ## Request
 
@@ -56,7 +56,7 @@ Accept: application/json
 - **Paging:** the docs contradict themselves. The feature table lists
   `TOP N (0–5000)` and `OFFSET … FETCH`, while the paging section says neither
   works and to use `Prefer: odata.maxpagesize` with `@odata.nextLink`. Plan on
-  `maxpagesize`, and test `TOP` on the dev org (yourdevorg).
+  `maxpagesize`, and test `TOP` on the dev org.
 
 ## Plan
 
@@ -76,7 +76,7 @@ Running a query:
 3. Show aliased columns under their alias, with the source column in the header
    tooltip, from the `AttributeName` annotation.
 
-Business Central has no equivalent, so SQL is CE only.
+Business Central has no equivalent, so its SQL is translated instead (see 007).
 
 ### 2. Editor: CodeMirror 6, shared with 005
 
@@ -183,9 +183,28 @@ Steps 1–4, on branch `release/2026.10.x`. Step 5 (SQL → Builder) isn't built
    Dataverse SQL docs, not ported from SQL 4 CDS, so no SQL 4 CDS code is in
    the build. FetchXml2Sql.cs is still the reference if it needs to grow.
 
-Tests: `tests/unit/query-builder/{sql-lint,sql-complete,to-sql}.test.ts`.
+Tests: `tests/unit/query-builder/{sql-lint,sql-complete,to-sql,sql-docs-examples}.test.ts`.
 
-### To test (dev org yourdevorg)
+### Checked against Microsoft's page and the dev org (2026-11-07)
+
+Every example on [the page](https://learn.microsoft.com/power-apps/developer/data-platform/webapi/query/sql)
+is now a unit test, both what it says works and what it says doesn't. Read-only queries on
+the dev org settled what the page leaves open:
+
+| Query | What the org did |
+| --- | --- |
+| `TOP 2` | Works: 2 rows, though it still offers a next page, so `runSql` stops at TOP |
+| `OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY` | Accepted, limit ignored: a full page came back. The page says both yes and no. The checker now warns |
+| `ORDER BY name ASC, createdon DESC` | Accepted, and returned rows (their order wasn't checked) |
+| `WHERE name LIKE 'A%' OR telephone1 IS NOT NULL` | Accepted, and returned rows |
+| `a AND b OR c`, no brackets | Accepted, and returned rows (which order it applied wasn't checked) |
+| Top-level `OR` in `ON`, `ON` condition on the main table, `WHERE 1=1`, `500.0 + 125.0`, `SELECT 'abc'` | All refused with a 400, as the checker now says before sending |
+
+So OR across columns and mixed sort directions are limits of Business Central only. For
+step 5, reading SQL into a FetchXML query and handing it to `fromFetchXml` would reuse
+what already sorts out what the builder can't show: it warns, and the query stays as text.
+
+### To test (dev org)
 
 - [ ] Builder → SQL: the builder's query appears as SQL; **Run** returns the
       same rows as FetchXML.

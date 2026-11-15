@@ -61,7 +61,7 @@ function findSymbols(): string | null {
     ),
     path.resolve(
       __dirname,
-      "../../../../../DYN365_Business_Central/BusinessCentral-Extension-Template/.alpackages"
+      "../../../../../../DYN365_Business_Central/BusinessCentral-Extension-Template/.alpackages"
     ),
   ].filter(Boolean) as string[]
   return (

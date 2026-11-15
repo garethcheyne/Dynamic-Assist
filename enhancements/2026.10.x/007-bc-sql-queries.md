@@ -3,7 +3,7 @@
 **Reported:** 2026-09-29, against 2026.9.25
 **Target release:** after 2026.10.x (phase 1 needs no companion update)
 **Platform:** Business Central, query builder (companion app)
-**Status:** Planned
+**Status:** Phase 1 built and tested in a real browser (see "Built" at the end)
 **Builds on:** [005](005-fetchxml-validation-autocomplete.md) and [006](006-dataverse-sql-queries.md): the same editor, SQL reader, suggestion and check plumbing
 
 ## Request
@@ -99,3 +99,45 @@ Keep it on the watch list, not the plan.
    BC's case-sensitive default? Proposal: case-insensitive, with a note in the check.
 3. Do we allow `FROM [18]` (table numbers) and `[1]`-style field numbers? Handy for BC
    developers; harmless.
+
+## Built (2026-11-06)
+
+Phase 1, in `src/platforms/bc/query/sql/`, with the open questions settled: names match
+by number, then name, then caption; `LIKE` ignores case (`@`); table and field numbers
+are allowed.
+
+**Added to the plan, at the user's request: SQL-like functions in the suggestions, that
+compile to a proper query.**
+
+| SQL | Becomes |
+| --- | --- |
+| `TODAY()`, `GETDATE()`, `NOW()` | BC's `t` |
+| `WORKDATE()` | BC's `w` |
+| `DATEADD(day, -30, TODAY())` | A date, worked out when it runs. day, week, month, year |
+| `YEAR(field) = 2025` | `2025-01-01..2025-12-31` |
+| `UPPER(field)`, `LOWER(field)` | Ignores case (`@`) |
+| `COUNT(*)` alone | The companion's own count |
+| `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `GROUP BY` | Worked out in the browser, from every matching row a page at a time, up to 50,000; over that it says the totals are short (`aggregate.ts`). So phase 2's aggregates aren't needed for this, only for tables far bigger than that |
+
+**Changed from the plan:** checks are the translator's own problems, so what's flagged and
+what runs can't disagree. Going back to Builder loads what the SQL compiled to, unless it
+adds rows up, which the builder can't show. Still not built: OR across different fields
+and mixed sort directions on plain queries (totals can already mix directions, because
+they're sorted in the browser).
+
+Tests: `tests/unit/bc-query/bc-sql.test.ts` and the browser area `bc-sql`.
+
+## Checked against the code and Microsoft's docs (2026-11-07)
+
+- **Fixed: AND and OR mixed without brackets.** `a AND b OR c` means `(a AND b) OR c` in
+  SQL, but it ran as `a AND (b OR c)`: different rows, with no warning. It's now an error
+  that asks for brackets. `(a OR b) AND c` on one field's ORs still runs.
+- **Cross-field OR is possible, with limits the plan didn't list.** `FilterGroup(-1)`
+  matches records meeting at least one filter in the group, and `RecordRef` has it. But
+  [Microsoft's docs](https://learn.microsoft.com/dynamics365/business-central/dev-itpro/developer/methods-auto/record/record-filtergroup-method#remarks)
+  say group -1 doesn't filter on FlowFields, and there's one such group, so
+  `(a OR b) AND (c OR d)` can't be written. The companion doesn't use it yet.
+- **Mixed sort doesn't need the companion, and the companion can't do it cheaply.** The
+  companion sorts through `SetView`, whose `ORDER()` has one direction for the whole
+  sort, so phase 2's "per-field sort direction" would mean reading and sorting in AL. The
+  browser can do that the way totals do, up to 50,000 rows, with no companion release.

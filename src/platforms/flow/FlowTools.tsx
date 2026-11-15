@@ -30,6 +30,7 @@ import {
   listFlows,
   listRuns,
   listSolutions,
+  flowState,
   setFlowOn,
   type ConnectionReference,
   type EnvVariable,
@@ -171,10 +172,12 @@ export function FlowDetails({
                     "font-medium",
                     f.on
                       ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-muted-foreground"
+                      : f.suspended
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-muted-foreground"
                   )}
                 >
-                  {f.on ? "On" : "Off"} · {f.status}
+                  {flowState(f)} · {f.status}
                 </span>
               }
             />
@@ -232,6 +235,7 @@ export function FlowDetails({
               variant="outline"
               onClick={download}
               title="Download the definition as a .json file"
+              aria-label="Download the definition as a .json file"
             >
               <DownloadIcon />
             </Button>
@@ -402,11 +406,12 @@ export function FlowsManager({
   const [outcomes, setOutcomes] = React.useState<Record<string, Outcome>>({})
 
   const all = flows.data ?? []
-  const offCount = all.filter((f) => !f.on).length
+  const isOff = (f: Flow) => !f.on && !f.suspended
+  const offCount = all.filter(isOff).length
   const q = search.trim().toLowerCase()
   const visible = all.filter(
     (f) =>
-      (show === "all" || !f.on || outcomes[f.workflowid]) &&
+      (show === "all" || isOff(f) || outcomes[f.workflowid]) &&
       (!q || f.name.toLowerCase().includes(q))
   )
   const chosen = all.filter((f) => picked.has(f.workflowid))
@@ -494,7 +499,9 @@ export function FlowsManager({
           {visible.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               {show === "off" && !q
-                ? "Every flow here is on."
+                ? all.some((f) => f.suspended)
+                  ? "No flows are off. Suspended flows are under All."
+                  : "Every flow here is on."
                 : "No flows match."}
             </p>
           ) : (
@@ -534,11 +541,15 @@ export function FlowsManager({
                         checked={picked.has(f.workflowid)}
                         onChange={() => togglePick(f.workflowid)}
                       />
-                      <Hint label={f.on ? "On" : "Off"}>
+                      <Hint label={flowState(f)}>
                         <span
                           className={cn(
                             "size-1.5 shrink-0 rounded-full",
-                            f.on ? "bg-emerald-500" : "bg-muted-foreground/40"
+                            f.on
+                              ? "bg-emerald-500"
+                              : f.suspended
+                                ? "bg-amber-500"
+                                : "bg-muted-foreground/40"
                           )}
                         />
                       </Hint>

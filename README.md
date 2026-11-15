@@ -2,16 +2,20 @@
 
 Admin and developer tools for Business Central, Dynamics 365, Power Apps and Power Automate, in one side panel. Not affiliated with Microsoft.
 
+- **Website and docs:** [dynamicassist.err403.com](https://dynamicassist.err403.com)
+- **Ideas and problems:** the [feedback page](https://dynamicassist.err403.com/feedback/). The extension sends nothing home, so this is how they reach us.
+- **Get it:** [Chrome Web Store](https://chromewebstore.google.com/detail/dynamic-assist/kdjmihadioacnbabibfljbpbkclcjhbf) or [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dynamic-assist/mnfokldcehmjefajddlheodgfekhmkhe)
+
 A Manifest V3 extension for Chrome and Edge, built with Vite, React, TypeScript, Tailwind CSS and [shadcn/ui](https://ui.shadcn.com). Created with [extension-publisher](https://github.com/garethcheyne/extension-publisher)'s `New-Extension.ps1`.
 
 ## Develop
 
 ```powershell
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick `dist/`. While `npm run dev` runs, changes reload by themselves. Click the toolbar icon to open the side panel.
+Open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick `dist/`. While `pnpm dev` runs, changes reload by themselves. Click the toolbar icon to open the side panel.
 
 ```text
 manifest.json              the extension manifest; entries point at source files, the build rewrites them for dist/
@@ -31,7 +35,7 @@ src/
 ├── query-builder/         shared by both builders: injected window, results grid, export
 ├── shared/                used by page scripts and panel alike: product detection, links, page tooltips, theme key
 ├── lib/                   panel helpers: Dataverse fetch, history, storage hooks
-├── components/            shared React components; ui/ is shadcn/ui (npx shadcn@latest add <name>)
+├── components/            shared React components; ui/ is shadcn/ui (pnpm dlx shadcn@latest add <name>)
 ├── assets/brand/ms/       official Microsoft product icons (see SOURCE.md for terms)
 └── styles/tokens.css      colours and per-product accents, shared by the panel and the injected builder
 public/
@@ -48,9 +52,9 @@ To add a popup, options page or content script, add it to `manifest.json` pointi
 ## Release
 
 1. Bump `version` in `manifest.json` (and `package.json` to match).
-2. `npm run store` builds, zips into `releases/` and checks against both stores' rules.
-3. `npm run store:publish` uploads and submits to both stores.
+2. `pnpm run store` builds, zips into `releases/` and checks against both stores' rules.
+3. `pnpm run store:publish` uploads and submits to both stores.
 
-For testers, `npm run build` also writes `releases/dynamics-assist-beta.zip`, with side-loading instructions in its README.txt.
+For testers, `pnpm build` also writes `releases/dynamics-assist-beta.zip`, with side-loading instructions in its README.txt.
 
 The first version is uploaded by hand. See "First release of a new extension" in the extension-publisher README.

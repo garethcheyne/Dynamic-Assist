@@ -35,7 +35,7 @@ export const CE: HelpTab = {
         },
         {
           id: "form-fields",
-          name: "Form fields",
+          name: "Fields",
           where: "Record tab",
           what: (
             <>
@@ -171,10 +171,56 @@ export const CE: HelpTab = {
       ],
     },
     {
+      title: "Tools tab: query",
+      intro: "The query tools, first on the Tools tab as in Business Central.",
+      tools: [
+        {
+          id: "open-view",
+          name: "Query builder, Query this table, Table data, Open this view",
+          where: "Tools tab, Query",
+          what: (
+            <>
+              Query builder opens over the page. Query this table opens this
+              page's table and runs it. Table data opens the table's list in a
+              new tab. Open this view brings the current view's columns, filters
+              and sort into the builder. See the Query builder tab.
+            </>
+          ),
+        },
+      ],
+    },
+    {
       title: "Tools tab: form",
       intro:
         "These act on the open form, in this tab only. Nothing is saved unless you save the record.",
       tools: [
+        {
+          id: "logical-names",
+          name: "Logical names",
+          where: "Tools tab",
+          what: (
+            <>
+              On a form, adds the field's logical name beside each label, with a
+              click to copy it. On list views and subgrids, adds the column's
+              logical name to each header, in Dynamics 365 colours. Hover a
+              badge for the column's display name, type, table and (for linked
+              columns) the relationship it comes through.
+            </>
+          ),
+          how: "Turn it off or reload to go back.",
+        },
+        {
+          id: "blur",
+          name: "Blur data",
+          where: "Tools tab",
+          what: "Blurs values on the form and in grids for screenshots and screen sharing; labels stay readable.",
+        },
+        {
+          id: "expand-tabs",
+          name: "Expand tabs",
+          where: "Tools tab",
+          what: "Opens every tab on the form so all its sections load and are searchable.",
+        },
         {
           id: "god-mode",
           name: "God mode",
@@ -188,31 +234,40 @@ export const CE: HelpTab = {
           ),
         },
         {
-          id: "logical-names",
-          name: "Logical names",
-          where: "Tools tab",
-          what: (
-            <>
-              On a form, replaces each label with the field's logical name and
-              adds a copy button. On list views and subgrids, adds the column's
-              logical name to each header, in Dynamics 365 colours. Hover a
-              badge for the column's display name, type, table and (for linked
-              columns) the relationship it comes through.
-            </>
-          ),
-          how: "Turn it off or reload to go back.",
-        },
-        {
-          id: "expand-tabs",
-          name: "Expand tabs",
-          where: "Tools tab",
-          what: "Opens every tab on the form so all its sections load and are searchable.",
-        },
-        {
           id: "refresh-subgrids",
           name: "Refresh subgrids",
           where: "Tools tab",
           what: "Reloads every subgrid without refreshing the page, for example after a flow or plug-in created related rows.",
+        },
+      ],
+    },
+    {
+      title: "Tools tab: record",
+      intro: "The record on the form.",
+      tools: [
+        {
+          id: "record-link",
+          name: "Copy record link and All columns",
+          where: "Tools tab, Record",
+          what: (
+            <>
+              Copy record link copies a URL that opens this exact record. All
+              columns opens the query builder on this one record, with every
+              column of its table.
+            </>
+          ),
+        },
+        {
+          id: "refresh-save",
+          name: "Refresh and Save",
+          where: "Tools tab",
+          what: (
+            <>
+              <b>Refresh</b> reloads the form's data without saving (unsaved
+              changes are lost). <b>Save</b> is the same as Ctrl+S, with the
+              form's events, business rules and plug-ins.
+            </>
+          ),
         },
         {
           id: "fill-required",
@@ -237,28 +292,11 @@ export const CE: HelpTab = {
             </>
           ),
         },
-        {
-          id: "refresh-save",
-          name: "Refresh and Save",
-          where: "Tools tab",
-          what: (
-            <>
-              <b>Refresh</b> reloads the form's data without saving (unsaved
-              changes are lost). <b>Save</b> is the same as Ctrl+S, with the
-              form's events, business rules and plug-ins.
-            </>
-          ),
-        },
-        {
-          id: "blur",
-          name: "Blur data",
-          where: "Tools tab",
-          what: "Blurs values on the form and in grids for screenshots and screen sharing; labels stay readable.",
-        },
       ],
     },
     {
       title: "Tools tab: lists and debugging",
+      intro: "For list views, and switches that reload the page.",
       tools: [
         {
           id: "fetchxml",
@@ -266,9 +304,9 @@ export const CE: HelpTab = {
           where: "Tools tab, List view",
           what: (
             <>
-              Copies the FetchXML of the list you're looking at, with your
-              current filters and sort, ready for XrmToolBox, the query builder
-              or code.
+              Copies the saved FetchXML of the list you're looking at, ready for
+              XrmToolBox, the query builder or code. Filters and sorting you've
+              changed on the page aren't included.
             </>
           ),
         },
@@ -280,18 +318,6 @@ export const CE: HelpTab = {
             <>
               Opens the view's rows as raw JSON from the Web API, with formatted
               values: what an integration would actually receive.
-            </>
-          ),
-        },
-        {
-          id: "open-view",
-          name: "Query builder and Open this view",
-          where: "Tools tab, Query",
-          what: (
-            <>
-              Opens the query builder over the page, either empty or with the
-              current view's columns, filters and sort. See the Query builder
-              tab.
             </>
           ),
         },
@@ -332,13 +358,14 @@ export const CE: HelpTab = {
           where: "Go to tab",
           what: (
             <>
+              <b>You</b>: your user record and your mailbox.{" "}
               <b>Administration</b>: this environment in the Power Platform
               admin center, classic settings, security, system jobs, processes,
-              mailboxes, diagnostics. <b>Customise</b>: solutions in the maker
-              portal, solution history, classic Advanced Find. <b>Developer</b>:
-              the Web API, its service document and entity metadata.{" "}
-              <b>Other orgs</b>: the other Dynamics 365 orgs in your History.{" "}
-              <b>Me</b>: your mailbox record.
+              mailboxes, My apps (every app in every environment), diagnostics.{" "}
+              <b>Customise</b>: solutions in the maker portal, solution history,
+              classic Advanced Find. <b>Developer</b>: the Web API, its service
+              document and entity metadata. <b>Other orgs</b>: the other
+              Dynamics 365 orgs in your History.
             </>
           ),
         },

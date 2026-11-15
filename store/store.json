@@ -1,7 +1,7 @@
 {
   "name": "dynamic-assist",
   "build": {
-    "command": "npm run build",
+    "command": "pnpm build",
     "output": "dist"
   },
   "package": {
@@ -16,9 +16,9 @@
   },
   "listing": {
     "defaultLocale": "en",
-    "privacyPolicyUrl": "https://github.com/garethcheyne/Dynamic-Assist/blob/main/store/privacy/privacy-policy.md",
-    "homepageUrl": "https://github.com/garethcheyne/Dynamic-Assist",
-    "supportUrl": "https://github.com/garethcheyne/Dynamic-Assist/issues",
+    "privacyPolicyUrl": "https://www.err403.com/privacy-policy/chrome-extensions",
+    "homepageUrl": "https://dynamicassist.err403.com",
+    "supportUrl": "https://dynamicassist.err403.com/feedback/",
     "category": "Developer Tools"
   },
   "stores": {
@@ -27,7 +27,7 @@
       "extensionId": "kdjmihadioacnbabibfljbpbkclcjhbf",
       "publisherId": "fa4c7629-9460-470f-8491-e4666f0fc6aa",
       "publishType": "DEFAULT_PUBLISH",
-      "listingUrl": "https://chromewebstore.google.com/detail/kdjmihadioacnbabibfljbpbkclcjhbf",
+      "listingUrl": "https://chromewebstore.google.com/detail/dynamic-assist/kdjmihadioacnbabibfljbpbkclcjhbf",
       "dashboardUrl": "https://chrome.google.com/webstore/devconsole/fa4c7629-9460-470f-8491-e4666f0fc6aa/kdjmihadioacnbabibfljbpbkclcjhbf/edit"      
     },
     "edge": {
@@ -35,7 +35,7 @@
       "productId": "df533ae3-c181-4492-887b-24dc9c60bb45",
       "crxId": "mnfokldcehmjefajddlheodgfekhmkhe",
       "storeId": "0RDCKGGVXTBD",
-      "listingUrl": ""
+      "listingUrl": "https://microsoftedge.microsoft.com/addons/detail/dynamic-assist/mnfokldcehmjefajddlheodgfekhmkhe"
     }
   }
 }

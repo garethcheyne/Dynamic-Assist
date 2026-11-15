@@ -2,8 +2,7 @@ import * as React from "react"
 import { TriangleAlertIcon } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
-
-const ISSUES = "https://github.com/garethcheyne/Dynamic-Assist/issues"
+import { feedbackUrl } from "@/shared/links"
 
 /**
  * Keeps a crash in one part of the panel (or the help page) from leaving it
@@ -46,7 +45,7 @@ export class CrashBoundary extends React.Component<
             Reload
           </Button>
           <a
-            href={ISSUES}
+            href={feedbackUrl({ kind: "issue", details: `Crashed with: ${error.message}` })}
             target="_blank"
             rel="noreferrer"
             className={buttonVariants({ size: "sm", variant: "ghost" })}

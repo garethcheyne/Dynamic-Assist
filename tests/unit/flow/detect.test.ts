@@ -1,16 +1,34 @@
 import { describe, expect, it } from "vitest"
 
+import { instanceKey } from "@/lib/history"
+import { flowState } from "@/platforms/flow/flows"
 import { detectPlatform, parseMakerUrl } from "@/shared/detect"
 
 const ENV = "11111111-2222-4333-8444-555555555555"
-const FLOW = "22222222-3333-4444-8555-666666666666"
-const SOL = "33333333-4444-4555-8666-777777777777"
+const FLOW = "66666666-7777-4888-9999-aaaaaaaaaaaa"
+const SOL = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff"
+
+describe("Flow states", () => {
+  it("doesn't call a suspended flow off", () => {
+    expect(flowState({ on: true, suspended: false })).toBe("On")
+    expect(flowState({ on: false, suspended: false })).toBe("Off")
+    expect(flowState({ on: false, suspended: true })).toBe("Suspended")
+  })
+})
+
+describe("the flow panel's instance", () => {
+  it("stays the same when you open a flow, so a picked solution stays", () => {
+    const list = `https://make.powerautomate.com/environments/${ENV}/flows`
+    const flow = `https://make.powerautomate.com/environments/${ENV}/flows/${FLOW}/details`
+    expect(instanceKey(flow)).toBe(instanceKey(list))
+    expect(instanceKey(list)).toBe(`flow:${ENV}`)
+  })
+})
 
 describe("Power Automate detection", () => {
   it.each([
     [`https://make.powerautomate.com/environments/${ENV}/flows`, "flow"],
     ["https://make.preview.powerautomate.com/", "flow"],
-    ["https://flow.microsoft.com/manage/environments", "flow"],
     [`https://make.powerapps.com/environments/${ENV}/solutions`, "maker"],
     ["https://org.crm6.dynamics.com/main.aspx", "ce"],
     ["https://example.com/", "none"],

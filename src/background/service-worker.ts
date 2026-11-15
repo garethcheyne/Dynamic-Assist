@@ -12,8 +12,14 @@ import {
   type BcCompanionRelay,
   type BcBridgeReady,
 } from "@/platforms/bc/messages"
-import { companionFor } from "@/platforms/bc/companion-channel"
+import {
+  companionFor,
+  forgetChannel,
+  markChannelReady,
+  markChannelShown,
+} from "@/platforms/bc/companion-channel"
 import type { CompanionCall } from "@/platforms/bc/coupling"
+import { clearCompanionProblem } from "@/platforms/bc/companion-status"
 import { parseBcUrl } from "@/platforms/bc/url"
 import { openQueryBuilder } from "@/query-builder/open"
 import { ERROR_WATCH_KEY, ERROR_WATCH_SCRIPT } from "@/platforms/ce/error-log"
@@ -128,8 +134,13 @@ chrome.runtime.onMessage.addListener(
 chrome.runtime.onMessage.addListener((message: BcBridgeReady, sender) => {
   if (message?.type === BRIDGE_READY && sender.tab?.id !== undefined) {
     const tabId = sender.tab.id
-    chrome.storage.session
-      .get(CHANNEL_TABS_KEY)
+    // Its bridge said hello: the companion is there, whatever was said before
+    if (sender.tab.url)
+      void clearCompanionProblem(parseBcUrl(sender.tab.url))
+    // Written down first: the builder opened below asks whether it's open
+    markChannelReady(tabId, sender.tab.url ?? "")
+      .catch((error) => console.warn("Couldn't note the query page", error))
+      .then(() => chrome.storage.session.get(CHANNEL_TABS_KEY))
       .then(async (stored) => {
         // A query page the panel opened in the background to reach the
         // companion (coupled records): no builder over it
@@ -181,6 +192,11 @@ chrome.runtime.onMessage.addListener(
 // tab, and opens again over it (bc-setup.ts)
 listenForBcSetup()
 
+// A background query page you've clicked on doesn't need showing again
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+  void markChannelShown(tabId).catch(() => {})
+})
+
 // Impersonation rules are per tab (platforms/ce/impersonation.ts); drop a
 // closed tab's rule so its ID can't carry over to a tab that reuses it.
 chrome.tabs.onRemoved.addListener((tabId) => {
@@ -188,4 +204,5 @@ chrome.tabs.onRemoved.addListener((tabId) => {
     .updateSessionRules({ removeRuleIds: [tabId] })
     .catch(() => {})
   void chrome.storage.session.remove(`impersonation:${tabId}`)
+  void forgetChannel(tabId).catch(() => {})
 })

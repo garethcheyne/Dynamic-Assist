@@ -11,6 +11,7 @@ import ceLogo from "@/assets/brand/ms/dynamics-365.svg"
 import paLogo from "@/assets/brand/ms/power-apps.svg"
 import flowLogo from "@/assets/brand/ms/power-automate.svg"
 import { CollapsibleSection } from "@/components/collapsible-section"
+import { feedbackUrl, SITE_LINKS } from "@/shared/links"
 
 const { version } = chrome.runtime.getManifest()
 const icon = chrome.runtime.getURL("icons/icon128.png")
@@ -108,7 +109,8 @@ export function CreditsView() {
           </span>
         </div>
         <p className="text-xs">
-          By Gareth Cheyne · <Link href={REPO}>Source on GitHub</Link>
+          By Gareth Cheyne · <Link href={SITE_LINKS.home}>Website</Link> ·{" "}
+          <Link href={REPO}>Source on GitHub</Link>
         </p>
       </section>
 
@@ -152,7 +154,8 @@ export function CreditsView() {
         defaultCollapsed
       >
         <p className="text-xs leading-relaxed">
-          Ideas, bugs and pull requests are welcome on{" "}
+          Ideas and bugs are welcome on the{" "}
+          <Link href={feedbackUrl()}>feedback page</Link>, and pull requests on{" "}
           <Link href={`${REPO}/issues`}>GitHub</Link>. Tools for other Microsoft
           business apps especially.
         </p>

@@ -9,6 +9,7 @@
  * background, so a new extension's tables turn up on the next open.
  */
 import type { BcTable, BcTableFields } from "./bridge"
+import { COMPANION_STATUS_PREFIX } from "../companion-status"
 
 const PREFIX = "bc:meta:"
 /** Older than this, cached metadata is read again before it's used */
@@ -45,11 +46,21 @@ export async function cachedTables(key: string): Promise<BcTable[] | null> {
   return entry && fresh(entry.at) && entry.tables.length ? entry.tables : null
 }
 
-export async function saveTables(key: string, tables: BcTable[]) {
-  const entry = await read(key)
-  await chrome.storage.local
-    .set({ [key]: { at: Date.now(), tables, fields: entry?.fields ?? {} } })
-    .catch(() => {})
+// Each write reads the entry, then replaces it: two at once would lose one
+let writes: Promise<unknown> = Promise.resolve()
+function inTurn(write: () => Promise<void>) {
+  const done = writes.then(write, write)
+  writes = done.catch(() => {})
+  return done
+}
+
+export function saveTables(key: string, tables: BcTable[]) {
+  return inTurn(async () => {
+    const entry = await read(key)
+    await chrome.storage.local
+      .set({ [key]: { at: Date.now(), tables, fields: entry?.fields ?? {} } })
+      .catch(() => {})
+  })
 }
 
 /** A table's cached fields, if recent enough to use. */
@@ -61,25 +72,27 @@ export async function cachedFields(
   return hit && fresh(hit.at) ? hit.data : null
 }
 
-export async function saveFields(key: string, data: BcTableFields) {
-  const entry = await read(key)
-  const fields: BcMetaEntry["fields"] = {
-    ...(entry?.fields ?? {}),
-    [data.table]: { at: Date.now(), data },
-  }
-  // Keep the most recently read tables only
-  const kept = Object.entries(fields)
-    .sort(([, a], [, b]) => b.at - a.at)
-    .slice(0, MAX_TABLES)
-  await chrome.storage.local
-    .set({
-      [key]: {
-        at: entry?.at ?? 0,
-        tables: entry?.tables ?? [],
-        fields: Object.fromEntries(kept),
-      },
-    })
-    .catch(() => {})
+export function saveFields(key: string, data: BcTableFields) {
+  return inTurn(async () => {
+    const entry = await read(key)
+    const fields: BcMetaEntry["fields"] = {
+      ...(entry?.fields ?? {}),
+      [data.table]: { at: Date.now(), data },
+    }
+    // Keep the most recently read tables only
+    const kept = Object.entries(fields)
+      .sort(([, a], [, b]) => b.at - a.at)
+      .slice(0, MAX_TABLES)
+    await chrome.storage.local
+      .set({
+        [key]: {
+          at: entry?.at ?? 0,
+          tables: entry?.tables ?? [],
+          fields: Object.fromEntries(kept),
+        },
+      })
+      .catch(() => {})
+  })
 }
 
 /** A cached environment, for Settings. */
@@ -109,4 +122,9 @@ export async function listMeta(): Promise<BcMetaSummary[]> {
     .sort((a, b) => b.at - a.at)
 }
 
-export const clearMeta = (keys: string[]) => chrome.storage.local.remove(keys)
+/** Forgets environments' metadata, and whether their companion was missing */
+export const clearMeta = (keys: string[]) =>
+  chrome.storage.local.remove([
+    ...keys,
+    ...keys.map((k) => COMPANION_STATUS_PREFIX + k.slice(PREFIX.length)),
+  ])

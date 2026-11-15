@@ -54,6 +54,17 @@ describe("toSql", () => {
     expect(lintSql(r.sql, META)).toEqual([])
   })
 
+  it("puts the builder's Rows in the SQL, unless it's the default", () => {
+    expect(sql(query([], { top: 20 })).sql).toContain(
+      "SELECT DISTINCT TOP 20\n"
+    )
+    expect(sql(query([], { top: 20, distinct: false })).sql).toContain(
+      "SELECT TOP 20\n"
+    )
+    expect(sql(query([], { top: null })).sql).not.toContain("TOP")
+    expect(sql(query([])).sql).not.toContain("TOP")
+  })
+
   it("names the primary columns when the builder has none", () => {
     const r = sql(query([], { columns: [], distinct: false }))
     expect(r.sql).toBe(

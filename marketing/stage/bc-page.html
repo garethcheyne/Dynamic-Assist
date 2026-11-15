@@ -1,0 +1,76 @@
+<!doctype html>
+<!--
+  A made-up Business Central customer card, as a backdrop for the query
+  builder video. Plain HTML: no Microsoft code or assets. The record matches
+  the panel's sample (fixtures/bc.json) and the companion's (bc-query.json).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Customer Card</title>
+    <style>
+      :root { --bg: #f3f2f1; --card: #fff; --ink: #212121; --muted: #605e5c; --line: #e1dfdd; --head: #00403f; --accent: #008489; }
+      :root.dark { --bg: #161616; --card: #222; --ink: #e8e8e8; --muted: #a19f9d; --line: #3b3a39; --head: #002b2a; --accent: #3fb6bb; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 14px "Segoe UI", system-ui, sans-serif; height: 100vh; overflow: hidden; }
+      header { height: 48px; background: var(--head); color: #fff; display: flex; align-items: center; gap: 18px; padding: 0 18px; }
+      header b { font-weight: 600; }
+      header span { opacity: .85; }
+      header .company { margin-left: auto; font-size: 13px; }
+      .bar { background: var(--card); border-bottom: 1px solid var(--line); padding: 14px 28px 0; }
+      .crumb { color: var(--muted); font-size: 12px; }
+      .bar h1 { margin: 4px 0 10px; font-size: 22px; font-weight: 600; }
+      .actions { display: flex; gap: 26px; color: var(--muted); padding-bottom: 10px; }
+      .actions span:first-child { color: var(--accent); font-weight: 600; }
+      .content { padding: 18px 28px; display: flex; flex-direction: column; gap: 14px; }
+      .fasttab { background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 12px 20px 16px; }
+      .fasttab h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+      .fasttab h2::before { content: "⌄"; color: var(--muted); margin-right: 8px; }
+      .fields { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; }
+      .row { display: grid; grid-template-columns: 200px 1fr; padding: 6px 0; border-bottom: 1px dotted var(--line); }
+      .row span { color: var(--muted); }
+      .num { text-align: right; max-width: 160px; }
+      .link { color: var(--accent); }
+      .closed { color: var(--muted); padding: 10px 20px; }
+      .closed::before { content: "›"; margin-right: 10px; }
+    </style>
+    <script>
+      document.documentElement.classList.toggle("dark", new URLSearchParams(location.search).get("theme") === "dark")
+    </script>
+  </head>
+  <body>
+    <header><b>Dynamics 365 Business Central</b><span>Sandbox</span><span class="company">CRONUS NZ</span></header>
+    <div class="bar">
+      <div class="crumb">Customers › Customer Card</div>
+      <h1>10000 · Adatum Corporation</h1>
+      <div class="actions"><span>Customer</span><span>New Document</span><span>Approve</span><span>Request Approval</span><span>Prices &amp; Discounts</span><span>Navigate</span><span>Report</span></div>
+    </div>
+    <div class="content">
+      <div class="fasttab">
+        <h2>General</h2>
+        <div class="fields">
+          <div class="row"><span>No.</span>10000</div>
+          <div class="row"><span>Balance (LCY)</span><span class="num link">1,499.03</span></div>
+          <div class="row"><span>Name</span>Adatum Corporation</div>
+          <div class="row"><span>Credit Limit (LCY)</span><span class="num">0.00</span></div>
+          <div class="row"><span>Salesperson Code</span>AW</div>
+          <div class="row"><span>Blocked</span>&nbsp;</div>
+        </div>
+      </div>
+      <div class="fasttab">
+        <h2>Address &amp; Contact</h2>
+        <div class="fields">
+          <div class="row"><span>Address</span>192 Market Square</div>
+          <div class="row"><span>Phone No.</span>09 555 0100</div>
+          <div class="row"><span>City</span>Auckland</div>
+          <div class="row"><span>Email</span>robert.townes@contoso.com</div>
+          <div class="row"><span>Country/Region Code</span>NZ</div>
+          <div class="row"><span>Customer Posting Group</span>DOMESTIC</div>
+        </div>
+      </div>
+      <div class="fasttab closed">Invoicing</div>
+      <div class="fasttab closed">Payments</div>
+      <div class="fasttab closed">Shipping</div>
+    </div>
+  </body>
+</html>

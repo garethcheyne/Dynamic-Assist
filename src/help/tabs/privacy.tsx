@@ -1,5 +1,7 @@
 import { LockIcon } from "lucide-react"
 
+import { SITE_LINKS } from "@/shared/links"
+
 import type { HelpTab } from "../types"
 
 export const PRIVACY: HelpTab = {
@@ -73,6 +75,51 @@ export const PRIVACY: HelpTab = {
           id: "shares",
           name: "What it shares",
           what: "Nothing. No analytics, no error reporting, no third parties.",
+        },
+      ],
+    },
+    {
+      title: "The policies",
+      tools: [
+        {
+          id: "policy",
+          name: "The privacy policy",
+          what: (
+            <>
+              The policy the stores link to covers every err403 browser
+              extension:{" "}
+              <a
+                href={SITE_LINKS.policy}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                err403.com/privacy-policy/chrome-extensions
+              </a>
+              . The website's{" "}
+              <a
+                href={SITE_LINKS.privacy}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                privacy page
+              </a>{" "}
+              says exactly what Dynamic Assist reads, keeps and changes, tool
+              by tool.
+            </>
+          ),
+        },
+        {
+          id: "website",
+          name: "The website is different",
+          what: (
+            <>
+              dynamicassist.err403.com counts visits (no cookies, nothing for
+              browsers that send Do Not Track) and keeps the feedback you send
+              it. The extension itself does neither.
+            </>
+          ),
         },
       ],
     },

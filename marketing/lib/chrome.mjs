@@ -51,12 +51,14 @@ export async function launchChrome(port = 9555) {
   await new Promise((r) => (ws.onopen = r))
   let seq = 0
   const pending = new Map()
+  /** Events (screencast frames, console), for whoever listens */
+  const listeners = new Set()
   ws.onmessage = (event) => {
     const m = JSON.parse(event.data)
     if (m.id && pending.has(m.id)) {
       pending.get(m.id)(m)
       pending.delete(m.id)
-    }
+    } else if (m.method) for (const f of listeners) f(m)
   }
   const send = (method, params = {}, sessionId) =>
     new Promise((resolve, reject) => {
@@ -81,6 +83,14 @@ export async function launchChrome(port = 9555) {
     })
     if (init) await s("Page.addScriptToEvaluateOnNewDocument", { source: init })
     return {
+      /** Any DevTools command, on this page */
+      cdp: s,
+      /** This page's DevTools events; returns a function that stops listening */
+      on(method, fn) {
+        const f = (m) => m.sessionId === sessionId && m.method === method && fn(m.params)
+        listeners.add(f)
+        return () => listeners.delete(f)
+      },
       async goto(url, settle = 1500) {
         await s("Page.navigate", { url })
         await sleep(settle)

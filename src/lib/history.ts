@@ -97,8 +97,15 @@ export function visitFromUrl(url: string): Visit | null {
 }
 
 /** The instance key a URL belongs to: panels remount when it changes. */
-export const instanceKey = (url: string | undefined) =>
-  (url && visitFromUrl(url)?.key) || url || ""
+export function instanceKey(url: string | undefined) {
+  if (!url) return ""
+  // Opening a flow is still the same environment: a picked solution stays
+  if (detectPlatform(url) === "flow") {
+    const env = parseMakerUrl(url).environmentId
+    if (env) return `flow:${env}`
+  }
+  return visitFromUrl(url)?.key || url
+}
 
 // --- The writer (service worker) ---------------------------------------------
 

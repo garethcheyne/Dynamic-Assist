@@ -1,11 +1,14 @@
 import { AppWindowIcon, ServerIcon, UserRoundIcon } from "lucide-react"
 
+import { ActionTile, TileGrid } from "@/components/action-tile"
 import { CollapsibleSection, Count } from "@/components/collapsible-section"
 import { Detail, DetailGrid } from "@/components/detail-grid"
+import { ProductIcon } from "@/components/product-icon"
 
 import type * as React from "react"
 
 import type { CeState } from "../types"
+import { ceUrls } from "../urls"
 
 const offset = (minutes: number | null) => {
   if (minutes === null) return "—"
@@ -131,6 +134,16 @@ export function CeSessionView({
             />
           )}
         </DetailGrid>
+        <TileGrid>
+          <ActionTile
+            icon={<ProductIcon product="powerPlatform" />}
+            title="Admin center"
+            description="This environment in Power Platform admin"
+            onClick={() =>
+              chrome.tabs.create({ url: ceUrls(state).adminCenter })
+            }
+          />
+        </TileGrid>
       </CollapsibleSection>
     </div>
   )

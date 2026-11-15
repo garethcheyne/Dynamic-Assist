@@ -2,9 +2,9 @@
 /**
  * Renders the brochure (marketing/templates/brochure.html) to an A4 PDF, plus
  * a PNG of each page for previews. Uses the panel screenshots from
- * capture.mjs, captured first unless --no-capture. Run `npm run build` first.
+ * capture.mjs, captured first unless --no-capture. Run `pnpm build` first.
  *
- *   npm run marketing:brochure
+ *   pnpm marketing:brochure
  *   node marketing/brochure.mjs --no-capture [--theme=dark]
  *
  * Writes marketing/out/dynamic-assist-brochure.pdf and out/brochure/page-N.png.

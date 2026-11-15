@@ -2,9 +2,11 @@ import * as React from "react"
 import {
   BugIcon,
   CompassIcon,
+  DatabaseIcon,
   FileSearchIcon,
   Loader2Icon,
   RefreshCwIcon,
+  ServerCogIcon,
   UserRoundCogIcon,
   UserRoundIcon,
   WrenchIcon,
@@ -13,10 +15,12 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { recordVisit, visitFromUrl } from "@/lib/history"
+import type { PanelIntent } from "@/lib/panel-intent"
 import { usePanelIntent } from "@/lib/use-panel-intent"
 import { useAction } from "@/lib/use-action"
 import { stopImpersonation, useImpersonation } from "../impersonation"
-import { ceAppUrl } from "../urls"
+import { openQueryBuilder } from "@/query-builder/open"
+import { ceAppUrl, ceUrls } from "../urls"
 
 import type { CeState } from "../types"
 import { useCeTab } from "../use-ce-tab"
@@ -42,9 +46,13 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
   // The right-click menu's "Option set values": go to Tools
   const intent = usePanelIntent(tab.id)
   const [seenIntent, setSeenIntent] = React.useState(0)
+  // Held until Tools has acted on it: Tools remounts each time you return to it
+  const [focusOptionSet, setFocusOptionSet] =
+    React.useState<PanelIntent | null>(null)
   if (intent && intent.seq !== seenIntent) {
     setSeenIntent(intent.seq)
     setCurrent("tools")
+    setFocusOptionSet(intent)
   }
   const errors = useCeErrors(run, tab.id)
   const errorCount = errors.entries.filter((e) => e.level === "error").length
@@ -72,7 +80,18 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <EnvironmentBar state={state} onRefresh={refresh} />
+      <EnvironmentBar
+        state={state}
+        onRefresh={refresh}
+        onQuery={() =>
+          act("query", () =>
+            openQueryBuilder(tab.id!, {
+              entityName:
+                state?.form?.entityName ?? state?.page.entityName ?? undefined,
+            })
+          )
+        }
+      />
       {impersonation && (
         <div className="flex items-center gap-2 border-b bg-sandbox px-3 py-1.5 text-xs text-sandbox-foreground">
           <UserRoundCogIcon className="size-3.5 shrink-0" />
@@ -161,6 +180,7 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
           <TabsContent value="record" className="min-h-0 overflow-y-auto p-3">
             <RecordView
               state={state}
+              tab={tab}
               run={run}
               act={act}
               actingAs={impersonation?.user.id ?? null}
@@ -173,7 +193,8 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
               run={run}
               act={act}
               busy={busy}
-              focusOptionSet={intent}
+              focusOptionSet={focusOptionSet}
+              onFocusUsed={() => setFocusOptionSet(null)}
             />
           </TabsContent>
           <TabsContent value="navigate" className="min-h-0 overflow-y-auto p-3">
@@ -212,9 +233,11 @@ export function CePanel({ tab }: { tab: chrome.tabs.Tab }) {
 function EnvironmentBar({
   state,
   onRefresh,
+  onQuery,
 }: {
   state: CeState | null
   onRefresh: () => void
+  onQuery: () => void
 }) {
   const env = state?.environment
   return (
@@ -231,16 +254,42 @@ function EnvironmentBar({
           </span>
         </Hint>
       )}
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        className="ml-auto"
-        title="Read the page again"
-        aria-label="Read the page again"
-        onClick={onRefresh}
-      >
-        <RefreshCwIcon />
-      </Button>
+      {/* The same buttons in the same order as Business Central's */}
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {state && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            title="Query builder"
+            aria-label="Query builder"
+            onClick={onQuery}
+          >
+            <DatabaseIcon />
+          </Button>
+        )}
+        {state && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            title="Power Platform admin center"
+            aria-label="Power Platform admin center"
+            onClick={() =>
+              chrome.tabs.create({ url: ceUrls(state).adminCenter })
+            }
+          >
+            <ServerCogIcon />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          title="Read the page again"
+          aria-label="Read the page again"
+          onClick={onRefresh}
+        >
+          <RefreshCwIcon />
+        </Button>
+      </div>
     </div>
   )
 }

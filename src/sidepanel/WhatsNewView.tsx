@@ -1,6 +1,5 @@
 import * as React from "react"
 import { ExternalLinkIcon, Loader2Icon, MoonIcon, SunIcon } from "lucide-react"
-import { cn } from "cn"
 
 // The copy this version shipped with, for offline and until GitHub has one
 import bundled from "../../CHANGELOG.md?raw"
@@ -25,7 +24,7 @@ type Source = "loading" | "github" | "bundled"
  * you open this page, so it's current without an update. Offline, or while
  * GitHub doesn't have it, the copy this version shipped with.
  */
-export function WhatsNewView({ page = false }: { page?: boolean }) {
+function WhatsNewView() {
   const [text, setText] = React.useState(bundled)
   const [source, setSource] = React.useState<Source>("loading")
 
@@ -49,15 +48,8 @@ export function WhatsNewView({ page = false }: { page?: boolean }) {
   const blocks = React.useMemo(() => parseMarkdown(text, resolve), [text])
 
   return (
-    <div
-      className={cn("flex flex-col", !page && "min-h-0 flex-1 overflow-y-auto")}
-    >
-      <div
-        className={cn(
-          "flex items-center gap-2 border-b py-1.5 text-muted-foreground",
-          page ? "text-xs" : "px-3 text-[11px]"
-        )}
-      >
+    <div className="flex flex-col">
+      <div className="flex items-center gap-2 border-b py-1.5 text-xs text-muted-foreground">
         {source === "loading" ? (
           <>
             <Loader2Icon className="size-3 animate-spin" />
@@ -81,12 +73,7 @@ export function WhatsNewView({ page = false }: { page?: boolean }) {
           <ExternalLinkIcon className="size-3" />
         </a>
       </div>
-      <article
-        className={cn(
-          "flex flex-col gap-2 leading-relaxed",
-          page ? "py-4 text-sm" : "p-3 text-xs"
-        )}
-      >
+      <article className="flex flex-col gap-2 py-4 text-sm leading-relaxed">
         {blocks.map((block, i) => (
           <MarkdownBlock key={i} block={block} />
         ))}
@@ -133,7 +120,7 @@ export function WhatsNewPage() {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 pb-12">
-        <WhatsNewView page />
+        <WhatsNewView />
       </main>
     </div>
   )

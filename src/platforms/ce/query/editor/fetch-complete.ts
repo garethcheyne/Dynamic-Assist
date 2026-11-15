@@ -26,6 +26,8 @@ export type Suggestion = {
   apply?: string
   /** Insert as a snippet: ${} marks where the cursor goes */
   snippet?: string
+  /** Order by this instead of the label */
+  sortText?: string
   type:
     | "keyword"
     | "property"

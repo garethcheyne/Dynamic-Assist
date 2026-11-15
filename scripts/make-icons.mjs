@@ -1,6 +1,6 @@
 // Renders scripts/icon.svg to public/icons/icon{16,32,48,128}.png, and the store's
 // icon-128.png and logo-300.png (Edge), with headless Chrome.
-// Usage: npm run icons   (set CHROME to the browser's path if it isn't in the usual place)
+// Usage: pnpm icons   (set CHROME to the browser's path if it isn't in the usual place)
 import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"

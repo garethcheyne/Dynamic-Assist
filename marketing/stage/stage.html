@@ -1,0 +1,90 @@
+<!doctype html>
+<!--
+  The stage for the demo videos: a browser window with a made-up product page
+  on the left and the real side panel on the right. ?product=ce|flow|bc picks the
+  page and the address shown. The recorder (marketing/videos.mjs) moves the
+  cursor and shows the captions.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dynamic Assist demo</title>
+    <style>
+      :root { --chrome: #dee1e6; --bar: #ffffff; --line: #c7c7c7; --ink: #1f1f1f; }
+      :root.dark { --chrome: #202124; --bar: #35363a; --line: #4a4a4a; --ink: #e8eaed; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: var(--chrome); font: 13px "Segoe UI", system-ui, sans-serif; color: var(--ink); }
+      .toolbar { height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--bar); border-bottom: 1px solid var(--line); }
+      .dots { display: flex; gap: 6px; }
+      .dots i { width: 12px; height: 12px; border-radius: 50%; background: #c9c9c9; }
+      :root.dark .dots i { background: #5f6368; }
+      .address { flex: 1; height: 30px; border-radius: 15px; background: var(--chrome); display: flex; align-items: center; padding: 0 14px; color: #5f6368; gap: 8px; }
+      :root.dark .address { color: #9aa0a6; }
+      .address b { color: var(--ink); font-weight: 400; }
+      .ext { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; }
+      .ext.on { background: color-mix(in srgb, #00767c 18%, transparent); }
+      .ext img { width: 20px; height: 20px; }
+      .main { position: absolute; top: 44px; left: 0; right: 0; bottom: 0; display: flex; }
+      #page { flex: 1; border: 0; height: 100%; background: #fff; }
+      #panel { width: 400px; border: 0; border-left: 1px solid var(--line); height: 100%; background: #faf9f8; }
+      :root.dark #panel { background: #1b1a19; }
+      #cursor { position: fixed; left: 0; top: 0; width: 22px; height: 22px; z-index: 10; pointer-events: none; transform: translate(-100px, -100px); transition: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+      #ripple { position: fixed; z-index: 9; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; background: rgba(0, 118, 124, .35); pointer-events: none; opacity: 0; transform: scale(.3); }
+      #ripple.go { animation: ripple .45s ease-out; }
+      @keyframes ripple { 0% { opacity: .9; transform: scale(.3) } 100% { opacity: 0; transform: scale(1.6) } }
+      #caption { position: fixed; left: 50%; bottom: 28px; z-index: 11; transform: translate(-50%, 12px); opacity: 0; transition: opacity .35s, transform .35s; padding: 10px 18px; border-radius: 999px; background: rgba(20, 20, 20, .86); color: #fff; font: 600 16px "Segoe UI", system-ui, sans-serif; white-space: nowrap; box-shadow: 0 10px 30px -8px rgba(0,0,0,.5); }
+      #caption.on { opacity: 1; transform: translate(-50%, 0); }
+      /* On a dark page the dark pill needs an edge */
+      :root.dark #caption { background: rgba(48, 48, 52, .92); box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 10px 30px -8px rgba(0,0,0,.7); }
+      #caption span { color: #3fc1c4; margin-right: 8px; }
+    </style>
+    <script>
+      document.documentElement.classList.toggle("dark", new URLSearchParams(location.search).get("theme") === "dark")
+    </script>
+  </head>
+  <body>
+    <div class="toolbar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="address">🔒 <span id="address"></span></div>
+      <div class="ext on"><img src="/icons/icon48.png" alt="" /></div>
+    </div>
+    <div class="main">
+      <iframe id="page" title="Dynamics 365"></iframe>
+      <iframe id="panel" title="Dynamic Assist"></iframe>
+    </div>
+    <div id="ripple"></div>
+    <svg id="cursor" viewBox="0 0 24 24"><path d="M5 2.5v17.2l4.6-4.3 2.9 6.6 2.7-1.2-2.9-6.5h6.3z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    <div id="caption"></div>
+    <script>
+      const params = new URLSearchParams(location.search)
+      const theme = params.get("theme") ?? "light"
+      const PRODUCTS = {
+        ce: { page: "ce-page.html", address: "<b>contoso.crm.dynamics.com</b>/main.aspx?appid=…&amp;pagetype=entityrecord&amp;etn=account" },
+        flow: { page: "flow-page.html", address: "<b>make.powerautomate.com</b>/environments/7d3c1f0a-…/solutions/5a8e2c14-…" },
+        bc: { page: "bc-page.html", address: "<b>businesscentral.dynamics.com</b>/contoso.onmicrosoft.com/Sandbox/?company=CRONUS%20NZ&amp;page=21" },
+      }
+      const product = PRODUCTS[params.get("product")] ?? PRODUCTS.ce
+      document.getElementById("address").innerHTML = product.address
+      document.getElementById("page").src = "/marketing/stage/" + product.page + "?theme=" + theme
+      document.getElementById("panel").src = "/src/sidepanel/index.html"
+      const cursor = document.getElementById("cursor")
+      const ripple = document.getElementById("ripple")
+      const caption = document.getElementById("caption")
+      window.__stage = {
+        cursor: (x, y) => (cursor.style.transform = "translate(" + (x - 5) + "px," + (y - 3) + "px)"),
+        click: (x, y) => {
+          ripple.style.left = x + "px"
+          ripple.style.top = y + "px"
+          ripple.classList.remove("go")
+          void ripple.offsetWidth
+          ripple.classList.add("go")
+        },
+        caption: (step, text) => {
+          if (!text) return caption.classList.remove("on")
+          caption.innerHTML = (step ? "<span>" + step + "</span>" : "") + text
+          caption.classList.add("on")
+        },
+      }
+    </script>
+  </body>
+</html>

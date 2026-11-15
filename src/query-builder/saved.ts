@@ -26,7 +26,12 @@ export type SavedQuery = {
       /** A SQL query instead (fetchXml is then empty) */
       sql?: string
     }
-  | { platform: "bc"; query: BcQuery }
+  | {
+      platform: "bc"
+      query: BcQuery
+      /** Written as SQL, which reopens as written; `query` is what it compiled to */
+      sql?: string
+    }
 )
 
 /** Omit, kept per platform (a plain Omit on a union loses which is which) */

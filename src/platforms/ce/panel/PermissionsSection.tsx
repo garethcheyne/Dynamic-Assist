@@ -30,8 +30,9 @@ const DEPTHS: Record<CeDepth, { label: string; level: number }> = {
   None: { label: "None", level: 0 },
   Basic: { label: "User", level: 1 },
   Local: { label: "Business unit", level: 2 },
-  Deep: { label: "Parent: child BUs", level: 3 },
+  Deep: { label: "Business unit + child", level: 3 },
   Global: { label: "Organization", level: 4 },
+  Unknown: { label: "Couldn't check", level: 0 },
 }
 
 const LABELS: Record<CePrivilegeType, string> = {
@@ -215,6 +216,13 @@ export function PermissionsSection({
             </Button>
           </div>
           {error && <span className="text-xs text-destructive">{error}</span>}
+          {data.privileges.some((p) => p.depth === "Unknown") && (
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Dataverse didn&apos;t answer for some privileges: they&apos;re
+              marked &quot;Couldn&apos;t check&quot;, which doesn&apos;t mean
+              none.
+            </p>
+          )}
           <table className="w-full text-xs">
             <thead>
               <tr className="text-[10px] tracking-wide text-muted-foreground uppercase">

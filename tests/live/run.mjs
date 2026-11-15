@@ -5,13 +5,13 @@
 //   builder    drives the query builder's UI (builder.live.js)
 //   companion  calls the companion's engine directly (companion.live.js)
 //
-// Both by default; name one to run only it: npm run test:live -- builder
+// Both by default; name one to run only it: pnpm test:live builder
 //
 // Needs Chrome or Edge started with --remote-debugging-port=9333 (or set
 // CDP_PORT), signed in to Business Central, with a tab on the "Dynamic Assist
 // Query" page (page 77500) of an environment where the companion is installed.
 //
-//   npm run test:live
+//   pnpm test:live
 import fs from "node:fs"
 import path from "node:path"
 

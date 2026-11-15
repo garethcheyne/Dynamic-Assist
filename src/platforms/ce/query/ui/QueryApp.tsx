@@ -31,7 +31,7 @@ import {
   toFetchXml,
   type Query,
 } from "../query"
-import { readSql } from "../editor/sql-parse"
+import { notReadOnly, readSql } from "../editor/sql-parse"
 import {
   checkFetchXml,
   entitySetOf,
@@ -47,7 +47,6 @@ import {
   DEFAULT_ROWS,
   MAX_ROWS,
   parseRows,
-  rowLimit,
 } from "@/query-builder/limits"
 import { ResultsPane, Section } from "@/query-builder/ResultsPane"
 import { SplitPanes } from "@/query-builder/SplitPanes"
@@ -217,13 +216,15 @@ export function QueryApp({
     setError(null)
     try {
       if (mode === "sql") {
+        const refused = notReadOnly(sqlText)
+        if (refused) throw new Error(refused)
         const from = sqlTable(sqlText)
         if (!from) throw new Error("Say which table: SELECT … FROM table.")
         const set =
           tables.find((t) => t.logicalName === from)?.entitySetName ??
           (await entitySetOf(from))
         const labels = await loadFields(from).catch(() => fields)
-        const results = await runSql(sqlText, set, labels, rowLimit(query?.top))
+        const results = await runSql(sqlText, set, labels)
         if (current()) setResults(results)
         return
       }
@@ -355,7 +356,8 @@ export function QueryApp({
           role="dialog"
           aria-modal="true"
           aria-label="Query builder"
-          className="fixed inset-x-[3vw] inset-y-[4vh] z-[2147483001] flex flex-col overflow-hidden rounded-xl border bg-background text-foreground shadow-2xl"
+          tabIndex={-1}
+          className="fixed inset-x-[3vw] inset-y-[4vh] z-[2147483001] flex flex-col overflow-hidden rounded-xl border bg-background text-foreground shadow-2xl outline-none"
         >
           {/* Header */}
           <div className="relative flex h-12 shrink-0 items-center gap-3 border-b bg-linear-to-b from-background to-card px-4">
@@ -423,10 +425,20 @@ export function QueryApp({
                 onLoad={(saved) => {
                   if (saved.platform !== "ce") return
                   if (saved.sql) {
-                    const from = sqlTable(saved.sql)
-                    if (from && from !== query?.entityName) switchTable(from)
-                    setSqlText(saved.sql)
-                    setMode("sql")
+                    const sql = saved.sql
+                    const from = sqlTable(sql)
+                    const show = () => {
+                      setSqlText(sql)
+                      setMode("sql")
+                    }
+                    // Opening a table goes back to the builder: SQL mode after it
+                    if (from && from !== query?.entityName) {
+                      setLoadingFields(true)
+                      setError(null)
+                      setNotice(null)
+                      setResults(null)
+                      void openTable(from).then(show)
+                    } else show()
                     return
                   }
                   const entity = entityOf(saved.fetchXml)
@@ -602,7 +614,10 @@ export function QueryApp({
                 results={results}
                 error={error}
                 running={running}
-                name={query?.entityName ?? "query"}
+                name={
+                  (mode === "sql" ? sqlTable(sqlText) : query?.entityName) ??
+                  "query"
+                }
               />
             }
           />
@@ -640,11 +655,8 @@ function ColumnsEditor({
           </span>
         )}
         {columns.map((c) => (
-          <Hint label={c}>
-            <span
-              key={c}
-              className="flex items-center gap-1 rounded-md border bg-accent py-0.5 pr-0.5 pl-1.5 text-[11px] text-accent-foreground"
-            >
+          <Hint key={c} label={c}>
+            <span className="flex items-center gap-1 rounded-md border bg-accent py-0.5 pr-0.5 pl-1.5 text-[11px] text-accent-foreground">
               {labelOf.get(c) ?? c}
               <button
                 type="button"
@@ -660,10 +672,11 @@ function ColumnsEditor({
       </div>
       <SearchSelect
         ariaLabel="Add column"
-        placeholder="Add a column"
+        placeholder="Add columns"
+        several
         items={items}
         value={null}
-        onChange={(c) => onChange([...columns, c])}
+        onAdd={(added) => onChange([...columns, ...added])}
       />
       {suggestions.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -799,5 +812,3 @@ function OptionsEditor({
     </div>
   )
 }
-
-/** A tab beside the results showing the query as text, with a copy button. */

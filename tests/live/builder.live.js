@@ -76,6 +76,13 @@
     target.dispatchEvent(
       new MouseEvent("mousedown", { bubbles: true, cancelable: true })
     )
+    await wait(150)
+    // The column picker ticks: Add puts the ticked field in
+    const add = root().querySelector("[data-add-ticked]")
+    if (add && !add.disabled)
+      add.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+      )
     await wait(300)
   }
   const loaded = () =>
@@ -105,13 +112,14 @@
     const headers = all("thead th")
       .slice(1)
       .map((th) => th.textContent.trim())
-    const rows = all("tbody tr").map((tr) =>
+    // The grid only draws the rows in view; aria-hidden rows are its spacers
+    const rows = all("tbody tr:not([aria-hidden])").map((tr) =>
       [...tr.children].slice(1).map((td) => td.textContent)
     )
     const status =
       all("span")
         .map((s) => s.textContent)
-        .find((t) => /\d+ rows?.* · \d+ ms/.test(t)) ?? ""
+        .find((t) => /[\d,]+ rows?.* · [\d,]+ ms/.test(t)) ?? ""
     const error =
       all("div").find(
         (d) =>
@@ -499,24 +507,27 @@
       g.error ?? `${names.length} names, ${inversions} out of order`
     )
   })
-  await step("ui-options", "rows: 5, then load more", async () => {
-    await table("Customer")
-    const rowsInput = one('input[type="number"]')
-    type(rowsInput, "5")
-    const g = await run()
-    const moreText = g.status.includes("more match")
-    const more = button("Load more rows")
-    if (!more)
-      return `5-row run: ${g.rows.length} rows, no Load more (${g.status})`
-    await click(more)
-    await until(() => grid().rows.length === 10, 20000)
-    const g2 = grid()
-    const unique = new Set(g2.values("No.")).size
-    return ok(
-      g.rows.length === 5 && moreText && g2.rows.length === 10 && unique === 10,
-      `${g.rows.length} → ${g2.rows.length} rows, ${unique} unique`
-    )
-  })
+  await step(
+    "ui-options",
+    "rows: 5 says more match, then raise it",
+    async () => {
+      await table("Customer")
+      const rowsInput = one('input[type="number"]')
+      type(rowsInput, "5")
+      const g = await run()
+      const moreText = g.status.includes("more match")
+      type(rowsInput, "10")
+      const g2 = await run()
+      const unique = new Set(g2.values("No.")).size
+      return ok(
+        g.rows.length === 5 &&
+          moreText &&
+          g2.rows.length === 10 &&
+          unique === 10,
+        `${g.rows.length} → ${g2.rows.length} rows, ${unique} unique`
+      )
+    }
+  )
   await step("ui-options", "count all matches", async () => {
     await click(one('input[type="checkbox"]'))
     await run()

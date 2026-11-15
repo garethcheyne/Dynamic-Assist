@@ -246,7 +246,13 @@ function RenameRow({
         onChange={(ev) => setValue(ev.target.value)}
         onKeyDown={(ev) => ev.key === "Escape" && onDone()}
       />
-      <Button type="submit" variant="ghost" size="icon-xs" title="Save name">
+      <Button
+        type="submit"
+        variant="ghost"
+        size="icon-xs"
+        title="Save name"
+        aria-label="Save name"
+      >
         <CheckIcon />
       </Button>
       <Button
@@ -254,6 +260,7 @@ function RenameRow({
         variant="ghost"
         size="icon-xs"
         title="Cancel"
+        aria-label="Cancel"
         onClick={onDone}
       >
         <XIcon />

@@ -143,7 +143,8 @@ export type CeEntity = {
 export type CeColumn = { name: string; value: string; formatted: string | null }
 
 /** Privilege levels, from none to the whole organisation. */
-export type CeDepth = "None" | "Basic" | "Local" | "Deep" | "Global"
+/** "Unknown": the lookup failed, so nobody can say it's "None" */
+export type CeDepth = "None" | "Basic" | "Local" | "Deep" | "Global" | "Unknown"
 
 export type CePrivilegeType =
   | "Create"
@@ -302,7 +303,7 @@ export type CeCommands = {
   refreshSubgrids: { args: void; result: { grids: number } }
   fillRequired: { args: void; result: { filled: string[]; skipped: string[] } }
   clone: { args: void; result: { fields: number } }
-  refresh: { args: void; result: void }
+  refresh: { args: void; result: { asked: boolean } }
   save: { args: void; result: void }
   blur: { args: { on: boolean }; result: void }
   allColumns: { args: void; result: CeColumn[] }
@@ -337,6 +338,8 @@ export type CeCommands = {
   errorsConsole: { args: { on: boolean }; result: void }
   /** The org's Business Central environment (virtual tables setup) */
   bcSource: { args: void; result: CeBcSource | null }
+  /** Business Central companies connected to this org, by name (see readBcOrgCompanies) */
+  bcOrgCompanies: { args: void; result: string[] }
   /** A row's Business Central couplings, via the virtual table */
   bcCouplings: {
     args: { crmId: string }

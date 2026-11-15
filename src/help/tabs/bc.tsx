@@ -94,6 +94,32 @@ export const BC: HelpTab = {
       intro: "Tools that act on the page. Click one again to turn it off.",
       tools: [
         {
+          id: "query-builder",
+          name: "Query builder",
+          where: "Tools tab, or the database icon",
+          what: (
+            <>
+              Opens the query builder over the page you're on, on its table when
+              it has one; pick any other table from there. Always available, on
+              any page.
+            </>
+          ),
+          needs: COMPANION,
+        },
+        {
+          id: "query-table",
+          name: "Query this table",
+          where: "Tools tab, Page tab",
+          what: (
+            <>
+              Opens the query builder on this page's table: from the Tools tab
+              it runs straight away, and from the Page tab's icon it waits for
+              you to add filters and press Run.
+            </>
+          ),
+          needs: COMPANION,
+        },
+        {
           id: "field-names",
           name: "Field names",
           where: "Tools tab",
@@ -185,31 +211,6 @@ export const BC: HelpTab = {
             </>
           ),
         },
-        {
-          id: "query-builder",
-          name: "Query builder",
-          where: "Tools tab, or the database icon",
-          what: (
-            <>
-              Opens the query builder over the page you're on, on its table when
-              it has one; pick any other table from there. Always available, on
-              any page.
-            </>
-          ),
-          needs: COMPANION,
-        },
-        {
-          id: "query-table",
-          name: "Query this table",
-          where: "Tools tab, Page tab",
-          what: (
-            <>
-              Opens the query builder on this page's table, ready to add filters
-              and run.
-            </>
-          ),
-          needs: COMPANION,
-        },
       ],
     },
     {
@@ -262,10 +263,9 @@ export const BC: HelpTab = {
           where: "Session tab",
           what: (
             <>
-              Your user name, security ID and email, role, company, language,
-              region and time zone; the environment, tenant and platform
-              version; and links to the Business Central admin center and the
-              tenant's admin pages.
+              Your user name, security ID and email, role, company, language and
+              time zone; the environment, tenant and platform version; and a
+              link to the Business Central admin center.
             </>
           ),
         },

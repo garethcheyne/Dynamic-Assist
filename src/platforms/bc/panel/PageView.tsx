@@ -2,6 +2,7 @@ import {
   DatabaseIcon,
   ExternalLinkIcon,
   LayoutListIcon,
+  LinkIcon,
   TableIcon,
 } from "lucide-react"
 
@@ -11,25 +12,38 @@ import { CopyJsonButton } from "@/components/copy-json-button"
 import { Detail, DetailGrid } from "@/components/detail-grid"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { useCopy } from "@/lib/copy"
 
-import { fieldsToJson, type BcForm } from "../page-info"
-import { buildBcUrl, type BcContext } from "../url"
+import { fieldsToJson, type BcForm, type BcPageInfo } from "../page-info"
+import { bcRecordLink, buildBcUrl, type BcContext } from "../url"
 import { FieldList } from "./FieldList"
+import { COMPANION_OFF } from "./use-companion-status"
 
 /** The current page: what it is, then its fields. */
 export function PageView({
   ctx,
   form,
+  session,
   onQuery,
+  queryOff = false,
 }: {
   ctx: BcContext
   form: BcForm
+  session: BcPageInfo["session"]
   /** Opens the query builder on a table */
   onQuery: (tableId: number) => void
+  /** The companion isn't available here: the query button only explains */
+  queryOff?: boolean
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <PageSummary ctx={ctx} form={form} onQuery={onQuery} />
+      <PageSummary
+        ctx={ctx}
+        form={form}
+        session={session}
+        onQuery={onQuery}
+        queryOff={queryOff}
+      />
       <CollapsibleSection
         id="bc.fields"
         title="Fields"
@@ -51,12 +65,18 @@ export function PageView({
 function PageSummary({
   ctx,
   form,
+  session,
   onQuery,
+  queryOff,
 }: {
   ctx: BcContext
   form: BcForm
+  session: BcPageInfo["session"]
   onQuery: (tableId: number) => void
+  queryOff: boolean
 }) {
+  const copy = useCopy()
+  const recordLink = bcRecordLink(ctx, form, session)
   const key = form.primaryKey
     .map(
       (no) => form.fields.find((f) => f.fieldNo === no)?.schemaName ?? `#${no}`
@@ -67,23 +87,42 @@ function PageSummary({
 
   return (
     <section className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-xs">
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <ObjectBadge kind="Page" id={form.pageId} />
-        {form.tableId !== null && (
-          <ObjectBadge kind="Table" id={form.tableId} />
-        )}
+        {/* Pages with no source table can report 0 */}
+        {!!form.tableId && <ObjectBadge kind="Table" id={form.tableId} />}
         <Badge variant="secondary">{form.pageType}</Badge>
+        {/* The same buttons in the same order as Dynamics 365's Record tab */}
         <div className="ml-auto flex">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="Open this page in a new tab"
-            aria-label="Open this page in a new tab"
-            onClick={() => open({ page: form.pageId })}
-          >
-            <ExternalLinkIcon />
-          </Button>
-          {form.tableId !== null && (
+          {recordLink && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Copy record link"
+              aria-label="Copy record link"
+              onClick={() => copy(recordLink, "record link")}
+            >
+              <LinkIcon />
+            </Button>
+          )}
+          {!!form.tableId && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title={
+                queryOff
+                  ? `Query this table: ${COMPANION_OFF}`
+                  : "Query this table (needs the companion app)"
+              }
+              aria-label="Query this table"
+              aria-disabled={queryOff || undefined}
+              className={queryOff ? "opacity-50" : undefined}
+              onClick={() => onQuery(form.tableId!)}
+            >
+              <DatabaseIcon />
+            </Button>
+          )}
+          {!!form.tableId && (
             <Button
               variant="ghost"
               size="icon-sm"
@@ -94,17 +133,15 @@ function PageSummary({
               <TableIcon />
             </Button>
           )}
-          {form.tableId !== null && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              title="Query this table (needs the companion app)"
-              aria-label="Query this table"
-              onClick={() => onQuery(form.tableId!)}
-            >
-              <DatabaseIcon />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Open this page in a new tab"
+            aria-label="Open this page in a new tab"
+            onClick={() => open({ page: form.pageId })}
+          >
+            <ExternalLinkIcon />
+          </Button>
         </div>
       </div>
 
@@ -117,17 +154,8 @@ function PageSummary({
         )}
       </div>
 
+      {/* The record first, then what shows it, then its key: as Dynamics 365 */}
       <DetailGrid>
-        {form.app && (
-          <Detail
-            label="App"
-            value={form.app.name}
-            title={`${form.app.name} ${form.app.version} · ${form.app.publisher}\n${form.app.id}`}
-            copy={form.app.id}
-          />
-        )}
-        {form.app && <Detail label="Version" value={form.app.version} mono />}
-        {key && <Detail label="Primary key" value={key} copy={key} wide />}
         {form.systemId && (
           <Detail
             label="SystemId"
@@ -146,6 +174,16 @@ function PageSummary({
             wide
           />
         )}
+        {form.app && (
+          <Detail
+            label="App"
+            value={form.app.name}
+            title={`${form.app.name} ${form.app.version} · ${form.app.publisher}\n${form.app.id}`}
+            copy={form.app.id}
+          />
+        )}
+        {form.app && <Detail label="Version" value={form.app.version} mono />}
+        {key && <Detail label="Primary key" value={key} copy={key} wide />}
       </DetailGrid>
     </section>
   )

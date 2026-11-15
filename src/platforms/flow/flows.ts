@@ -11,6 +11,8 @@ export type Flow = {
   resourceid: string | null
   name: string
   on: boolean
+  /** Stopped by Power Automate, not by anyone turning it off */
+  suspended: boolean
   /** "Activated", "Draft", "Suspended": the formatted status reason */
   status: string
   modifiedon: string
@@ -28,6 +30,7 @@ const toFlow = (r: Row): Flow => ({
   resourceid: (r.resourceid as string | null) ?? null,
   name: r.name as string,
   on: r.statecode === 1,
+  suspended: r.statecode === 2,
   status: formatted(r, "statuscode") ?? String(r.statuscode),
   modifiedon: r.modifiedon as string,
   owner: formatted(r, "_ownerid_value"),
@@ -57,6 +60,10 @@ export async function listFlows(org: string, solutionId?: string | null) {
     ? flows.filter((f) => inSolution.has(f.workflowid.toLowerCase()))
     : flows
 }
+
+/** "On", "Off" or "Suspended", as Power Automate says it. */
+export const flowState = (f: Pick<Flow, "on" | "suspended">) =>
+  f.on ? "On" : f.suspended ? "Suspended" : "Off"
 
 export type FlowDetail = Flow & {
   description: string | null

@@ -1,0 +1,86 @@
+{
+  "info": { "app": "Dynamic Assist Companion", "version": "2026.9.24.11", "company": "CRONUS NZ", "companyId": "8a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9", "user": "ALEX.WILBER", "maxRows": 5000 },
+  "tables": [
+    [3, "Payment Terms", "Payment Terms"],
+    [4, "Currency", "Currency"],
+    [9, "Country/Region", "Country/Region"],
+    [13, "Salesperson/Purchaser", "Salesperson/Purchaser"],
+    [15, "G/L Account", "G/L Account"],
+    [17, "G/L Entry", "G/L Entry"],
+    [18, "Customer", "Customer"],
+    [21, "Cust. Ledger Entry", "Cust. Ledger Entry"],
+    [23, "Vendor", "Vendor"],
+    [25, "Vendor Ledger Entry", "Vendor Ledger Entry"],
+    [27, "Item", "Item"],
+    [32, "Item Ledger Entry", "Item Ledger Entry"],
+    [36, "Sales Header", "Sales Header"],
+    [37, "Sales Line", "Sales Line"],
+    [38, "Purchase Header", "Purchase Header"],
+    [39, "Purchase Line", "Purchase Line"],
+    [92, "Customer Posting Group", "Customer Posting Group"],
+    [112, "Sales Invoice Header", "Sales Invoice Header"],
+    [5050, "Contact", "Contact"]
+  ],
+  "fields": {
+    "18": [
+      [1, "No.", "No.", "Code", "Normal", 20, true],
+      [2, "Name", "Name", "Text", "Normal", 100],
+      [5, "Address", "Address", "Text", "Normal", 100],
+      [7, "City", "City", "Text", "Normal", 30],
+      [9, "Phone No.", "Phone No.", "Text", "Normal", 30],
+      [20, "Credit Limit (LCY)", "Credit Limit (LCY)", "Decimal", "Normal", 12],
+      [21, "Customer Posting Group", "Customer Posting Group", "Code", "Normal", 20, false, 92],
+      [29, "Salesperson Code", "Salesperson Code", "Code", "Normal", 20, false, 13],
+      [35, "Country/Region Code", "Country/Region Code", "Code", "Normal", 10, false, 9],
+      [39, "Blocked", "Blocked", "Option", "Normal", 4, false, null, [" ", "Ship", "Invoice", "All"]],
+      [59, "Balance (LCY)", "Balance (LCY)", "Decimal", "FlowField", 12],
+      [102, "E-Mail", "Email", "Text", "Normal", 80]
+    ],
+    "13": [
+      [1, "Code", "Code", "Code", "Normal", 20, true],
+      [2, "Name", "Name", "Text", "Normal", 50],
+      [5052, "E-Mail", "Email", "Text", "Normal", 80]
+    ],
+    "9": [
+      [1, "Code", "Code", "Code", "Normal", 10, true],
+      [2, "Name", "Name", "Text", "Normal", 50]
+    ],
+    "92": [
+      [1, "Code", "Code", "Code", "Normal", 20, true],
+      [2, "Description", "Description", "Text", "Normal", 100]
+    ]
+  },
+  "rows": {
+    "18": [
+      ["10000", "Adatum Corporation", "192 Market Square", "Auckland", "09 555 0100", 0, "DOMESTIC", "AW", "NZ", " ", 1499.03, "robert.townes@contoso.com"],
+      ["20000", "Trey Research", "153 Thomas Drive", "Wellington", "04 555 0101", 50000, "DOMESTIC", "MB", "NZ", " ", 24117.6, "helen.ray@contoso.com"],
+      ["30000", "School of Fine Art", "10 High Tower Green", "Christchurch", "03 555 0102", 20000, "DOMESTIC", "NW", "NZ", " ", 8840.5, "meagan.bond@contoso.com"],
+      ["40000", "Alpine Ski House", "10 Deerfield Road", "Queenstown", "03 555 0103", 25000, "DOMESTIC", "AW", "NZ", " ", 31560, "ian.deberry@contoso.com"],
+      ["50000", "Relecloud", "25 Water Way", "Sydney", "02 5550 0104", 100000, "FOREIGN", "MB", "AU", " ", 66208.75, "jesse.homer@contoso.com"],
+      ["60000", "Coho Winery", "88 Vine Street", "Blenheim", "03 555 0105", 30000, "DOMESTIC", "NW", "NZ", "Invoice", 12950, "nicole.carley@contoso.com"],
+      ["70000", "Fabrikam Residences", "4 Harbour Lane", "Tauranga", "07 555 0106", 15000, "DOMESTIC", "AW", "NZ", " ", 0, "lena.park@contoso.com"],
+      ["80000", "Litware, Inc.", "601 Collins Street", "Melbourne", "03 5550 0107", 75000, "FOREIGN", "MB", "AU", " ", 45210.2, "omar.haddad@contoso.com"],
+      ["90000", "Northwind Traders", "12 Quay Street", "Auckland", "09 555 0108", 40000, "DOMESTIC", "NW", "NZ", " ", 19875.4, "mia.tane@contoso.com"],
+      ["100000", "Tailspin Toys", "7 Kite Road", "Hamilton", "07 555 0109", 10000, "DOMESTIC", "AW", "NZ", "Ship", 3420, "sam.oliver@contoso.com"],
+      ["110000", "Wide World Importers", "3 Dock Road", "Brisbane", "07 5550 0110", 60000, "FOREIGN", "MB", "AU", " ", 52300.9, "ruth.ngata@contoso.com"],
+      ["120000", "Proseware, Inc.", "55 Lambton Quay", "Wellington", "04 555 0111", 20000, "DOMESTIC", "NW", "NZ", " ", 7615.3, "kai.wells@contoso.com"],
+      ["130000", "Fourth Coffee", "21 Cuba Street", "Wellington", "04 555 0112", 5000, "DOMESTIC", "AW", "NZ", " ", 980.45, "ana.lee@contoso.com"],
+      ["140000", "Lamna Healthcare", "300 Queen Street", "Auckland", "09 555 0113", 80000, "DOMESTIC", "MB", "NZ", " ", 38440, "tom.reid@contoso.com"],
+      ["150000", "Woodgrove Bank", "1 Customhouse Quay", "Wellington", "04 555 0114", 150000, "DOMESTIC", "NW", "NZ", " ", 121905.6, "grace.hunt@contoso.com"],
+      ["160000", "Graphic Design Institute", "9 Art Lane", "Dunedin", "03 555 0115", 10000, "DOMESTIC", "AW", "NZ", " ", 2265.8, "leo.marsh@contoso.com"]
+    ],
+    "13": [
+      ["AW", "Alex Wilber", "alex.wilber@contoso.com"],
+      ["MB", "Megan Bowen", "megan.bowen@contoso.com"],
+      ["NW", "Nestor Wilke", "nestor.wilke@contoso.com"]
+    ],
+    "9": [
+      ["AU", "Australia"],
+      ["NZ", "New Zealand"]
+    ],
+    "92": [
+      ["DOMESTIC", "Domestic customers"],
+      ["FOREIGN", "Foreign customers"]
+    ]
+  }
+}

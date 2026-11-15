@@ -1,0 +1,86 @@
+<!doctype html>
+<!--
+  A made-up Dynamics 365 account form, as a backdrop for the videos. Plain
+  HTML: no Microsoft code or assets. Its fields come from fixtures/ce.json, the
+  record the panel reads, so the two agree. The panel's Logical names and Blur
+  data reach it as { type: "da:ce", command, on } (videos.mjs passes them on).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Adventure Works (sample)</title>
+    <style>
+      :root { --bg: #f5f5f5; --card: #fff; --ink: #242424; --muted: #616161; --line: #e0e0e0; --head: #1b1b1b; --accent: #0f6cbd; --tag: #e6f2fb; --tag-ink: #0f548c; }
+      :root.dark { --bg: #141414; --card: #242424; --ink: #e8e8e8; --muted: #a0a0a0; --line: #3a3a3a; --head: #0a0a0a; --accent: #479ef5; --tag: #0f3a5c; --tag-ink: #9ccbf2; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 14px "Segoe UI", system-ui, sans-serif; height: 100vh; overflow: hidden; }
+      header { height: 48px; background: var(--head); color: #fff; display: flex; align-items: center; gap: 16px; padding: 0 16px; font-weight: 600; }
+      header .app { font-weight: 400; opacity: .85; border-left: 1px solid #555; padding-left: 16px; }
+      header .search { margin-left: auto; width: 280px; height: 30px; border-radius: 4px; background: #2e2e2e; }
+      .layout { display: flex; height: calc(100vh - 48px); }
+      nav { width: 200px; background: var(--card); border-right: 1px solid var(--line); padding: 12px 0; }
+      nav div { padding: 8px 18px; color: var(--muted); }
+      nav div.on { color: var(--ink); background: color-mix(in srgb, var(--accent) 12%, transparent); border-left: 3px solid var(--accent); padding-left: 15px; }
+      nav h4 { margin: 14px 18px 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+      main { flex: 1; overflow: hidden; }
+      .commands { height: 44px; background: var(--card); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 22px; padding: 0 20px; color: var(--muted); }
+      .title { padding: 18px 24px 8px; }
+      .title h1 { margin: 0; font-size: 22px; font-weight: 600; }
+      .title p { margin: 4px 0 0; color: var(--muted); }
+      .tabs { display: flex; gap: 24px; padding: 0 24px; border-bottom: 1px solid var(--line); color: var(--muted); }
+      .tabs span { padding: 10px 0; }
+      .tabs span.on { color: var(--ink); border-bottom: 2px solid var(--accent); }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 18px 24px; align-items: start; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px; }
+      .card h3 { margin: 0 0 8px; font-size: 15px; }
+      .row { display: grid; grid-template-columns: 170px 1fr; align-items: center; min-height: 36px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+      .row:last-child { border: 0; }
+      .label { color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+      .label .req { color: #c50f1f; margin-left: 2px; }
+      .tag { display: none; align-self: flex-start; font: 11px ui-monospace, Consolas, monospace; background: var(--tag); color: var(--tag-ink); border-radius: 4px; padding: 1px 6px; }
+      .names .tag { display: inline-block; animation: pop .35s ease-out; }
+      .value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: filter .35s; }
+      .value.empty { color: var(--muted); }
+      .blurred .value { filter: blur(6px); }
+      @keyframes pop { from { opacity: 0; transform: translateY(-3px) } }
+    </style>
+    <script>
+      document.documentElement.classList.toggle("dark", new URLSearchParams(location.search).get("theme") === "dark")
+    </script>
+  </head>
+  <body>
+    <header><span>Dynamics 365</span><span class="app">Sales Hub</span><span class="search"></span></header>
+    <div class="layout">
+      <nav>
+        <h4>My Work</h4><div>Dashboards</div><div>Activities</div>
+        <h4>Customers</h4><div class="on">Accounts</div><div>Contacts</div>
+        <h4>Sales</h4><div>Leads</div><div>Opportunities</div><div>Quotes</div><div>Orders</div>
+      </nav>
+      <main>
+        <div class="commands"><span>Save</span><span>Save &amp; Close</span><span>New</span><span>Deactivate</span><span>Refresh</span><span>Share</span></div>
+        <div class="title"><h1 id="name">Adventure Works (sample)</h1><p>Account · Account for Sales Insights</p></div>
+        <div class="tabs"><span class="on">Summary</span><span>Details</span><span>Related</span></div>
+        <div class="grid" id="form"></div>
+      </main>
+    </div>
+    <script type="module">
+      const { state } = await (await fetch("/marketing/fixtures/ce.json")).json()
+      const fields = state.form.fields.filter((f) => f.tab === "Summary" && f.visible)
+      const half = Math.ceil(fields.length / 2)
+      const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])
+      const card = (title, list) =>
+        `<div class="card"><h3>${title}</h3>${list
+          .map(
+            (f) =>
+              `<div class="row"><span class="label"><span>${esc(f.label)}${f.requiredLevel === "required" ? '<span class="req">*</span>' : ""}</span><span class="tag">${f.logicalName}</span></span><span class="value${f.display ? "" : " empty"}">${f.display ? esc(f.display) : "---"}</span></div>`
+          )
+          .join("")}</div>`
+      document.getElementById("form").innerHTML = card("Account information", fields.slice(0, half)) + card("Details", fields.slice(half))
+      addEventListener("message", ({ data }) => {
+        if (data?.type !== "da:ce") return
+        if (data.command === "logicalNames") document.body.classList.toggle("names", !!data.on)
+        if (data.command === "blur") document.body.classList.toggle("blurred", !!data.on)
+      })
+    </script>
+  </body>
+</html>

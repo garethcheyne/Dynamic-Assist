@@ -85,3 +85,58 @@ describe("bcCompanies", () => {
     expect(bcCompanies(list, source, TENANT)).toHaveLength(1)
   })
 })
+
+describe("bcCompanies with what the org and Business Central say", () => {
+  const ORG = "https://contoso.crm6.dynamics.com"
+  const key = (env: string, company: string) =>
+    `${TENANT}/${env}/${company}`.toLowerCase()
+
+  it("offers only the company the org's business units name", () => {
+    const list = [
+      bc(`${TENANT}/Production?company=A`),
+      bc(`${TENANT}/Production?company=B`),
+    ]
+    const org = { origin: ORG, companies: ["B"], links: {} }
+    expect(companiesOf(bcCompanies(list, null, TENANT, org))).toEqual(["B"])
+  })
+
+  it("offers a company the companion said syncs with this org", () => {
+    const list = [
+      bc(`${TENANT}/Sandbox?company=A`),
+      bc(`${TENANT}/Production?company=B`),
+    ]
+    const links = { [key("Sandbox", "A")]: ORG }
+    const org = { origin: ORG, companies: [], links }
+    expect(companiesOf(bcCompanies(list, null, TENANT, org))).toEqual(["A"])
+  })
+
+  it("never offers a company that syncs with another org", () => {
+    const list = [
+      bc(`${TENANT}/Sandbox?company=A`),
+      bc(`${TENANT}/Production?company=B`),
+    ]
+    const links = { [key("Production", "B")]: "https://other.crm.dynamics.com" }
+    const org = { origin: ORG, companies: [], links }
+    expect(companiesOf(bcCompanies(list, null, TENANT, org))).toEqual(["A"])
+  })
+
+  it("offers everything left when nothing names a company", () => {
+    const list = [
+      bc(`${TENANT}/Sandbox?company=A`),
+      bc(`${TENANT}/Production?company=B`),
+    ]
+    const org = { origin: ORG, companies: ["Z"], links: {} }
+    expect(companiesOf(bcCompanies(list, null, TENANT, org))).toEqual([
+      "B",
+      "A",
+    ])
+  })
+
+  it("keeps the org's default company from its setup", () => {
+    const source = { environment: "UAT", company: "CRONUS NZ" }
+    const list = [bc(`${TENANT}/UAT?company=Other`)]
+    const org = { origin: ORG, companies: [], links: {} }
+    const offered = bcCompanies(list, source, TENANT, org)
+    expect(offered.map((e) => e.key)).toEqual(["setup:uat/cronus nz"])
+  })
+})

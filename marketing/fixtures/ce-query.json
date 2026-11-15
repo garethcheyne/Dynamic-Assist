@@ -1,0 +1,125 @@
+{
+  "_note": "Demo data for the Dynamics 365 query builder videos. Fictitious only: Microsoft's sample company names, invented people, example.com addresses. Never real tenant, customer or user data.",
+  "tables": [
+    ["account", "Account", "accounts", "accountid", "name"],
+    ["contact", "Contact", "contacts", "contactid", "fullname"],
+    ["opportunity", "Opportunity", "opportunities", "opportunityid", "name"],
+    ["lead", "Lead", "leads", "leadid", "fullname"],
+    ["incident", "Case", "incidents", "incidentid", "title"],
+    ["systemuser", "User", "systemusers", "systemuserid", "fullname"],
+    ["team", "Team", "teams", "teamid", "name"],
+    ["businessunit", "Business Unit", "businessunits", "businessunitid", "name"],
+    ["product", "Product", "products", "productid", "name"],
+    ["quote", "Quote", "quotes", "quoteid", "name"],
+    ["salesorder", "Order", "salesorders", "salesorderid", "name"],
+    ["invoice", "Invoice", "invoices", "invoiceid", "name"],
+    ["campaign", "Campaign", "campaigns", "campaignid", "name"],
+    ["task", "Task", "tasks", "activityid", "subject"],
+    ["phonecall", "Phone Call", "phonecalls", "activityid", "subject"],
+    ["email", "Email", "emails", "activityid", "subject"]
+  ],
+  "attributes": {
+    "account": [
+      ["accountid", "AccountId", "Account", "Uniqueidentifier"],
+      ["name", "Name", "Account Name", "String"],
+      ["accountnumber", "AccountNumber", "Account Number", "String"],
+      ["address1_city", "Address1_City", "Address 1: City", "String"],
+      ["address1_country", "Address1_Country", "Address 1: Country/Region", "String"],
+      ["telephone1", "Telephone1", "Main Phone", "String"],
+      ["emailaddress1", "EMailAddress1", "Email", "String"],
+      ["websiteurl", "WebSiteURL", "Website", "String"],
+      ["revenue", "Revenue", "Annual Revenue", "Money"],
+      ["numberofemployees", "NumberOfEmployees", "Number of Employees", "Integer"],
+      ["industrycode", "IndustryCode", "Industry", "Picklist"],
+      ["statecode", "StateCode", "Status", "State"],
+      ["creditonhold", "CreditOnHold", "Credit Hold", "Boolean"],
+      ["primarycontactid", "PrimaryContactId", "Primary Contact", "Lookup", ["contact"]],
+      ["ownerid", "OwnerId", "Owner", "Owner", ["systemuser"]],
+      ["createdon", "CreatedOn", "Created On", "DateTime"]
+    ],
+    "contact": [
+      ["contactid", "ContactId", "Contact", "Uniqueidentifier"],
+      ["fullname", "FullName", "Full Name", "String"],
+      ["firstname", "FirstName", "First Name", "String"],
+      ["lastname", "LastName", "Last Name", "String"],
+      ["jobtitle", "JobTitle", "Job Title", "String"],
+      ["emailaddress1", "EMailAddress1", "Email", "String"],
+      ["telephone1", "Telephone1", "Business Phone", "String"],
+      ["address1_city", "Address1_City", "Address 1: City", "String"],
+      ["parentcustomerid", "ParentCustomerId", "Company Name", "Customer", ["account"]],
+      ["statecode", "StateCode", "Status", "State"],
+      ["ownerid", "OwnerId", "Owner", "Owner", ["systemuser"]],
+      ["createdon", "CreatedOn", "Created On", "DateTime"]
+    ],
+    "systemuser": [
+      ["systemuserid", "SystemUserId", "User", "Uniqueidentifier"],
+      ["fullname", "FullName", "Full Name", "String"],
+      ["internalemailaddress", "InternalEMailAddress", "Primary Email", "String"]
+    ]
+  },
+  "options": {
+    "industrycode": [[6, "Business Services"], [7, "Consulting"], [12, "Durable Manufacturing"], [13, "Eating and Drinking Places"], [14, "Entertainment Retail"], [16, "Financial"], [17, "Food and Tobacco Processing"], [22, "Non-Durable Merchandise Retail"], [30, "Transportation"], [31, "Utility Creation and Distribution"], [33, "Wholesale"]],
+    "statecode": [[0, "Active"], [1, "Inactive"]],
+    "creditonhold": [[1, "Yes"], [0, "No"]]
+  },
+  "relationships": {
+    "account": {
+      "manyToOne": [
+        ["account_primary_contact", "contact", "contactid", "primarycontactid"],
+        ["user_accounts", "systemuser", "systemuserid", "ownerid"]
+      ],
+      "oneToMany": [
+        ["contact_customer_accounts", "contact", "parentcustomerid", "accountid"],
+        ["opportunity_customer_accounts", "opportunity", "customerid", "accountid"]
+      ]
+    },
+    "contact": {
+      "manyToOne": [
+        ["contact_customer_accounts", "account", "accountid", "parentcustomerid"],
+        ["user_contacts", "systemuser", "systemuserid", "ownerid"]
+      ],
+      "oneToMany": []
+    }
+  },
+  "users": [
+    ["u1", "Alex Wilber", "alex@example.com"],
+    ["u2", "Megan Bowen", "megan@example.com"],
+    ["u3", "Nestor Wilke", "nestor@example.com"]
+  ],
+  "accounts": [
+    ["Adventure Works (sample)", "ACC-1001", "Redmond", "United States", 4200000, 4300, 12, 0, false, "c01", "u1", "2026-03-12T09:14:00Z"],
+    ["Fabrikam, Inc. (sample)", "ACC-1002", "Lynnwood", "United States", 3100000, 1500, 7, 0, false, "c02", "u2", "2026-03-15T11:02:00Z"],
+    ["Contoso Pharmaceuticals (sample)", "ACC-1003", "Seattle", "United States", 2850000, 980, 22, 0, false, "c03", "u1", "2026-04-02T14:40:00Z"],
+    ["Alpine Ski House (sample)", "ACC-1004", "Missoula", "United States", 1750000, 420, 14, 0, true, "c04", "u3", "2026-04-18T08:21:00Z"],
+    ["A. Datum Corporation (sample)", "ACC-1005", "Redmond", "United States", 6800000, 5200, 6, 0, false, "c05", "u2", "2026-05-06T10:55:00Z"],
+    ["Coho Winery (sample)", "ACC-1006", "Phoenix", "United States", 980000, 140, 17, 0, false, "c06", "u3", "2026-05-21T16:08:00Z"],
+    ["Litware, Inc. (sample)", "ACC-1007", "Dallas", "United States", 5400000, 2600, 6, 0, false, "c07", "u1", "2026-06-03T13:30:00Z"],
+    ["Blue Yonder Airlines (sample)", "ACC-1008", "Los Angeles", "United States", 12500000, 9800, 30, 0, false, "c08", "u2", "2026-06-17T09:47:00Z"],
+    ["City Power & Light (sample)", "ACC-1009", "Redmond", "United States", 9300000, 7100, 31, 0, false, "c09", "u3", "2026-07-01T12:12:00Z"],
+    ["Fourth Coffee (sample)", "ACC-1010", "Renton", "United States", 610000, 95, 13, 1, false, "c10", "u1", "2026-07-14T15:25:00Z"],
+    ["Proseware, Inc.", "ACC-1011", "Auckland", "New Zealand", 2200000, 310, 7, 0, false, "c11", "u2", "2026-08-02T21:10:00Z"],
+    ["Northwind Traders", "ACC-1012", "Wellington", "New Zealand", 1450000, 260, 33, 0, false, "c12", "u3", "2026-08-19T22:40:00Z"],
+    ["Wide World Importers", "ACC-1013", "Christchurch", "New Zealand", 3900000, 640, 33, 0, true, "c13", "u1", "2026-09-04T20:05:00Z"],
+    ["Tailspin Toys", "ACC-1014", "Sydney", "Australia", 880000, 120, 22, 0, false, "c14", "u2", "2026-09-22T23:18:00Z"],
+    ["Woodgrove Bank", "ACC-1015", "London", "United Kingdom", 15200000, 11000, 16, 0, false, "c15", "u3", "2026-10-07T07:50:00Z"],
+    ["Trey Research", "ACC-1016", "Toronto", "Canada", 1120000, 180, 7, 1, false, "c16", "u1", "2026-10-21T14:36:00Z"]
+  ],
+  "contacts": [
+    ["c01", "Nancy", "Anderson", "Purchasing Manager", 1, "Redmond"],
+    ["c02", "Maria", "Campbell", "Chief Operating Officer", 2, "Lynnwood"],
+    ["c03", "Robert", "Lyon", "IT Director", 3, "Seattle"],
+    ["c04", "Paul", "Cannon", "Store Manager", 4, "Missoula"],
+    ["c05", "Rene", "Valdes", "Finance Director", 5, "Redmond"],
+    ["c06", "Jim", "Glynn", "Owner", 6, "Phoenix"],
+    ["c07", "Susan", "Burk", "Head of Procurement", 7, "Dallas"],
+    ["c08", "Sidney", "Higa", "Fleet Manager", 8, "Los Angeles"],
+    ["c09", "Scott", "Konersmann", "Operations Lead", 9, "Redmond"],
+    ["c10", "Patrick", "Sands", "Café Manager", 10, "Renton"],
+    ["c11", "Yvonne", "McKay", "Managing Director", 11, "Auckland"],
+    ["c12", "Susanna", "Stubberod", "Buyer", 12, "Wellington"],
+    ["c13", "Aroha", "Tane", "Logistics Manager", 13, "Christchurch"],
+    ["c14", "Liam", "Murray", "Product Manager", 14, "Sydney"],
+    ["c15", "Priya", "Shah", "Head of Partnerships", 15, "London"],
+    ["c16", "Ethan", "Roy", "Research Lead", 16, "Toronto"]
+  ]
+}

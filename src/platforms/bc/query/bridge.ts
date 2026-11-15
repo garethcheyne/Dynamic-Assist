@@ -10,6 +10,8 @@ export const BRIDGE_TAG = "dynamic-assist"
 export const BRIDGE_PAGE_ID = 77500
 const BC_ORIGIN = "https://businesscentral.dynamics.com"
 const REQUEST_TIMEOUT_MS = 120_000
+/** How long to look for a bridge in this tab before asking the service worker */
+const LOOK_HERE_MS = 700
 
 export type BcTable = {
   id: number
@@ -20,6 +22,13 @@ export type BcTable = {
 }
 
 import type { ConditionOp } from "./conditions"
+import {
+  classifyPageError,
+  PAGE_ERROR_TAG,
+  type CompanionProblem,
+  type PageErrorAnswer,
+  type PageErrorAsk,
+} from "../page-error"
 import {
   COMPANION_RELAY,
   type BcCompanionRelay,
@@ -198,6 +207,13 @@ async function relayRequest<T>(method: string, params: object): Promise<T> {
 }
 
 export class BridgeClient {
+  /** Why connect() answered false, when the companion itself said why */
+  connectError: string | null = null
+  /**
+   * Business Central's own error page for the query page in this tab, when
+   * it shows one: the companion isn't installed, or you can't run its page
+   */
+  pageProblem: CompanionProblem | null = null
   private target: Window | null = null
   /** Not on the query page: requests go through the service worker instead */
   private relay = false
@@ -213,9 +229,26 @@ export class BridgeClient {
     this.pending.clear()
   }
 
-  private onMessage = (event: MessageEvent<Response>) => {
-    const data = event.data
-    if (data?.tag !== BRIDGE_TAG || event.origin !== BC_ORIGIN) return
+  private onMessage = (event: MessageEvent<Response | PageErrorAnswer>) => {
+    if (event.origin !== BC_ORIGIN) return
+    const answer = event.data as PageErrorAnswer
+    if (
+      answer?.tag === PAGE_ERROR_TAG &&
+      answer.type === "answer" &&
+      answer.page === BRIDGE_PAGE_ID &&
+      typeof answer.text === "string"
+    ) {
+      // No bridge is coming: say why, and stop waiting for one
+      this.pageProblem = {
+        kind: classifyPageError(answer.text),
+        message: answer.text,
+      }
+      this.connectError = answer.text
+      this.found?.()
+      return
+    }
+    const data = event.data as Response
+    if (data?.tag !== BRIDGE_TAG) return
     if (data.type === "hello" && event.source) {
       this.target = event.source as Window
       this.found?.()
@@ -231,37 +264,56 @@ export class BridgeClient {
   private found: (() => void) | null = null
 
   /**
-   * Finds the companion: the bridge frame on this page (the query page), or,
-   * anywhere else in Business Central, the query page of this environment and
-   * company through the service worker, which opens it in the background the
-   * first time (that can take a minute). False if there's no companion.
+   * Finds the companion: the bridge frame in this tab, or, failing that, the
+   * query page of this environment and company through the service worker,
+   * which opens it in the background the first time (that can take a minute).
+   * False if there's no companion.
+   *
+   * The URL can't be relied on to say this is the query page: older companions
+   * have it as a dialog, and BC drops page=77500 from the URL once one has
+   * opened. So this looks first.
    */
   async connect(waitMs = 2500): Promise<boolean> {
-    const onQueryPage =
+    const urlSaysQueryPage =
       new URLSearchParams(location.search).get("page") ===
       String(BRIDGE_PAGE_ID)
-    if (!onQueryPage && typeof chrome !== "undefined" && chrome.runtime?.id) {
-      this.relay = true
-      return this.request("info").then(
-        () => true,
-        () => false
-      )
-    }
-    return this.connectHere(waitMs)
+    const canRelay = typeof chrome !== "undefined" && !!chrome.runtime?.id
+    if (urlSaysQueryPage || !canRelay) return this.connectHere(waitMs)
+    if (await this.connectHere(LOOK_HERE_MS)) return true
+    this.relay = true
+    return this.request("info").then(
+      () => true,
+      (error: unknown) => {
+        this.connectError =
+          error instanceof Error ? error.message : String(error)
+        return false
+      }
+    )
   }
 
-  private async connectHere(waitMs: number): Promise<boolean> {
+  /** Finds the bridge frame in this tab, and only there. */
+  async connectHere(waitMs: number): Promise<boolean> {
     // Listening again after dispose() is harmless: the same listener is added once
     window.addEventListener("message", this.onMessage)
+    this.relay = false
     if (this.target && !this.target.closed) return true
     this.target = null
+    this.pageProblem = null
     const done = new Promise<void>((resolve) => (this.found = resolve))
     const deadline = Date.now() + waitMs
-    // The add-in may still be loading: keep pinging until it answers
-    while (!this.target && Date.now() < deadline) {
-      for (const frame of allFrames()) {
+    const ask: PageErrorAsk = {
+      tag: PAGE_ERROR_TAG,
+      type: "ask",
+      page: BRIDGE_PAGE_ID,
+    }
+    // The add-in may still be loading: keep pinging until it answers, or
+    // Business Central says the page can't open
+    while (!this.target && !this.pageProblem && Date.now() < deadline) {
+      for (const frame of [window, ...allFrames()]) {
         try {
-          frame.postMessage({ tag: BRIDGE_TAG, type: "ping" }, BC_ORIGIN)
+          if (frame !== window)
+            frame.postMessage({ tag: BRIDGE_TAG, type: "ping" }, BC_ORIGIN)
+          frame.postMessage(ask, BC_ORIGIN)
         } catch {
           // A frame on another origin: it can't be the bridge
         }

@@ -1,6 +1,6 @@
 import { DatabaseIcon } from "lucide-react"
 
-import { COMPANION_REPO } from "@/shared/links"
+import { COMPANION_REPO, SITE_LINKS } from "@/shared/links"
 
 import type { HelpTab } from "../types"
 
@@ -26,12 +26,18 @@ export const QUERY: HelpTab = {
           what: (
             <>
               The builder is on the left: <b>Columns</b>, <b>Filters</b>,{" "}
-              <b>Related tables</b>, <b>Sort</b> and <b>Options</b> (such as a
-              row limit). Results are on the right, with the query as text
-              beside them. <b>Run</b> with the button or Ctrl+Enter. A query
-              returns 500 rows unless you set <b>Rows</b> (up to 5,000); when
-              more match, the results say so. It follows the panel's light or
-              dark theme.
+              <b>Sort</b> and <b>Options</b> (such as a row limit), and in
+              Business Central <b>Related tables</b>. Results are on the right,
+              with the query as text beside them. <b>Run</b> with the button or
+              Ctrl+Enter. A query returns 500 rows unless you set <b>Rows</b>{" "}
+              (up to 5,000); when more match, the results say so. It follows the
+              panel's light or dark theme.
+              <br />
+              <b>Add column</b> takes as many as you like: tick them (your ticks
+              stay as you search again, and <b>Select all shown</b> ticks every
+              match), then press <b>Add</b>. Enter adds the highlighted one
+              straight away, Shift+Enter ticks it, and Esc closes the list
+              without adding.
             </>
           ),
           how: (
@@ -81,7 +87,8 @@ export const QUERY: HelpTab = {
               saved as FetchXML or SQL; Business Central ones as the table and
               field numbers, so they open in any environment with the same
               tables. Fields the other environment doesn't have are left out,
-              and the builder says which.
+              and the builder says which. Business Central SQL is saved as you
+              wrote it.
             </>
           ),
         },
@@ -176,6 +183,38 @@ export const QUERY: HelpTab = {
           ),
         },
         {
+          id: "bc-sql",
+          name: "SQL",
+          where: "Query builder → SQL",
+          what: (
+            <>
+              Write the query as SQL, with suggestions from this environment:
+              tables, the right table's fields, option values, functions, and
+              joins from its lookups. What can't be translated is underlined as
+              you type, and it says why. Use <code>TOP</code>, <code>LIKE</code>
+              , <code>IN</code>, <code>BETWEEN</code>, <code>TODAY()</code>,{" "}
+              <code>WORKDATE()</code>, <code>DATEADD()</code>,{" "}
+              <code>YEAR()</code>, <code>UPPER()</code>, <code>COUNT</code>,{" "}
+              <code>SUM</code>, <code>AVG</code>, <code>MIN</code>,{" "}
+              <code>MAX</code> and <code>GROUP BY</code>. Ctrl+Space shows
+              suggestions; Ctrl+Enter runs. The <b>SQL</b> tab beside the
+              results shows a built query as SQL.
+            </>
+          ),
+          how: (
+            <>
+              Business Central has no SQL of its own, so this is translated in
+              your browser into the query the builder runs: read-only, with your
+              permissions. Totals are worked out in your browser from every
+              matching row, up to 50,000; past that it says they only cover
+              those. A join must follow one of the table's lookup fields. OR
+              across different fields can't be translated, and when AND and OR
+              are mixed, the ORs need brackets. Sorting goes one way for the
+              whole query, except on totals, which can mix directions.
+            </>
+          ),
+        },
+        {
           id: "al-api",
           name: "AL and API",
           where: "Results side",
@@ -229,12 +268,24 @@ export const QUERY: HelpTab = {
               The app installed in the environment (Business Central 2024 wave 2
               or later), and the <b>DA QUERY</b> permission set for each user,
               alongside their normal permissions. <b>DA QUERY ADMIN</b> adds the
-              query log. Its releases, install steps and source are in the{" "}
+              query log. How to install it is on the{" "}
+              <a
+                href={SITE_LINKS.companionDocs}
+                target="_blank"
+                rel="noreferrer"
+              >
+                website
+              </a>
+              ; its releases and source are in the{" "}
               <a href={COMPANION_REPO} target="_blank" rel="noreferrer">
                 Dynamic-Assist_BusinessCentralAddon
               </a>{" "}
               repository. The same app powers <b>All fields</b>, the{" "}
               <b>Dynamics 365 record</b> link and app names on field badges.
+              Without it, the panel knows within seconds, when Business Central
+              says its page doesn't exist: those tools are turned off in that
+              environment, and the Tools tab lists what to install, with{" "}
+              <b>Copy for your admin</b> and <b>Check again</b>.
             </>
           ),
         },

@@ -156,7 +156,7 @@ export function fromFetchXml(
         descending: o.getAttribute("descending") === "true",
       })),
       top: Number.isFinite(top) && top > 0 ? top : null,
-      distinct: fetchEl.getAttribute("distinct") !== "false",
+      distinct: fetchEl.getAttribute("distinct") === "true",
       filters: parsed.state ?? emptyFilters(),
     },
     // A query without filters is fine: the parser only has something to say

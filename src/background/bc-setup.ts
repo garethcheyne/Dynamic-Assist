@@ -6,11 +6,17 @@
  * request, loads the page, and opens the builder over it as soon as the tab
  * has loaded, so its steps show while the companion starts.
  */
-import { hasChannel } from "@/platforms/bc/companion-channel"
 import {
+  forgetChannel,
+  hasChannel,
+  markChannelLoading,
+} from "@/platforms/bc/companion-channel"
+import {
+  CHANNEL_GONE,
   CHANNEL_STATUS,
   SETUP_REQUEST,
   SETUP_TABS_KEY,
+  type BcChannelGone,
   type BcChannelStatus,
   type BcSetupRequest,
   type BcSetupTab,
@@ -69,7 +75,24 @@ export function openSetupBuilder(tabId: number, done = false) {
 
 export function listenForBcSetup() {
   chrome.runtime.onMessage.addListener(
-    (message: BcChannelStatus | BcSetupRequest, sender, respond) => {
+    (
+      message: BcChannelStatus | BcSetupRequest | BcChannelGone,
+      sender,
+      respond
+    ) => {
+      if (message?.type === CHANNEL_GONE) {
+        const tabId = sender.tab?.id
+        if (tabId === undefined) return false
+        void forgetChannel(tabId)
+          .then(() =>
+            change((setups) => {
+              delete setups[tabId]
+            })
+          )
+          .catch(() => undefined)
+          .finally(() => respond({ ok: true }))
+        return true
+      }
       if (message?.type === CHANNEL_STATUS) {
         hasChannel(parseBcUrl(message.url)).then(
           (open) => respond({ open }),
@@ -90,6 +113,8 @@ export function listenForBcSetup() {
             at: Date.now(),
           }
         })
+          // So other callers wait for this page instead of reloading it
+          .then(() => markChannelLoading(parseBcUrl(returnUrl), tabId))
           .then(() =>
             chrome.tabs.update(tabId, {
               url: buildBcUrl(parseBcUrl(returnUrl), { page: BRIDGE_PAGE_ID }),

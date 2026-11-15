@@ -1,5 +1,6 @@
 import * as React from "react"
 import {
+  BracesIcon,
   DatabaseIcon,
   ExternalLinkIcon,
   LayoutListIcon,
@@ -18,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useCopy } from "@/lib/copy"
 import type { Act } from "@/lib/use-action"
+import { openQueryBuilder } from "@/query-builder/open"
 
 import type { CeColumn, CeForm, CeState } from "../types"
 import { ceUrls, FORM_TYPES } from "../urls"
@@ -31,11 +33,13 @@ type Run = ReturnType<typeof useCeTab>["run"]
 /** The open record: what it is, its form fields, and every column via the Web API. */
 export function RecordView({
   state,
+  tab,
   run,
   act,
   actingAs,
 }: {
   state: CeState
+  tab: chrome.tabs.Tab
   run: Run
   act: Act
   /** The impersonated user's ID, whose access to check instead of yours */
@@ -61,7 +65,7 @@ export function RecordView({
 
   return (
     <div className="flex flex-col gap-3">
-      <RecordSummary state={state} form={form} act={act} run={run} />
+      <RecordSummary state={state} tab={tab} form={form} act={act} run={run} />
       {form.id && (
         <CoupledBcSection
           key={form.id}
@@ -73,7 +77,7 @@ export function RecordView({
       )}
       <CollapsibleSection
         id="ce.fields"
-        title="Form fields"
+        title="Fields"
         icon={<LayoutListIcon />}
         summary={<Count>{form.fields.length}</Count>}
         actions={
@@ -103,11 +107,13 @@ export function RecordView({
 
 function RecordSummary({
   state,
+  tab,
   form,
   act,
   run,
 }: {
   state: CeState
+  tab: chrome.tabs.Tab
   form: CeForm
   act: Act
   run: Run
@@ -118,7 +124,7 @@ function RecordSummary({
 
   return (
     <section className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-xs">
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <span className="inline-flex h-6 items-center gap-1 rounded-md border bg-background pr-0.5 pl-1.5 text-xs">
           <span className="font-mono">{form.entityName}</span>
           <CopyButton
@@ -140,6 +146,7 @@ function RecordSummary({
           {FORM_TYPES[form.formType] ?? form.formType}
         </Badge>
         {form.isDirty && <Badge>Unsaved</Badge>}
+        {/* The same buttons in the same order as Business Central's Page tab */}
         <div className="ml-auto flex">
           {recordUrl && (
             <Button
@@ -152,6 +159,19 @@ function RecordSummary({
               <LinkIcon />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Query this table"
+            aria-label="Query this table"
+            onClick={() =>
+              act("query", () =>
+                openQueryBuilder(tab.id!, { entityName: form.entityName })
+              )
+            }
+          >
+            <DatabaseIcon />
+          </Button>
           {form.id && form.entitySetName && (
             <Button
               variant="ghost"
@@ -164,7 +184,7 @@ function RecordSummary({
                 })
               }
             >
-              <DatabaseIcon />
+              <BracesIcon />
             </Button>
           )}
           {recordUrl && (
@@ -185,8 +205,10 @@ function RecordSummary({
             aria-label="Refresh the form's data"
             onClick={() =>
               act("refresh", async () => {
-                await run("refresh")
-                return "Refreshed"
+                const { asked } = await run("refresh")
+                return asked
+                  ? "Dynamics 365 is asking about your unsaved changes"
+                  : "Refreshed"
               })
             }
           >
@@ -291,7 +313,7 @@ function AllColumns({ run }: { run: Run }) {
           Every column of this record from the Web API, including ones the form
           doesn't show.
           <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-            <DatabaseIcon data-icon="inline-start" />
+            <ScrollTextIcon data-icon="inline-start" />
             {loading ? "Loading…" : "Load columns"}
           </Button>
           {error && <span className="text-destructive">{error}</span>}

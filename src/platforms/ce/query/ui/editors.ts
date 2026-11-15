@@ -78,15 +78,22 @@ function toCompletion(s: Suggestion): Completion {
     info: s.info,
     type: s.type,
     boost: s.boost,
+    sortText: s.sortText,
     apply: s.snippet ? snippet(s.snippet) : s.apply,
   }
 }
 
+/** Metadata an editor can read, and load more of */
+export type Loadable<M> = {
+  get: () => M
+  ensure: (tables: string[]) => Promise<void>
+}
+
 /** A completion source from a pure suggester, loading the query's tables first. */
-function source(
-  meta: MetaSource,
+export function source<M>(
+  meta: Loadable<M>,
   tablesOf: (text: string) => string[],
-  complete: (text: string, pos: number, meta: EditorMeta) => Completions | null,
+  complete: (text: string, pos: number, meta: M) => Completions | null,
   validFor: RegExp
 ): CompletionSource {
   return async (ctx) => {
@@ -103,10 +110,10 @@ function source(
   }
 }
 
-function lintSource(
-  meta: MetaSource,
+export function lintSource<M>(
+  meta: Loadable<M>,
   tablesOf: (text: string) => string[],
-  check: (text: string, meta: EditorMeta | null) => Problem[]
+  check: (text: string, meta: M) => Problem[]
 ) {
   return linter(
     async (view): Promise<Diagnostic[]> => {

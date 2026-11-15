@@ -16,6 +16,7 @@ import { BcQueryApp, type BcOpenRequest } from "@/platforms/bc/query/BcQueryApp"
 
 import { QUERY_OPEN, type QueryOpenMessage } from "./messages"
 import { ErrorBoundary } from "./ErrorBoundary"
+import { ModalFocus } from "./ModalFocus"
 import { QueryTiles } from "./QueryTiles"
 import { scaleCss } from "./scale-css"
 import { QueryApp, type OpenRequest } from "@/platforms/ce/query/ui/QueryApp"
@@ -179,23 +180,25 @@ function mount() {
                 style={i.minimized ? { display: "none" } : undefined}
               >
                 <ErrorBoundary onClose={i.close}>
-                  {"app" in i.request && i.request.app === "bc" ? (
-                    <BcQueryApp
-                      request={i.request}
-                      dark={dark}
-                      onClose={i.close}
-                      onMinimize={i.minimize}
-                      onTitle={i.setTitle}
-                    />
-                  ) : (
-                    <QueryApp
-                      request={i.request}
-                      dark={dark}
-                      onClose={i.close}
-                      onMinimize={i.minimize}
-                      onTitle={i.setTitle}
-                    />
-                  )}
+                  <ModalFocus active={!i.minimized}>
+                    {"app" in i.request && i.request.app === "bc" ? (
+                      <BcQueryApp
+                        request={i.request}
+                        dark={dark}
+                        onClose={i.close}
+                        onMinimize={i.minimize}
+                        onTitle={i.setTitle}
+                      />
+                    ) : (
+                      <QueryApp
+                        request={i.request}
+                        dark={dark}
+                        onClose={i.close}
+                        onMinimize={i.minimize}
+                        onTitle={i.setTitle}
+                      />
+                    )}
+                  </ModalFocus>
                 </ErrorBoundary>
               </div>
             ))}

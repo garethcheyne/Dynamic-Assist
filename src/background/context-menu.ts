@@ -22,7 +22,8 @@ import {
   type BcToolRequest,
 } from "@/platforms/bc/messages"
 import type { BcMenuTarget, BcToolCommand } from "@/platforms/bc/page-info"
-import { buildBcUrl, parseBcUrl } from "@/platforms/bc/url"
+import { showsOneRecord } from "@/platforms/bc/page-info"
+import { bcRecordLink, buildBcUrl, parseBcUrl } from "@/platforms/bc/url"
 import { ceStateOf, runCe } from "@/platforms/ce/command"
 import { ceUrls } from "@/platforms/ce/urls"
 import { openQueryBuilder } from "@/query-builder/open"
@@ -104,7 +105,9 @@ function addLinks(
   PORTAL_LINKS.forEach((group, i) => {
     if (i)
       create({
-        id: `${where}-sep-${i}`,
+        // Not bc-sep-1: the page's own items use that, and a second item with
+        // an ID fails silently
+        id: `${where}-links-sep-${i}`,
         type: "separator",
         parentId,
         contexts,
@@ -210,8 +213,16 @@ const NOT_READY =
 
 // --- Dynamics 365 -----------------------------------------------------------------
 
-async function ceItem(id: string, tab: chrome.tabs.Tab): Promise<Note | void> {
+async function ceItem(
+  id: string,
+  tab: chrome.tabs.Tab,
+  frameId: number
+): Promise<Note | void> {
   const tabId = tab.id!
+  // The page only hears right-clicks in its top frame: in a frame of its own
+  // (a web resource), there's no telling what you clicked
+  if (frameId !== 0 && (id === "ce-copy-name" || id === "ce-option-set"))
+    return refuse("Right-click a field or column on the form or list itself")
   const { state, dark } = await ceStateOf(tabId)
   if (!state) return refuse(NOT_READY)
   const recordId = state.form?.id ?? state.page.entityId
@@ -356,15 +367,14 @@ async function bcItem(
       const r = await bcTool(tabId, "expandTabs")
       return { text: r.message ?? "Done" }
     }
-    case "bc-record-link":
-      if (!form.bookmark)
+    case "bc-record-link": {
+      const link = bcRecordLink(ctx, form, page.session)
+      if (!link)
         return refuse("Open a single record (a card or document) first")
-      return {
-        text: "Copied the record link",
-        copy: buildBcUrl(ctx, { page: form.pageId, bookmark: form.bookmark }),
-      }
+      return { text: "Copied the record link", copy: link }
+    }
     case "bc-all-fields":
-      if (!form.tableId || !form.systemId)
+      if (!showsOneRecord(form.pageType) || !form.tableId || !form.systemId)
         return refuse("Open a single record first")
       await openQueryBuilder(
         tabId,
@@ -415,7 +425,7 @@ export function onContextMenuClick(
 
   const frameId = info.frameId ?? 0
   const run = id.startsWith("ce-")
-    ? ceItem(id, tab)
+    ? ceItem(id, tab, frameId)
     : bcItem(id, tab, frameId, info.selectionText)
   void run
     .then((n) => n && note(tab.id!, frameId, n))

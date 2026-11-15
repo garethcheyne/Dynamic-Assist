@@ -80,11 +80,10 @@ export function NavigateView({
   return (
     <div className="flex flex-col gap-3">
       <QuickOpen state={state} run={run} />
-      <OtherOrgs current={state.environment.clientUrl} />
 
       <CollapsibleSection
         id="ce.nav.me"
-        title="Me"
+        title="You"
         icon={<CircleUserRoundIcon />}
       >
         <TileGrid>
@@ -109,6 +108,8 @@ export function NavigateView({
           />
         </TileGrid>
       </CollapsibleSection>
+
+      <OtherOrgs current={state.environment.clientUrl} />
 
       <CollapsibleSection
         id="ce.nav.admin"
@@ -213,7 +214,7 @@ function QuickOpen({ state, run }: { state: CeState; run: Run }) {
     <section className="flex flex-col gap-2 rounded-xl border bg-card p-3 shadow-xs">
       <div className="flex items-center gap-1.5 text-xs font-semibold">
         <CompassIcon className="size-3.5 text-primary" />
-        Open
+        Go to
       </div>
       <div className="flex flex-col gap-1.5">
         <TablePicker value={e} onChange={setEntity} load={loadEntities} />
@@ -283,9 +284,8 @@ function OtherOrgs({ current }: { current: string }) {
     >
       <div className="-mx-1.5 flex flex-col">
         {orgs.map((e) => (
-          <Hint label={e.url}>
+          <Hint key={e.key} label={e.url}>
             <button
-              key={e.key}
               type="button"
               onClick={() => open(e.url)}
               className="flex min-w-0 flex-col rounded-md px-1.5 py-1.5 text-left hover:bg-muted/60"

@@ -259,10 +259,11 @@ new MutationObserver(() => {
 window.addEventListener("message", (event) => {
   if (event.source !== window) return
   if (event.data?.type === REQUEST_MESSAGE) post(true)
-  if (event.data?.type === TOOL_MESSAGE && currentForm()) {
-    const answer = read(() =>
-      runTool(event.data.command, event.data.on, event.data.data)
-    )
+  if (event.data?.type === TOOL_MESSAGE) {
+    // Always answers: the panel's tile stays busy until it hears back
+    const answer = currentForm()
+      ? read(() => runTool(event.data.command, event.data.on, event.data.data))
+      : "Open a Business Central page first"
     const message = typeof answer === "string" ? answer : answer?.message
     window.postMessage(
       {

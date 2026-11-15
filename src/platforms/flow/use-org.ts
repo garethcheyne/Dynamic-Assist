@@ -13,7 +13,10 @@ export const flowUrl = (env: string, flowId: string) =>
 export function useOrg(tabId: number | undefined, env: string | null) {
   const [history] = useStorage<HistoryEntry[]>(HISTORY_KEY, [])
   const remembered = history.find(
-    (e) => e.platform === "ce" && env && e.environmentId === env
+    (e) =>
+      e.platform === "ce" &&
+      env &&
+      e.environmentId?.toLowerCase() === env.toLowerCase()
   )
   const fallback = remembered ? new URL(remembered.url).origin : null
   const load = useLoad(

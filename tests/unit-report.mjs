@@ -1,5 +1,5 @@
 // Turns Vitest's JSON output (tests/results/unit-latest.json) into a readable
-// report, tests/results/unit-latest.md. Run by `npm run test:report`.
+// report, tests/results/unit-latest.md. Run by `pnpm test:report`.
 import fs from "node:fs"
 import path from "node:path"
 

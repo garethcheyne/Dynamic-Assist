@@ -33,6 +33,7 @@ const SHORT: Record<CeDepth, string> = {
   Local: "BU",
   Deep: "BU + child",
   Global: "Org",
+  Unknown: "?",
 }
 const LABELS: Record<CePrivilegeType, string> = {
   Create: "Create",

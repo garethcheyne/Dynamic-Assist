@@ -7,6 +7,8 @@
  * Written from the Dataverse SQL docs; SQL 4 CDS's FetchXml2Sql (MIT, Mark
  * Carrington) is a much fuller converter if this ever needs more.
  */
+import { DEFAULT_ROWS } from "@/query-builder/limits"
+
 import type { QueryBuilderCondition, QueryBuilderField } from "./lib/types"
 import type { TableInfo } from "./metadata"
 import type { Query } from "./query"
@@ -220,7 +222,9 @@ export function toSql(
   if (left.length) lines.push(`-- Left out, no SQL form: ${left.join("; ")}`)
   if (approximate.length)
     lines.push(`-- From now, not from midnight: ${approximate.join("; ")}`)
-  lines.push(`SELECT${query.distinct ? " DISTINCT" : ""}`)
+  // The builder's Rows, in the text: SQL mode has no other limit to go by
+  const top = query.top && query.top !== DEFAULT_ROWS ? ` TOP ${query.top}` : ""
+  lines.push(`SELECT${query.distinct ? " DISTINCT" : ""}${top}`)
   lines.push(columns.map((c) => `  ${c}`).join(",\n") || "  -- name a column")
   lines.push(`FROM ${sqlName(base)}`)
   lines.push(...joins)

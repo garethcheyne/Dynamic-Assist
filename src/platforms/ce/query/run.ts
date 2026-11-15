@@ -3,6 +3,7 @@ import { getJson } from "./metadata"
 import type { QueryBuilderField } from "./lib/types"
 
 import { rowLimit } from "@/query-builder/limits"
+import { sqlTop } from "./editor/sql-parse"
 import type { Results, Row } from "@/query-builder/results"
 
 export type { Results }
@@ -149,16 +150,18 @@ export async function entitySetOf(entityName: string): Promise<string> {
  * Runs a SQL query through the Web API's sql option, on the entity set of its
  * FROM table, following pages up to the row limit (default 500, at most
  * 5,000). Paging uses odata.maxpagesize: the docs say TOP and OFFSET aren't
- * reliable here.
+ * reliable here, and on a real org a page size above TOP returned the whole
+ * page. So the query's own TOP is applied here too, ahead of the row limit.
  * https://learn.microsoft.com/power-apps/developer/data-platform/webapi/query/sql
  */
 export async function runSql(
   sql: string,
   entitySetName: string,
-  fields: QueryBuilderField[],
-  limit = rowLimit(null)
+  fields: QueryBuilderField[]
 ): Promise<Results> {
   const started = performance.now()
+  const top = sqlTop(sql)
+  const limit = rowLimit(top)
   const prefer = `odata.include-annotations="*",odata.maxpagesize=${Math.min(limit, 5000)}`
   let url: string | undefined =
     `/api/data/v9.2/${entitySetName}?sql=${encodeURIComponent(sql)}`
@@ -176,7 +179,8 @@ export async function runSql(
   }
   return {
     ...shape(raw.slice(0, limit), fields, [], true),
-    more,
+    // TOP asked for this many: that others exist isn't news
+    more: more && !(top && top <= limit),
     ms: Math.round(performance.now() - started),
   }
 }

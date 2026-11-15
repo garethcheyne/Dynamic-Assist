@@ -1,0 +1,82 @@
+<!doctype html>
+<!--
+  A made-up Power Automate solution page, as a backdrop for the bulk on/off
+  video. Plain HTML: no Microsoft code or assets. The flows come from
+  fixtures/flow.json; when the panel turns one on or off, the recorder posts
+  { type: "da:flow", name, on } here and its row changes.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Contoso Sales | Solutions</title>
+    <style>
+      :root { --bg: #faf9f8; --card: #fff; --ink: #242424; --muted: #616161; --line: #e1dfdd; --head: #0f4a8a; --accent: #0f6cbd; --on: #107c10; }
+      :root.dark { --bg: #141414; --card: #1f1f1f; --ink: #e8e8e8; --muted: #a0a0a0; --line: #3a3a3a; --head: #0b2f57; --accent: #479ef5; --on: #54b054; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 14px "Segoe UI", system-ui, sans-serif; height: 100vh; overflow: hidden; }
+      header { height: 48px; background: var(--head); color: #fff; display: flex; align-items: center; gap: 16px; padding: 0 16px; font-weight: 600; }
+      header .env { margin-left: auto; font-weight: 400; font-size: 12px; opacity: .9; text-align: right; line-height: 1.2; }
+      header .env b { display: block; font-weight: 600; font-size: 13px; }
+      .layout { display: flex; height: calc(100vh - 48px); }
+      nav { width: 190px; background: var(--card); border-right: 1px solid var(--line); padding: 10px 0; }
+      nav div { padding: 9px 18px; color: var(--muted); }
+      nav div.on { color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--accent) 10%, transparent); border-left: 3px solid var(--accent); padding-left: 15px; }
+      main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+      .commands { height: 44px; background: var(--card); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 22px; padding: 0 20px; color: var(--muted); }
+      .crumb { padding: 16px 24px 4px; color: var(--muted); font-size: 13px; }
+      .crumb b { color: var(--ink); font-size: 20px; font-weight: 600; display: block; margin-top: 4px; }
+      .wrap { padding: 10px 24px; overflow: hidden; }
+      table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; font-size: 13px; }
+      th { text-align: left; font-weight: 600; color: var(--muted); padding: 9px 14px; border-bottom: 1px solid var(--line); }
+      td { padding: 8px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+      tr:last-child td { border-bottom: 0; }
+      td.name { max-width: 380px; overflow: hidden; text-overflow: ellipsis; }
+      .state { display: inline-flex; align-items: center; gap: 6px; }
+      .state i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); opacity: .5; }
+      .state.on { color: var(--on); }
+      .state.on i { background: var(--on); opacity: 1; }
+      tr.flash td { animation: flash 1.6s ease-out; }
+      @keyframes flash { 0% { background: color-mix(in srgb, var(--on) 22%, transparent) } 100% { background: transparent } }
+    </style>
+    <script>
+      document.documentElement.classList.toggle("dark", new URLSearchParams(location.search).get("theme") === "dark")
+    </script>
+  </head>
+  <body>
+    <header><span>Power Automate</span><span class="env">Environment<b>Contoso Sales (Sandbox)</b></span></header>
+    <div class="layout">
+      <nav><div>Home</div><div>Create</div><div>Templates</div><div>My flows</div><div>Approvals</div><div class="on">Solutions</div><div>Process mining</div></nav>
+      <main>
+        <div class="commands"><span>+ New</span><span>Add existing</span><span>Publish all customizations</span><span>Export solution</span></div>
+        <div class="crumb">Solutions ›<b>Contoso Sales</b></div>
+        <div class="wrap">
+          <table>
+            <thead><tr><th>Display name</th><th>Type</th><th>Status</th><th>Modified</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+    <script type="module">
+      const flow = await (await fetch("/marketing/fixtures/flow.json")).json()
+      const rows = document.getElementById("rows")
+      const state = (on) => `<span class="state${on ? " on" : ""}"><i></i>${on ? "On" : "Off"}</span>`
+      flow.flows.forEach(([name, on], i) => {
+        const tr = document.createElement("tr")
+        tr.dataset.name = name
+        tr.innerHTML = `<td class="name">${name}</td><td>Cloud flow</td><td>${state(on)}</td><td>${i ? `${i + 1} days ago` : "Yesterday"}</td>`
+        rows.append(tr)
+      })
+      addEventListener("message", ({ data }) => {
+        if (data?.type !== "da:flow") return
+        const tr = [...rows.children].find((r) => r.dataset.name === data.name)
+        if (!tr) return
+        tr.children[2].innerHTML = state(data.on)
+        tr.children[3].textContent = "Just now"
+        tr.classList.remove("flash")
+        void tr.offsetWidth
+        tr.classList.add("flash")
+      })
+    </script>
+  </body>
+</html>

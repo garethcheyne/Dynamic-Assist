@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest"
 
 import { lintSql } from "@/platforms/ce/query/editor/sql-lint"
-import { readSql } from "@/platforms/ce/query/editor/sql-parse"
+import {
+  notReadOnly,
+  readSql,
+  sqlTop,
+} from "@/platforms/ce/query/editor/sql-parse"
 
 import { META } from "./fixtures/meta"
 
@@ -37,6 +41,45 @@ describe("readSql", () => {
     expect(q.tables[0].table).toBe("account")
     expect(q.code.find((t) => t.kind === "string")?.value).toBe("O'Brien")
     expect(q.tokens.some((t) => t.kind === "comment")).toBe(true)
+  })
+})
+
+describe("notReadOnly", () => {
+  it.each([
+    "SELECT name FROM account",
+    "select top 3 name from account;",
+    "-- a note\nSELECT name FROM account",
+    "WITH a AS (SELECT name FROM account) SELECT name FROM a",
+    "SELECT name FROM account WHERE name = 'a; b'",
+    "",
+  ])("lets through %j", (text) => {
+    expect(notReadOnly(text)).toBeNull()
+  })
+  it.each([
+    ["DELETE FROM account", /Only SELECT/],
+    ["UPDATE account SET name = 'x'", /Only SELECT/],
+    ["DROP TABLE account", /Only SELECT/],
+    ["/* looks fine */ INSERT INTO account (name) VALUES ('x')", /Only SELECT/],
+    ["SELECT name FROM account; DELETE FROM account", /One query at a time/],
+  ])("refuses %j", (text, message) => {
+    expect(notReadOnly(text)).toMatch(message)
+  })
+})
+
+describe("sqlTop", () => {
+  it.each([
+    ["SELECT TOP 10 name FROM account", 10],
+    ["select top 10 name from account", 10],
+    ["SELECT DISTINCT TOP 5 name FROM account", 5],
+    ["SELECT TOP (7) name FROM account", 7],
+    ["-- first ten\nSELECT TOP 10 name FROM account", 10],
+    ["SELECT name FROM account", null],
+    ["SELECT top FROM account", null],
+    ["SELECT TOP 0 name FROM account", null],
+    ["SELECT name FROM account -- TOP 3", null],
+    ["", null],
+  ])("%s", (text, top) => {
+    expect(sqlTop(text)).toBe(top)
   })
 })
 
