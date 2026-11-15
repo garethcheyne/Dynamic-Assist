@@ -49,11 +49,16 @@ async function readEnvironmentName(tabId: number): Promise<string | null> {
   try {
     const [result] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: () =>
-        document
-          .querySelector('[data-test-id="SelectEnvironment"]')
-          ?.getAttribute("aria-label")
-          ?.replace(/^Environment:\s*/, "") ?? null,
+      // The picker's label, however the portal marks it this month
+      func: () => {
+        const picker = document.querySelector(
+          '[data-test-id="SelectEnvironment"], [data-testid="SelectEnvironment"], button[aria-label^="Environment:"], [aria-label^="Environment:"]'
+        )
+        const label =
+          picker?.getAttribute("aria-label") ?? picker?.textContent ?? ""
+        const name = label.replace(/^\s*Environment:?\s*/i, "").trim()
+        return name || null
+      },
     })
     return (result?.result as string | null) ?? null
   } catch {
@@ -89,23 +94,34 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
     return () => window.clearTimeout(timer)
   }, [refresh, env])
 
-  React.useEffect(() => {
-    const visit = tab.url ? visitFromUrl(tab.url) : null
-    if (visit && stableName)
-      void recordVisit({ ...visit, title: stableName, named: true })
-  }, [tab.url, stableName])
-
   // The Dynamics 365 org behind this environment, if you've been there
   const org = history.find(
-    (e) => e.platform === "ce" && env && e.environmentId === env
+    (e) =>
+      e.platform === "ce" &&
+      env &&
+      e.environmentId?.toLowerCase() === env.toLowerCase()
   )
+  // When the picker can't be read, the org's name stands in for History
+  const orgName = org ? org.label || org.title : null
+  const knownName = stableName ?? orgName
+
+  React.useEffect(() => {
+    const visit = tab.url ? visitFromUrl(tab.url) : null
+    if (visit && knownName)
+      void recordVisit({ ...visit, title: knownName, named: true })
+  }, [tab.url, knownName])
   const maker = (path: string) => powerPlatform.maker(env!, path)
   const open = (url: string) => chrome.tabs.create({ url })
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-9 items-center gap-2 border-b bg-card px-3 text-xs">
-        <span className="truncate font-semibold">{name ?? "Power Apps"}</span>
+        <span
+          className="truncate font-semibold"
+          title={env ? `Environment ${env}` : undefined}
+        >
+          {name ?? orgName ?? "Power Apps"}
+        </span>
         {m.area && (
           <span className="truncate text-muted-foreground">
             {AREAS[m.area] ?? m.area}

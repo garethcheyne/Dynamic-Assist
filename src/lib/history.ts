@@ -9,7 +9,7 @@
 import { buildBcUrl, parseBcUrl } from "@/platforms/bc/url"
 import { ceAppUrl } from "@/platforms/ce/urls"
 import { detectPlatform, parseMakerUrl } from "@/shared/detect"
-import { powerPlatform } from "@/shared/links"
+import { GUID, powerPlatform } from "@/shared/links"
 
 export const HISTORY_KEY = "history"
 export const HISTORY_MESSAGE = "history:op"
@@ -94,6 +94,28 @@ export function visitFromUrl(url: string): Visit | null {
     }
   }
   return null
+}
+
+/**
+ * The name to show for an entry: your own name for it, otherwise its title.
+ * A Power Apps environment known only by its ID (the portal's address has
+ * nothing else) takes the name of the Dynamics 365 org in the same
+ * environment, when you've been there.
+ */
+export function displayName(entry: HistoryEntry, all: HistoryEntry[]) {
+  if (entry.label) return entry.label
+  if (
+    entry.platform === "maker" &&
+    entry.environmentId &&
+    GUID.test(entry.title)
+  ) {
+    const env = entry.environmentId.toLowerCase()
+    const org = all.find(
+      (e) => e.platform === "ce" && e.environmentId?.toLowerCase() === env
+    )
+    if (org) return org.label || org.title
+  }
+  return entry.title
 }
 
 /** The instance key a URL belongs to: panels remount when it changes. */

@@ -11,7 +11,7 @@ import ceLogo from "@/assets/brand/ms/dynamics-365.svg"
 import paLogo from "@/assets/brand/ms/power-apps.svg"
 import flowLogo from "@/assets/brand/ms/power-automate.svg"
 import { CollapsibleSection } from "@/components/collapsible-section"
-import { feedbackUrl, SITE_LINKS } from "@/shared/links"
+import { BUY_ME_A_COFFEE, feedbackUrl, SITE_LINKS } from "@/shared/links"
 
 const { version } = chrome.runtime.getManifest()
 const icon = chrome.runtime.getURL("icons/icon128.png")
@@ -55,21 +55,8 @@ function Credit({
   )
 }
 
-const LIBRARIES: [string, string][] = [
-  ["React", "https://react.dev"],
-  ["Vite", "https://vite.dev"],
-  ["CRXJS", "https://crxjs.dev"],
-  ["Tailwind CSS", "https://tailwindcss.com"],
-  ["shadcn/ui", "https://ui.shadcn.com"],
-  ["Base UI", "https://base-ui.com"],
-  ["Lucide", "https://lucide.dev"],
-  ["CodeMirror", "https://codemirror.net"],
-  [
-    "react-resizable-panels",
-    "https://github.com/bvaughn/react-resizable-panels",
-  ],
-  ["Geist", "https://vercel.com/font"],
-]
+/** Every open-source package in the extension, with its licence (written by the build, vite.config.ts) */
+const NOTICES = chrome.runtime.getURL("THIRD-PARTY-NOTICES.txt")
 
 /** What this is, who made it, and whose work it stands on. */
 export function CreditsView() {
@@ -150,12 +137,10 @@ export function CreditsView() {
         icon={<PackageIcon />}
         defaultCollapsed
       >
-        <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-          {LIBRARIES.map(([name, href]) => (
-            <Link key={name} href={href}>
-              {name}
-            </Link>
-          ))}
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Built with open-source software, React, Base UI, CodeMirror and
+          Tailwind CSS among it. Each package and its licence:{" "}
+          <Link href={NOTICES}>open-source licences</Link>.
         </p>
       </CollapsibleSection>
 
@@ -170,6 +155,10 @@ export function CreditsView() {
           <Link href={feedbackUrl()}>feedback page</Link>, and pull requests on{" "}
           <Link href={`${REPO}/issues`}>GitHub</Link>. Tools for other Microsoft
           business apps especially.
+        </p>
+        <p className="text-xs leading-relaxed">
+          Dynamic Assist is free, and stays free. If it saves you time, you can{" "}
+          <Link href={BUY_ME_A_COFFEE}>buy me a coffee</Link>.
         </p>
       </CollapsibleSection>
 

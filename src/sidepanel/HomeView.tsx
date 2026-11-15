@@ -9,9 +9,10 @@ import {
 } from "lucide-react"
 
 import { MS_ICONS } from "@/assets/brand/ms"
+import { CoffeeBadge } from "@/components/coffee-badge"
 import { CollapsibleSection } from "@/components/collapsible-section"
 import { Hint, HintBody } from "@/components/hint"
-import { HISTORY_KEY, type HistoryEntry } from "@/lib/history"
+import { displayName, HISTORY_KEY, type HistoryEntry } from "@/lib/history"
 import { feedbackUrl } from "@/shared/links"
 import { useStorage } from "@/lib/use-storage"
 
@@ -130,7 +131,12 @@ export function HomeView({ onHelp }: { onHelp: () => void }) {
       <div className="grid grid-cols-2 gap-2">
         {PRODUCTS.map((p) => {
           const last = lastUsed(p.platform)
-          const where = last ? (last.label ?? last.title) : null
+          const where = last ? displayName(last, history) : null
+          // A Power Platform environment: its ID too, in the tooltip
+          const envId =
+            last?.environmentId && where !== last.environmentId
+              ? last.environmentId
+              : null
           return (
             <Hint
               key={p.platform}
@@ -142,6 +148,11 @@ export function HomeView({ onHelp }: { onHelp: () => void }) {
                       ? `Opens ${where}, the one you used last. Ctrl-click opens it in the background.`
                       : `Opens ${p.name}.`}
                   </span>
+                  {envId && (
+                    <span className="mt-1 block font-mono text-[10px]">
+                      Environment {envId}
+                    </span>
+                  )}
                 </HintBody>
               }
             >
@@ -214,6 +225,7 @@ export function HomeView({ onHelp }: { onHelp: () => void }) {
           <HeartIcon className="size-3.5" />
           Feedback
         </a>
+        <CoffeeBadge />
       </div>
     </div>
   )

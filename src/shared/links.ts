@@ -20,7 +20,8 @@ export const COMPANION_REPO =
   "https://github.com/garethcheyne/Dynamic-Assist_BusinessCentralAddon"
 export const COMPANION_LATEST = `${COMPANION_REPO}/releases/latest`
 /** The companion's latest .app, ready to install: GitHub won't host .app files, so the website unzips the release */
-export const COMPANION_APP = "https://dynamicassist.err403.com/download/DynamicAssistCompanion.app"
+export const COMPANION_APP =
+  "https://dynamicassist.err403.com/download/DynamicAssistCompanion.app"
 
 /** Microsoft's Business Central Virtual Table app for Dataverse, and its setup docs */
 export const BC_VIRTUAL_TABLES = {
@@ -28,7 +29,8 @@ export const BC_VIRTUAL_TABLES = {
   docs: "https://learn.microsoft.com/dynamics365/business-central/dev-itpro/powerplatform/powerplat-admin-reference",
 }
 
-const REPO = "https://github.com/garethcheyne/Dynamic-Assist"
+/** Buy Me a Coffee, for anyone who'd like to say thanks: a plain link, nothing loaded until it's clicked */
+export const BUY_ME_A_COFFEE = "https://buymeacoffee.com/acejvszkeo"
 
 /** The website: docs, the changelog, feedback and the privacy pages */
 export const SITE = "https://dynamicassist.err403.com"
@@ -40,6 +42,14 @@ export const SITE_LINKS = {
   /** What the website itself keeps: visit counts and feedback */
   websitePrivacy: `${SITE}/privacy/website/`,
   changelog: `${SITE}/changelog/`,
+  /** The docs page Help opens for each product, starting where its panel starts */
+  help: {
+    bc: `${SITE}/docs/bc-page-and-parts/`,
+    ce: `${SITE}/docs/d365-record/`,
+    maker: `${SITE}/docs/power-apps/`,
+    flow: `${SITE}/docs/power-automate/`,
+    none: `${SITE}/docs/getting-started/`,
+  } as Record<string, string>,
   feedback: `${SITE}/feedback/`,
   /** The companion app's page: what it is, installing it, a missing companion */
   companionDocs: `${SITE}/docs/companion-app/`,
@@ -68,9 +78,9 @@ export function feedbackUrl(
   return `${SITE_LINKS.feedback}?${params}`
 }
 
-/** CHANGELOG.md on the main branch: raw for reading, and the repo's files for its relative links */
-export const CHANGELOG = {
-  raw: "https://raw.githubusercontent.com/garethcheyne/Dynamic-Assist/main/CHANGELOG.md",
-  page: `${REPO}/blob/main/CHANGELOG.md`,
-  files: `${REPO}/blob/main/`,
-}
+/**
+ * The website's changelog at a version's release: its sections link as
+ * #2026-11-15 for 2026.11.15. A version not released yet just opens the top.
+ */
+export const whatsNewUrl = (version: string) =>
+  `${SITE_LINKS.changelog}#${version.replace(/\./g, "-")}`

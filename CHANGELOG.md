@@ -17,11 +17,33 @@ Each item that came from feedback or a request links to its file in
 
 ### Added
 
+- **Buy me a coffee**: a link on the home page and in About, for anyone who'd
+  like to say thanks. It's a plain link; nothing loads until you click it.
+- **Pop out**: the More menu opens the panel in a window of its own, to move,
+  size or put on another screen. It follows the tab you're working in, in the
+  browser window you used last, and Dock to side panel puts it back.
 - **Hide the welcome card**: the card at the top of the home page has a ×
   to hide it, and Settings → Home page shows it again.
 
+### Fixed
+
+- **Power Apps environment names**: the home page, History and the Go
+  anywhere menu showed a Power Apps environment by its ID when the portal's
+  environment picker couldn't be read. They now show its name (from the
+  picker, or from the Dynamics 365 org in the same environment) with the ID
+  underneath in History and in the home card's tooltip.
+
 ### Changed
 
+- **Help is the website's docs**: Help, on the home page and in the More
+  menu, opens the docs on dynamicassist.err403.com at the product you're in,
+  instead of a help page built into the extension. The docs cover the same
+  tools, with pictures and search, and are kept up to date between releases.
+  The built-in help page is gone, which makes the extension smaller.
+- **What's new is the website's changelog**: What's new opens the changelog on
+  dynamicassist.err403.com at your version. The extension no longer downloads
+  the changelog from GitHub, so it talks only to the Microsoft services you're
+  using.
 - **About shows the website**: About & credits links dynamicassist.err403.com
   by name, with its docs, changelog, feedback page and privacy policy, instead
   of a small "Website" link next to the author's name.

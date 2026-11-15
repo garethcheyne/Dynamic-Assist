@@ -15,6 +15,7 @@ import { SearchBox } from "@/components/search-box"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  displayName,
   clearHistory,
   HISTORY_KEY,
   removeVisit,
@@ -99,7 +100,7 @@ export function HistoryView({ embedded = false }: { embedded?: boolean }) {
           bodyClassName="gap-0 px-1.5"
         >
           {pinned.map((e) => (
-            <HistoryRow key={e.key} entry={e} showProduct />
+            <HistoryRow key={e.key} entry={e} all={entries} showProduct />
           ))}
         </CollapsibleSection>
       )}
@@ -118,7 +119,7 @@ export function HistoryView({ embedded = false }: { embedded?: boolean }) {
             bodyClassName="gap-0 px-1.5"
           >
             {items.map((e) => (
-              <HistoryRow key={e.key} entry={e} />
+              <HistoryRow key={e.key} entry={e} all={entries} />
             ))}
           </CollapsibleSection>
         )
@@ -138,15 +139,21 @@ export function HistoryView({ embedded = false }: { embedded?: boolean }) {
 
 function HistoryRow({
   entry: e,
+  all,
   showProduct,
 }: {
   entry: HistoryEntry
+  all: HistoryEntry[]
   showProduct?: boolean
 }) {
   const [editing, setEditing] = React.useState(false)
-  const name = e.label || e.title
-  // With a friendly name, the real title moves to the second line
-  const detail = [e.label ? e.title : null, e.subtitle, ago(e.lastVisited)]
+  const name = displayName(e, all)
+  // With a friendly name, the real title (an environment's ID) moves to the second line
+  const detail = [
+    name !== e.title ? e.title : null,
+    e.subtitle,
+    ago(e.lastVisited),
+  ]
     .filter(Boolean)
     .join(" · ")
 

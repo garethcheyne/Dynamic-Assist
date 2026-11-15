@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { HISTORY_KEY, type HistoryEntry } from "@/lib/history"
+import { displayName, HISTORY_KEY, type HistoryEntry } from "@/lib/history"
 import { BC_ORG_KEY, bcCompanyKey, type BcOrgLinks } from "@/lib/product-links"
 import { useStorage } from "@/lib/use-storage"
 import { bcAdminCenterUrl, parseBcUrl } from "@/platforms/bc/url"
@@ -280,7 +280,7 @@ export function Launcher({
                 <Item
                   key={e.key}
                   link={{
-                    label: e.label ?? e.title,
+                    label: displayName(e, history),
                     detail:
                       [e.subtitle, e.envType].filter(Boolean).join(" · ") ||
                       PRODUCT_NAME[e.platform],

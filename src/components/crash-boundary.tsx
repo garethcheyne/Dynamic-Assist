@@ -5,7 +5,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { feedbackUrl } from "@/shared/links"
 
 /**
- * Keeps a crash in one part of the panel (or the help page) from leaving it
+ * Keeps a crash in one part of the panel from leaving it
  * blank: says what broke and offers a way back.
  */
 export class CrashBoundary extends React.Component<

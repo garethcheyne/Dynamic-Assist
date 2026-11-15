@@ -51,6 +51,6 @@ The query builder, "All fields" and the Dynamics 365 record lookup need the opti
 
 - The grid icon in the header lists this environment's other products, the Microsoft admin centres and recent environments.
 - The house icon opens the home page (pinned and recent environments, history); click it again to go back to the page's tools.
-- The ⋮ menu → Help opens the help page in a new tab, and What's new shows what changed in each version.
+- The ⋮ menu → Help opens the docs on the Dynamic Assist website (https://dynamicassist.err403.com/docs/) in a new tab, at the product the tab is on, and What's new opens the website's changelog at the installed version.
 - Feedback on the home page opens the Dynamic Assist website's feedback page (https://dynamicassist.err403.com/feedback/) in a new tab. The extension itself sends nothing anywhere.
 - History (clock icon, also on the home page): the environments you opened. Pin one and rename it.

@@ -43,15 +43,15 @@ EVERYWHERE
 • Go anywhere from the header: this environment's related admin, maker and product pages, and your recent environments
 • A home page with your pinned and recent environments, one click away from any page's tools
 • Right-click menu on Business Central and Dynamics 365 pages: copy the field's name or the record's link, turn the page tools on and off, and open the query builder without opening the panel
-• What's new: what changed in each version
+• What's new: what changed in each version, on the Dynamic Assist website
 • Light and dark themes
-• Full help in a browser tab: every tool, what it does and what it needs, with the full docs on the website
+• Help opens the docs on the Dynamic Assist website, at the product you're in: every tool, what it does and what it needs
 
 HISTORY
 • Every environment and company you open, newest first; pin the ones you use and give them your own names
 
 WHAT IT ACCESSES
-Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server (the What's new page only reads the public changelog from GitHub), there is no account and no tracking, and your history and settings stay in your browser. Links to the Dynamic Assist website open in a new tab only when you click them.
+Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser. Links to the Dynamic Assist website (Help, What's new, Feedback) open in a new tab only when you click them.
 
 Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Microsoft product names and icons are trademarks of the Microsoft group of companies; the icons appear in the panel only to show which product a page or link belongs to.
 

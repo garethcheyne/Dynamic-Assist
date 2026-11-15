@@ -1,4 +1,4 @@
-// The panel's shared parts: header, launcher, Home, History, Settings, What's new, Help.
+// The panel's shared parts: header, launcher, Home, History, Settings, What's new, Help (the website's docs).
 import { sleep, until } from "./lib/browser.mjs"
 import { eq, match, ok } from "./lib/harness.mjs"
 import { bcLoaded, bcUrl, panelOnBc } from "./bc-panel.mjs"
@@ -73,50 +73,27 @@ export async function shellTests({ b, p, run, config }) {
     await p.openMenu("More")
     return b.newTabFrom(() => p.clickMenuItem(item))
   }
-  await h("Help opens on this product, with its tabs", async () => {
+  await h("Help opens this product's docs on the website", async () => {
     const page = await opened("Help")
     try {
-      match(page.url, /index\.html\?page=help#bc/, "URL")
-      await until(() => b.evaluate(page.targetId, `document.querySelectorAll('[role=tab]').length>=8`), { what: "the help tabs" })
-      const names = await b.evaluate(page.targetId, `[...document.querySelectorAll('[role=tab]')].map(x=>x.textContent.trim())`)
-      for (const want of ["Getting started", "Business Central", "Dynamics 365", "Power Apps", "Power Automate", "Query builder", "Privacy"])
-        ok(names.some((n) => n.includes(want)), `no "${want}" tab`)
-      match(await b.evaluate(page.targetId, `document.title`), /Dynamic Assist help/, "title")
+      match(page.url, /^https:\/\/dynamicassist\.err403\.com\/docs\/bc-page-and-parts\//, "URL")
     } finally {
       await b.closeTab(page.targetId)
     }
   })
-  await h("Every help tab has content", async () => {
+  await h("An old help link goes to the docs", async () => {
     const page = await b.openTab(b.extensionUrl("src/sidepanel/index.html?page=help"))
     try {
-      await until(() => b.evaluate(page, `document.querySelectorAll('[role=tab]').length>=8`), { what: "the help tabs" })
-      const count = await b.evaluate(page, `document.querySelectorAll('[role=tab]').length`)
-      for (let i = 0; i < count; i++) {
-        await b.evaluate(page, `document.querySelectorAll('[role=tab]')[${i}].click()`)
-        await sleep(120)
-        const length = await b.evaluate(page, `(document.querySelector('[role=tabpanel]')?.innerText||'').length`)
-        ok(length > 100, `tab ${i} has ${length} characters`)
-      }
-      return `${count} tabs`
+      await until(async () => /dynamicassist\.err403\.com\/docs\//.test(await b.evaluate(page, "location.href")), { what: "the docs", timeout: 8000 })
     } finally {
       await b.closeTab(page)
     }
   })
-  await h("Help deep link goes to its tool", async () => {
-    const page = await b.openTab(b.extensionUrl("src/sidepanel/index.html?page=help#bc/blur"))
-    try {
-      await until(() => b.evaluate(page, `!!document.getElementById('bc--blur')`), { what: "the Blur data section", timeout: 8000 })
-    } finally {
-      await b.closeTab(page)
-    }
-  })
-  await h("What's new shows the changelog", async () => {
+  await h("What's new opens the website's changelog at this version", async () => {
     const page = await opened("What's new")
     try {
-      match(page.url, /index\.html\?page=whatsnew/, "URL")
-      await until(() => b.evaluate(page.targetId, `/What's new in Dynamic Assist/.test(document.body.innerText)&&/You have version|shipped with version/.test(document.body.innerText)`), { what: "the changelog", timeout: 15000 })
       const version = await b.inWorker(`chrome.runtime.getManifest().version`)
-      ok((await b.evaluate(page.targetId, `document.body.innerText`)).includes(version), "doesn't state this version")
+      match(page.url, new RegExp(`^https://dynamicassist\\.err403\\.com/changelog/#${version.replace(/\./g, "-")}$`), "URL")
     } finally {
       await b.closeTab(page.targetId)
     }

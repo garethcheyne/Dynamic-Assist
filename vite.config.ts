@@ -113,6 +113,85 @@ function noScriptWebResources(): CrxPlugin {
   }
 }
 
+// The open-source packages that end up in the extension, gathered from every
+// bundle (the panel, the worker, the injected query builder), with their
+// licence texts: their licences (MIT, ISC, OFL for the Geist font) ask for
+// the notice to travel with the code. Written to dist/THIRD-PARTY-NOTICES.txt,
+// which About links to. Build tools (Vite, CRXJS) don't ship, so aren't in it.
+const shipped = new Map<string, string>()
+
+function packageRoot(id: string) {
+  const clean = id.replace(/\?.*$/, "").replace(/\\/g, "/")
+  const at = clean.lastIndexOf("/node_modules/")
+  if (at < 0) return null
+  const rest = clean.slice(at + "/node_modules/".length).split("/")
+  const name = rest[0].startsWith("@") ? `${rest[0]}/${rest[1]}` : rest[0]
+  return { dir: `${clean.slice(0, at)}/node_modules/${name}`, name }
+}
+
+function licenceText(dir: string) {
+  const file = fs
+    .readdirSync(dir)
+    .find((f) => /^(licen[cs]e|copying|ofl)(\.(md|txt))?$/i.test(f))
+  return file ? fs.readFileSync(path.join(dir, file), "utf8").trim() : ""
+}
+
+// Shipped through stylesheets rather than imports, so no bundle names them: the
+// Geist font, the panel's animations and Tailwind's generated styles
+const STYLE_PACKAGES = ["@fontsource-variable/geist", "tw-animate-css", "tailwindcss"]
+
+function writeNotices(outDir: string) {
+  for (const name of STYLE_PACKAGES) {
+    const dir = path.join(ROOT, "node_modules", name)
+    if (fs.existsSync(path.join(dir, "package.json"))) shipped.set(name, fs.realpathSync(dir))
+  }
+  const entries = [...shipped.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, dir]) => {
+      const meta = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"))
+      const licence = typeof meta.license === "string" ? meta.license : meta.license?.type ?? "see below"
+      const home = meta.homepage ?? (typeof meta.repository === "string" ? meta.repository : meta.repository?.url) ?? ""
+      const text = licenceText(dir) || `Licensed under ${licence}.`
+      return [`${name} ${meta.version} (${licence})`, home.replace(/^git\+/, ""), "", text].filter((l, i) => i !== 1 || l).join("\n")
+    })
+  const header = [
+    "Dynamic Assist: open-source software it includes",
+    "",
+    "Dynamic Assist is free and open source (https://github.com/garethcheyne/Dynamic-Assist).",
+    "It's built with the packages below, each under its own licence, reproduced here as",
+    "those licences ask. Its controls are adapted from shadcn/ui (MIT, https://ui.shadcn.com).",
+    "The Dynamics 365 tools are a rebuild of Level up for Dynamics 365/Power Apps by",
+    "Natraj Yegnaraman (MIT, https://github.com/rajyraman/Levelup-for-Dynamics-CRM).",
+  ].join("\n")
+  const rule = "\n\n" + "-".repeat(78) + "\n\n"
+  fs.mkdirSync(outDir, { recursive: true })
+  fs.writeFileSync(path.join(outDir, "THIRD-PARTY-NOTICES.txt"), header + rule + entries.join(rule) + "\n")
+}
+
+function thirdPartyNotices(): Plugin {
+  let outDir = path.resolve(ROOT, "dist")
+  return {
+    name: "third-party-notices",
+    apply: "build",
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    generateBundle(_, bundle) {
+      for (const output of Object.values(bundle)) {
+        if (output.type !== "chunk") continue
+        for (const id of output.moduleIds) {
+          const pkgRoot = packageRoot(id)
+          if (pkgRoot && fs.existsSync(path.join(pkgRoot.dir, "package.json"))) shipped.set(pkgRoot.name, pkgRoot.dir)
+        }
+      }
+    },
+    // Every bundle closes with the packages seen so far; the last one has them all
+    closeBundle() {
+      if (shipped.size) writeNotices(outDir)
+    },
+  }
+}
+
 // manifest.json is the source; @crxjs bundles every entry it names (side panel,
 // service worker, content scripts) and writes the final manifest to dist/.
 // The version comes from package.json only, so the two can't drift apart.
@@ -125,6 +204,7 @@ export default defineConfig({
     crx({ manifest: { ...manifest, version: pkg.version } }),
     singleReact(),
     noScriptWebResources(),
+    thirdPartyNotices(),
   ],
   resolve: {
     alias: {

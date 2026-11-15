@@ -41,7 +41,7 @@ Nothing else is stored. The extension never reads or stores passwords or sign-in
 
 ## What it shares
 
-Nothing. Dynamic Assist has no server of its own and sends no data to the developer or to any third party. It has no analytics, advertising or tracking. Its network requests go to the Microsoft service you're already signed in to: the Dynamics 365 or Dataverse organisation, or Business Central through its own page. The one exception is the What's new page: when you open it, it reads the public changelog from GitHub (raw.githubusercontent.com), a plain download that sends nothing about you or your data.
+Nothing. Dynamic Assist has no server of its own and sends no data to the developer or to any third party. It has no analytics, advertising or tracking. Its network requests go to the Microsoft service you're already signed in to: the Dynamics 365 or Dataverse organisation, or Business Central through its own page.
 
 ## How long data is kept, and how to delete it
 
@@ -49,7 +49,7 @@ History stays until you remove entries or choose Clear on the History page (pinn
 
 ## The website
 
-The extension never sends anything to its website by itself. Its links to https://dynamicassist.err403.com (the docs, the feedback page and the companion app download) open in a new tab only when you click them. Feedback and Report a problem put the extension's version, and after a crash the error message, in the link, to fill in the feedback form; the form shows them, and nothing is sent unless you send the form. The website counts visits and keeps the feedback you choose to send; its own privacy policy (https://dynamicassist.err403.com/privacy/website/) says what and for how long.
+The extension never sends anything to its website by itself. Its links to https://dynamicassist.err403.com (the docs, the changelog, the feedback page and the companion app download), and to Buy Me a Coffee, open in a new tab only when you click them. Feedback and Report a problem put the extension's version, and after a crash the error message, in the link, to fill in the feedback form; the form shows them, and nothing is sent unless you send the form. The website counts visits and keeps the feedback you choose to send; its own privacy policy (https://dynamicassist.err403.com/privacy/website/) says what and for how long.
 
 ## Contact
 

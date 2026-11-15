@@ -6,6 +6,10 @@ Admin and developer tools for Business Central, Dynamics 365, Power Apps and Pow
 - **Ideas and problems:** the [feedback page](https://dynamicassist.err403.com/feedback/). The extension sends nothing home, so this is how they reach us.
 - **Get it:** [Chrome Web Store](https://chromewebstore.google.com/detail/dynamic-assist/kdjmihadioacnbabibfljbpbkclcjhbf) or [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dynamic-assist/mnfokldcehmjefajddlheodgfekhmkhe)
 
+Dynamic Assist is free. If it saves you time, you can buy me a coffee:
+
+<a href="https://buymeacoffee.com/acejvszkeo"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="40"></a>
+
 A Manifest V3 extension for Chrome and Edge, built with Vite, React, TypeScript, Tailwind CSS and [shadcn/ui](https://ui.shadcn.com). Created with [extension-publisher](https://github.com/garethcheyne/extension-publisher)'s `New-Extension.ps1`.
 
 ## Develop
@@ -22,7 +26,6 @@ manifest.json              the extension manifest; entries point at source files
 src/
 ├── background/            service worker: opens the panel, impersonation rules, query builder hand-off
 ├── sidepanel/             the side panel shell: header, launcher (portals.ts), home, history, credits
-├── help/                  the help page (index.html?page=help), opened in a browser tab
 ├── platforms/
 │   ├── bc/                Business Central: content + main-world scripts, page reading and page tools
 │   │   ├── panel/         Page, Parts, Tools, Go to and Session tabs

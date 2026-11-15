@@ -11,6 +11,8 @@ import {
   SettingsIcon,
   SparklesIcon,
   SunIcon,
+  PanelRightIcon,
+  PictureInPicture2Icon,
 } from "lucide-react"
 import { cn } from "cn"
 
@@ -40,6 +42,8 @@ import { HistoryView } from "./HistoryView"
 import { HomeView } from "./HomeView"
 import { SettingsView } from "./SettingsView"
 import { Hint } from "@/components/hint"
+import { SITE_LINKS, whatsNewUrl } from "@/shared/links"
+import { dockBack, isPopout, popOut } from "@/lib/popout"
 
 type View = "tools" | "home" | "history" | "credits" | "settings"
 
@@ -52,19 +56,15 @@ const VIEWS: Record<
   settings: { title: "Settings", icon: <SettingsIcon /> },
 }
 
-/** Help in a tab of its own, opened at the product you're in */
+/** Help: the docs on the website, at the product you're in */
 function openHelp(platform: Platform) {
-  void chrome.tabs.create({
-    url: chrome.runtime.getURL(
-      `src/sidepanel/index.html?page=help${platform === "none" ? "" : `#${platform}`}`
-    ),
-  })
+  void chrome.tabs.create({ url: SITE_LINKS.help[platform] ?? SITE_LINKS.docs })
 }
 
-/** What's new in a tab of its own */
+/** What's new: the changelog on the website, at this version's release */
 function openWhatsNew() {
   void chrome.tabs.create({
-    url: chrome.runtime.getURL("src/sidepanel/index.html?page=whatsnew"),
+    url: whatsNewUrl(chrome.runtime.getManifest().version),
   })
 }
 
@@ -211,6 +211,19 @@ function Header({
           </DropdownMenuTrigger>
         </Hint>
         <DropdownMenuContent align="end" className="w-52">
+          {/* The panel in a window of its own, or back into the side panel (popout.ts) */}
+          {isPopout ? (
+            <DropdownMenuItem onClick={dockBack}>
+              <PanelRightIcon />
+              Dock to side panel
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={() => void popOut()}>
+              <PictureInPicture2Icon />
+              Pop out
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => openHelp(platform)}>
             <LifeBuoyIcon />
             Help
