@@ -18,6 +18,7 @@ import {
   visitFromUrl,
   type HistoryEntry,
 } from "@/lib/history"
+import { orgDetail } from "@/lib/dataverse"
 import { useStorage } from "@/lib/use-storage"
 import {
   ConnectionReferences,
@@ -101,9 +102,31 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
       env &&
       e.environmentId?.toLowerCase() === env.toLowerCase()
   )
-  // When the picker can't be read, the org's name stands in for History
+  // When the picker can't be read, a name from elsewhere stands in: the
+  // Dynamics 365 org you've visited in this environment, or else the
+  // environment's own Dataverse, which knows its display name
   const orgName = org ? org.label || org.title : null
-  const knownName = stableName ?? orgName
+  // Kept with the environment it's for, so a switch never shows the last one's name
+  const [fromDataverse, setFromDataverse] = React.useState<{
+    env: string
+    name: string | null
+  } | null>(null)
+  React.useEffect(() => {
+    if (!dv.org || !env || stableName) return
+    let live = true
+    void orgDetail(dv.org)
+      .then((d) => {
+        if (live && d.environmentId === env.toLowerCase())
+          setFromDataverse({ env, name: d.friendlyName })
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [dv.org, env, stableName])
+  const dataverseName = fromDataverse?.env === env ? fromDataverse.name : null
+  const fallbackName = orgName ?? dataverseName
+  const knownName = stableName ?? fallbackName
 
   React.useEffect(() => {
     const visit = tab.url ? visitFromUrl(tab.url) : null
@@ -120,7 +143,7 @@ export function MakerPanel({ tab }: { tab: chrome.tabs.Tab }) {
           className="truncate font-semibold"
           title={env ? `Environment ${env}` : undefined}
         >
-          {name ?? orgName ?? "Power Apps"}
+          {name ?? fallbackName ?? "Power Apps"}
         </span>
         {m.area && (
           <span className="truncate text-muted-foreground">

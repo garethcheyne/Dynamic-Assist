@@ -30,8 +30,9 @@ Each item that came from feedback or a request links to its file in
 - **Power Apps environment names**: the home page, History and the Go
   anywhere menu showed a Power Apps environment by its ID when the portal's
   environment picker couldn't be read. They now show its name (from the
-  picker, or from the Dynamics 365 org in the same environment) with the ID
-  underneath in History and in the home card's tooltip.
+  picker, the Dynamics 365 org in the same environment, or the environment's
+  own Dataverse) with the ID underneath in History and in the home card's
+  tooltip.
 
 ### Changed
 

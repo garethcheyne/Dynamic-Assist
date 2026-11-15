@@ -110,9 +110,19 @@ export async function orgFromTab(tabId: number): Promise<string | null> {
 
 /** The Power Platform environment an org belongs to. */
 export async function environmentOf(org: string) {
-  const answer = await dataverse<{ Detail?: { EnvironmentId?: string } }>(
+  return (await orgDetail(org)).environmentId
+}
+
+/** An org's Power Platform environment ID and its display name, as the admin centre shows it */
+export async function orgDetail(org: string) {
+  const answer = await dataverse<{
+    Detail?: { EnvironmentId?: string; FriendlyName?: string }
+  }>(
     org,
     "RetrieveCurrentOrganization(AccessType=Microsoft.Dynamics.CRM.EndpointAccessType'Default')"
   )
-  return answer.Detail?.EnvironmentId?.toLowerCase() ?? null
+  return {
+    environmentId: answer.Detail?.EnvironmentId?.toLowerCase() ?? null,
+    friendlyName: answer.Detail?.FriendlyName?.trim() || null,
+  }
 }
