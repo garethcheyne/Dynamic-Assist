@@ -1,62 +1,30 @@
-Dynamic Assist puts the everyday tools that administrators and developers need for Microsoft Business Central, Dynamics 365, Power Apps and Power Automate into one side panel. Open one of those sites and the panel shows the tools for it; switch tabs and it follows.
+Dynamic Assist puts the everyday tools that administrators and developers need for Microsoft Business Central, Dynamics 365, Power Apps and Power Automate into one side panel. Open one of those sites and the panel shows the tools for it; switch tabs and it follows. Every tool is described on the website: https://dynamicassist.err403.com/docs/
 
 BUSINESS CENTRAL
-• Page details: page and table IDs, page type, the app and version that own the page, and the record's keys, with links to open the page or the table's data
-• Every field on the page with its value, grouped by section, searchable and filterable
-• Copy a field's name or value in one click, in the format you need, or copy all fields at once
-• Parts: each FactBox and subpage with its own page, table and fields
-• Session: your user, role, company and environment, with a link to the admin center
-• Field names on the page: the table field name and number beside every caption and column header, click to copy; hover one for more detail
-• All fields of the record, including ones the page doesn't show, and a one-click jump to the Dynamics 365 record it's coupled to (companion app)
-• Page tools: blur data for screenshots, expand every section, copy a link to the record
-• Go to any page, table, report or query by number, plus shortcuts to common admin and developer pages
-• Reads from the web client itself, so it doesn't start a second session the way the page inspector does
-• Query builder: query any table you're allowed to read, over the page you're on, with filters, related tables, sorting or SQL, and export the results to Excel, CSV or JSON, or turn the query into AL code or an API request. Needs the free, open-source Dynamic Assist Companion app installed in the environment; it's read-only and uses your own permissions. If it isn't installed, the panel says so within seconds and lists what to install.
+• Page details, table IDs, the owning app, and every field with its value, ready to copy
+• Field names on the page, all fields of the record, and page tools such as blur for screenshots
+• Go to any page, table, report or query by number
+• Query builder: query any table you can read, with filters, related tables or SQL, and export to Excel, CSV or JSON or turn it into AL or an API request (needs the free Dynamic Assist Companion app)
 
-DYNAMICS 365 APPS (model-driven apps)
-• Record details: table, record ID, form, and every form field with its value, required level and changes
-• All columns: every column of the record, including ones the form doesn't show
-• Form tools: logical names on forms and column headers with copy buttons, expand tabs, fill required fields, clone record, and more
-• List tools: copy the current view's query, or open the view in the API
-• Debug switches for forms, the ribbon and performance
-• Errors: script errors and failed requests on the page, with the server's own message, filtered to your own code in one click
-• Go to: search any table by name and open a record, a new form or the list
-• Session: your user, security roles, app and environment details
-• Access: the privileges of you or any user you pick on the table, their rights on the open record and why they have them
-• Compare: two users side by side, with the differences in their privileges and security roles
-• Find the Business Central records coupled to this one and open them
-• Impersonate: run the app as another user to see what they see (needs the matching privilege)
-• Query builder: build and run a query in a large window over the page, or write it as FetchXML or SQL, and export the results
-• Save your queries and run them again in any environment, and export and import them as a file
+DYNAMICS 365 APPS
+• Record details and all columns, logical names on forms, god mode, fill required fields and clone record
+• Errors on the page with the server's own message, and debug switches
+• Access and Compare: a user's privileges and roles, and two users side by side
+• Query builder with FetchXML and SQL, saved queries, and the coupled Business Central records
 
-POWER APPS MAKER PORTAL
-• The environment's name and ID, and the solution ID when you're in a solution
-• Shortcuts to the environment's key maker and admin pages
-• In a solution: its cloud flows, connection references and environment variables
-
-POWER AUTOMATE
-• Turn many cloud flows on (or off) at once: tick them and go, with the reason shown for any that fail
-• The flow you're on: state, owner, IDs, on/off switch, and its definition to view, copy or download
-• Recent and failed runs, connection references without a connection, and environment variables with no value
+POWER APPS AND POWER AUTOMATE
+• The environment and solution IDs, and shortcuts to the maker and admin pages
+• Turn many cloud flows on or off at once, see failed runs, and find connection references and environment variables that need attention
 
 EVERYWHERE
-• Go anywhere from the header: this environment's related admin, maker and product pages, and your recent environments
-• A home page with your pinned and recent environments, one click away from any page's tools
-• Right-click menu on Business Central and Dynamics 365 pages: copy the field's name or the record's link, turn the page tools on and off, and open the query builder without opening the panel
-• What's new: what changed in each version, on the Dynamic Assist website
-• Light and dark themes
-• Help opens the docs on the Dynamic Assist website, at the product you're in: every tool, what it does and what it needs
-
-HISTORY
-• Every environment and company you open, newest first; pin the ones you use and give them your own names
+• Pinned and recent environments, a Go anywhere menu, a right-click menu, a pop-out window, and light and dark themes
 
 WHAT IT ACCESSES
-Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does, such as turning flows on or off or saving a form. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser. Links to the Dynamic Assist website (Help, What's new, Feedback) open in a new tab only when you click them.
+Dynamic Assist works only on Business Central, Dynamics 365, Power Apps and Power Automate sites. It reads the page you're on and calls that service's own API as you, with your existing sign-in and permissions. It never reads or stores passwords or tokens, and it changes data only when you click a tool that does. Nothing is sent to any other server, there is no account and no tracking, and your history and settings stay in your browser. Links to the Dynamic Assist website open in a new tab only when you click them.
 
-Dynamic Assist is an independent project and is not affiliated with or endorsed by Microsoft. Microsoft product names and icons are trademarks of the Microsoft group of companies; the icons appear in the panel only to show which product a page or link belongs to.
+Dynamic Assist is a free, independent project, not affiliated with or endorsed by Microsoft. Microsoft product names and icons are trademarks of the Microsoft group of companies.
 
-Full feature list and more: https://www.err403.com/apps/dynamic-assist
-Website and docs: https://dynamicassist.err403.com
-Ideas, problems and feedback: https://dynamicassist.err403.com/feedback/
+Website, docs and changelog: https://dynamicassist.err403.com
+Feedback: https://dynamicassist.err403.com/feedback/
+Business Central companion app: https://dynamicassist.err403.com/docs/companion-app/
 Source code: https://github.com/garethcheyne/Dynamic-Assist
-Business Central companion app (for the query builder): https://dynamicassist.err403.com/docs/companion-app/

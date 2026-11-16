@@ -23,7 +23,7 @@ store/
 │   ├── permissions.md           a "## <permission>" justification per manifest permission
 │   ├── data-usage.md            Chrome → Privacy → Data usage (and Edge's questions)
 │   ├── remote-code.md           both stores: "Are you using remote code?"
-│   └── privacy-policy.md        publish it, then set listing.privacyPolicyUrl
+│   └── privacy-policy.md        where the policy lives (store.json has its URL)
 └── review/
     └── reviewer-notes.md        Chrome test instructions · Edge notes for certification
 ```

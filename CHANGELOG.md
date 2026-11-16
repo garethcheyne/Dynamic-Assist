@@ -13,7 +13,7 @@ only.
 Each item that came from feedback or a request links to its file in
 [enhancements/](enhancements/README.md), which has the cause and the details.
 
-## [Unreleased]
+## [2026.11.16] — 2026-11-16
 
 ### Added
 

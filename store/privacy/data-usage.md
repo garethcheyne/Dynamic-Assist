@@ -25,17 +25,11 @@ These are handled locally and are worth confirming against the dashboard's wordi
 
 ## Where does it go?
 
-Nothing leaves the browser except requests to the Microsoft service you're already signed in to, made as you with your permissions:
+Nothing leaves the browser except requests to the Microsoft service you're already signed in to, made as you with your permissions: the Dynamics 365 organisation's Web API, the Power Platform environment's Dataverse Web API, and in Business Central the optional, read-only Dynamic Assist Companion app inside the page. Results are shown and not kept, unless you choose Export, which saves a file to your own computer.
 
-- **Dynamics 365 app pages**: that organisation's own Web API, to read table metadata, the current record's columns, the current view's query, security roles and privileges (yours, or a user you pick in Access), the environment's details, and the rows you ask for in the query builder.
-- **Power Apps and Power Automate**: the environment's Dataverse Web API, to read solution flows, flow runs, connection references and environment variables. The one write is turning flows on or off, and only when you click to do it.
-- **Business Central**: if the optional Dynamic Assist Companion app is installed, the query builder reads tables, fields and rows through it, inside the Business Central page and your own session. The app is read-only and applies your Business Central permissions. The same route reads the list of installed apps, to label fields with the extension that added them.
+Stored only in the browser: History, saved queries, which Business Central company goes with which Dynamics 365 org, short-lived caches of Business Central table and app names, and preferences. No server of our own, no analytics, no error reporting, no third party. Links to the Dynamic Assist website open in a new tab only when clicked.
 
-The results are shown in the side panel or the query builder and not kept, unless you choose Export, which saves a file to your own computer.
-
-Its links to the Dynamic Assist website (docs, the feedback page, the companion app download) open in a new tab only when you click them. Feedback and Report a problem fill in the extension's version, and after a crash the error message, in the link; the feedback form shows them, and nothing is sent unless you send the form.
-
-Stored locally, in chrome.storage and localStorage: History, the queries you save in the query builder, the Business Central company linked to each Dynamics 365 org, a one-day cache of installed Business Central app names, a cache of each Business Central environment's table list and table fields for the query builder (cleared from Settings), whether an environment doesn't have the companion app (for a day, or until Check again), and preferences (theme, collapsed sections). There is no server of our own, no analytics, no error reporting and no third party.
+The full detail, kept up to date: https://dynamicassist.err403.com/privacy/
 
 ## Certifications (all three must be true to publish)
 
